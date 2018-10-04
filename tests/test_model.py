@@ -150,15 +150,16 @@ class TestModel:
             x = Float()
 
         class Example(Model):
-            a = Integer()
+            a = Integer(rename='d')
             b = ModelField(SubExample)
             c = Boolean(optional=True)
 
         example = Example(5, SubExample(10.5))
-        assert example.to_dict() == {'a': 5, 'b': {'x': 10.5}}
+        assert example.a == 5
+        assert example.to_dict() == {'d': 5, 'b': {'x': 10.5}}
 
         example = Example(5, SubExample(10.5), c=True)
-        assert example.to_dict() == {'a': 5, 'b': {'x': 10.5}, 'c': True}
+        assert example.to_dict() == {'d': 5, 'b': {'x': 10.5}, 'c': True}
 
         class Example(Model):
             a = Array(Integer)

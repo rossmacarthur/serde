@@ -18,12 +18,14 @@ class Field:
     # because we wouldn't know the order of the Field arguments.
     __counter__ = 0
 
-    def __init__(self, optional=False, validators=None):
+    def __init__(self, optional=False, rename=None, validators=None):
         """
         Create a new Field.
 
         Args:
             optional (bool): whether this field is required for deserialization.
+            rename (Text): use this name for the field when serialializing and
+                expect this name when deserializing.
             validators (List[Callable]): a list of validator functions taking
                 `(self, value)` as arguments. The functions need to raise an
                 `Exception` if they fail.
@@ -34,6 +36,7 @@ class Field:
         Field.__counter__ += 1
 
         self.optional = optional
+        self.rename = rename
         self.validators = validators or []
 
     def __eq__(self, other):
@@ -48,6 +51,7 @@ class Field:
         """
         return (isinstance(other, self.__class__) and
                 self.optional == other.optional and
+                self.rename == other.rename and
                 self.validators == other.validators)
 
     def serialize(self, value):

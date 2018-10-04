@@ -98,18 +98,18 @@ def test_base_1():
         email = String()
 
     class User(Model):
-        name = String()
+        name = String(rename='username')
         age = Integer(optional=True)
         addresses = Array(Address, optional=True)
 
     # Serialization
     user = User('John Smith', age=53, addresses=[Address('john@smith.com')])
-    assert user.to_dict() == {'name': 'John Smith',
+    assert user.to_dict() == {'username': 'John Smith',
                               'age': 53,
                               'addresses': [{'email': 'john@smith.com'}]}
 
     # Deserialization
-    user = User.from_dict({'name': 'John Smith',
+    user = User.from_dict({'username': 'John Smith',
                            'age': 53,
                            'addresses': [{'email': 'john@smith.com'}]})
     assert user.name == 'John Smith'

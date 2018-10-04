@@ -201,6 +201,7 @@ class ModelType(type):
 
             for name, field in fields.items():
                 value = getattr(self, name)
+                name = field.rename or name
 
                 if value is None and field.optional:
                     continue
@@ -242,6 +243,8 @@ class ModelType(type):
             kwargs = {}
 
             for name, field in fields.items():
+                name = field.rename or name
+
                 if name in d:
                     value = field.deserialize(d.pop(name))
 
