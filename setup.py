@@ -32,7 +32,7 @@ version = find_version()
 
 url = 'https://github.com/rossmacarthur/serde'
 
-long_description = read('README.rst')
+long_description = read('README.md')
 
 lint_requirements = [
     'flake8',
@@ -66,8 +66,9 @@ setup(
     author_email='macarthur.ross@gmail.com',
     description='A framework for serializing and deserializing Python objects.',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     license='MIT',
-    keywords='serde',
+    keywords='serde serialization deserialization json',
     url=url,
     download_url='{url}/archive/{version}.tar.gz'.format(url=url, version=version),
     classifiers=[
