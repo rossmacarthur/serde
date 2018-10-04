@@ -27,7 +27,7 @@ sort-imports: ## Sort import statements according to isort configuration.
 	$(VIRTUAL_ENV)/bin/isort --recursive .
 
 test: ## Run all tests.
-	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing tests
+	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing --cov-fail-under 100 tests
 
 dist: clean ## Build source and wheel package.
 	$(VIRTUAL_ENV)/bin/python setup.py sdist
