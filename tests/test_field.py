@@ -26,7 +26,7 @@ class TestField:
 
         assert field.counter == 0
         assert field.optional is False
-        assert field.rename is None
+        assert field.name is None
         assert field.default is None
         assert field.validators == []
 
@@ -35,9 +35,9 @@ class TestField:
         assert field2.counter == 1
 
         # A Field with extra options set.
-        field = Field(optional=True, rename='test', default=lambda m: 5, validators=[None])
+        field = Field(optional=True, name='test', default=lambda m: 5, validators=[None])
         assert field.optional is True
-        assert field.rename == 'test'
+        assert field.name == 'test'
         assert callable(field.default)
         assert field.validators == [None]
 

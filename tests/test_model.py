@@ -175,7 +175,7 @@ class TestModel:
             x = Float()
 
         class Example(Model):
-            a = Integer(rename='d')
+            a = Integer(name='d')
             b = ModelField(SubExample)
             c = Boolean(optional=True)
 

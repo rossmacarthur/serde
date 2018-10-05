@@ -97,7 +97,7 @@ def test_base_1():
         email = String()
 
     class User(Model):
-        name = String(rename='username')
+        name = String(name='username')
         age = Integer(optional=True)
         addresses = Array(Address, optional=True)
 

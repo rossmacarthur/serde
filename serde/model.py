@@ -206,7 +206,8 @@ class Model(metaclass=ModelType):
         kwargs = {}
 
         for name, field in cls.__fields__.items():
-            name = field.rename or name
+            if field.name:
+                name = field.name(cls, name) if callable(field.name) else field.name
 
             if name in d:
                 value = field.deserialize(d.pop(name))
@@ -248,7 +249,9 @@ class Model(metaclass=ModelType):
 
         for name, field in self.__fields__.items():
             value = getattr(self, name)
-            name = field.rename or name
+
+            if field.name:
+                name = field.name(self, name) if callable(field.name) else field.name
 
             if value is None and field.optional:
                 continue
