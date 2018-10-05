@@ -9,12 +9,6 @@ class SerdeError(Exception):
     """
 
 
-class ModelError(SerdeError):
-    """
-    Raised when a Model cannot be constructed correctly.
-    """
-
-
 class ValidationError(SerdeError):
     """
     Raised when field validation fails.

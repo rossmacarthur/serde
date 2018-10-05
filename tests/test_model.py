@@ -1,6 +1,6 @@
 from pytest import raises
 
-from serde.error import DeserializationError, ModelError, SerializationError, ValidationError
+from serde.error import DeserializationError, SerializationError, ValidationError
 from serde.field import Array, Boolean, Float, Integer, ModelField, String
 from serde.model import Model
 
@@ -14,23 +14,48 @@ class TestModel:
 
         assert hasattr(Example, '__init__') and callable(Example.__init__)
         assert hasattr(Example, '__eq__') and callable(Example.__eq__)
+        assert hasattr(Example, '__hash__') and callable(Example.__eq__)
         assert hasattr(Example, '__validate__') and callable(Example.__validate__)
         assert hasattr(Example, 'to_dict') and callable(Example.to_dict)
         assert hasattr(Example, 'from_dict') and callable(Example.from_dict)
-
-        # A Model that defines one of the methods that *we* set
-        with raises(ModelError):
-            class BadExample(Model):
-                def to_dict(self):
-                    pass
 
         class Example(Model):
             a = Integer()
             b = Boolean()
 
-        # the field attributes should not be present on the final class.
+        # The field attributes should not be present on the final class.
         assert not hasattr(Example, 'a')
         assert not hasattr(Example, 'b')
+
+        # But they should be in the __fields__ attribute
+        assert hasattr(Example.__fields__, 'a')
+        assert hasattr(Example.__fields__, 'b')
+
+        with raises(AttributeError):
+            Example.__fields__.c
+
+        # When extending a model the parent field attributes should also be
+        # present, but subclass fields of the same name should override them.
+        class Example2(Example):
+            b = Float()
+            c = Float()
+
+        assert hasattr(Example2.__fields__, 'a')
+        assert isinstance(Example2.__fields__.a, Integer)
+        assert hasattr(Example2.__fields__, 'b')
+        assert isinstance(Example2.__fields__.b, Float)
+        assert hasattr(Example2.__fields__, 'c')
+        assert isinstance(Example2.__fields__.c, Float)
+
+        class Example3(Example2):
+            pass
+
+        assert hasattr(Example2.__fields__, 'a')
+        assert isinstance(Example2.__fields__.a, Integer)
+        assert hasattr(Example2.__fields__, 'b')
+        assert isinstance(Example2.__fields__.b, Float)
+        assert hasattr(Example2.__fields__, 'c')
+        assert isinstance(Example2.__fields__.c, Float)
 
     def test___init__(self):
         # A simple Model with no fields.
@@ -81,13 +106,13 @@ class TestModel:
 
         class Example(Model):
             a = Integer(validators=[assert_value_between_0_and_20])
-            b = Boolean(optional=True)
+            b = Boolean(optional=True, default=False)
             c = ModelField(SubExample, optional=True)
             d = ModelField(SubExample)
 
         # Just passing in args
         example = Example(5, SubExample(10))
-        assert example.__dict__ == {'a': 5, 'b': None, 'c': None, 'd': SubExample(10)}
+        assert example.__dict__ == {'a': 5, 'b': False, 'c': None, 'd': SubExample(10)}
 
         # Passing in args and kwargs
         example = Example(5, SubExample(10), c=SubExample(50), b=True)

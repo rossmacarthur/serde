@@ -18,7 +18,7 @@ class Field:
     # because we wouldn't know the order of the Field arguments.
     __counter__ = 0
 
-    def __init__(self, optional=False, rename=None, validators=None):
+    def __init__(self, optional=False, rename=None, default=None, validators=None):
         """
         Create a new Field.
 
@@ -26,8 +26,11 @@ class Field:
             optional (bool): whether this field is required for deserialization.
             rename (Text): use this name for the field when serialializing and
                 expect this name when deserializing.
+            default (Any): a value to use if the field value is None. This can
+                also be a function that generates a new value each time it is
+                called. The function needs to take the Model as an argument.
             validators (List[Callable]): a list of validator functions taking
-                `(self, value)` as arguments. The functions need to raise an
+                Model and the value as arguments. The functions need to raise an
                 `Exception` if they fail.
         """
         super().__init__()
@@ -37,6 +40,7 @@ class Field:
 
         self.optional = optional
         self.rename = rename
+        self.default = default
         self.validators = validators or []
 
     def __eq__(self, other):
@@ -52,6 +56,7 @@ class Field:
         return (isinstance(other, self.__class__) and
                 self.optional == other.optional and
                 self.rename == other.rename and
+                self.default == other.default and
                 self.validators == other.validators)
 
     def serialize(self, value):

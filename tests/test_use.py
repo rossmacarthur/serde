@@ -17,7 +17,7 @@ def test_base_0():
             assert isinstance(value, UUID)
 
     class Player(Model):
-        key = Uuid(optional=True)
+        key = Uuid(optional=True, default=lambda m: uuid4())
         name = Parts(String, String)
         age = Integer()
         rating = Float()
@@ -28,10 +28,9 @@ def test_base_0():
         board = Map(String, Integer)
 
     # Create a player manually
-    random_uuid = uuid4()
-    player = Player(('James', 'Williams'), 23, 52.3, key=random_uuid)
+    player = Player(('James', 'Williams'), 23, 52.3)
 
-    assert player.key == random_uuid
+    assert isinstance(player.key, UUID)
     assert player.name == ('James', 'Williams')
     assert player.age == 23
     assert player.rating == 52.3

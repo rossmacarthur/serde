@@ -26,6 +26,8 @@ class TestField:
 
         assert field.counter == 0
         assert field.optional is False
+        assert field.rename is None
+        assert field.default is None
         assert field.validators == []
 
         # A second Field instantiated should have a higher counter.
@@ -33,8 +35,10 @@ class TestField:
         assert field2.counter == 1
 
         # A Field with extra options set.
-        field = Field(optional=True, validators=[None])
+        field = Field(optional=True, rename='test', default=lambda m: 5, validators=[None])
         assert field.optional is True
+        assert field.rename == 'test'
+        assert callable(field.default)
         assert field.validators == [None]
 
     def test_serialize(self):
