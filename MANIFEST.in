@@ -2,6 +2,10 @@ include LICENSE
 include Makefile
 include README.md
 
+recursive-include docs *
 recursive-include tests *
+
+exclude docs/_build
+
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]

@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 
-from serde import Array, Boolean, Field, Float, Integer, Map, Model, Parts, String
+from serde import Array, Boolean, Field, Float, Integer, Map, Model, ModelField, Parts, String
 
 
 def test_base_0():
@@ -17,7 +17,7 @@ def test_base_0():
             assert isinstance(value, UUID)
 
     class Player(Model):
-        key = Uuid(optional=True, default=lambda m: uuid4())
+        key = Uuid(optional=True, default=lambda _: uuid4())
         name = Parts(String, String)
         age = Integer()
         rating = Float()
@@ -114,3 +114,44 @@ def test_base_1():
     assert user.name == 'John Smith'
     assert user.age == 53
     assert user.addresses == [Address('john@smith.com')]
+
+
+def test_base_2():
+    class Version(Model):
+        major = Integer()
+        minor = Integer()
+        patch = Integer(optional=True, default=0)
+
+    class Package(Model):
+        name = String(name='packageName')
+        version = ModelField(Version)
+
+    # Create an instance of the Model
+    package = Package('requests', Version(2, 19, 1))
+    assert package.name == 'requests'
+    assert package.version.major == 2
+    assert package.version.minor == 19
+    assert package.version.patch == 1
+
+    # Serialize the Model as a dictionary
+    assert package.to_dict() == {
+        'packageName': 'requests',
+        'version': {
+            'major': 2,
+            'minor': 19,
+            'patch': 1
+        }
+    }
+
+    # Deserialize another Model from a dictionary
+    package = Package.from_dict({
+        'packageName': 'click',
+        'version': {
+            'major': 7,
+            'minor': 0
+        }
+    })
+    assert package.name == 'click'
+    assert package.version.major == 7
+    assert package.version.minor == 0
+    assert package.version.patch == 0

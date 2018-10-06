@@ -20,7 +20,7 @@ class Fields(OrderedDict):
         Return keys in the dictionary like attributes.
 
         Args:
-            name (Text): the attribute lookup.
+            name (str): the attribute lookup.
 
         Returns:
             Field: the field value in the dictionary.
@@ -35,18 +35,19 @@ class ModelType(type):
     """
     A metaclass for Models.
 
-    This metaclass pulls Field attributes off the defined class and uses them
-    to construct unique __init__, __eq__, and __hash__ methods on the Model.
+    This metaclass pulls `~serde.field.Field` attributes off the defined class
+    and uses them to construct unique __init__, __eq__, and __hash__ methods on
+    the `Model`.
     """
 
     def __new__(cls, cname, bases, attrs):
         """
-        Create a new Model type, overriding the relevant methods.
+        Create a new `Model` type, overriding the relevant methods.
 
         Args:
-            cname (Text): the class name.
-            bases (Tuple[type]): the classes's base classes.
-            attrs (Dict[Text, Any]): the attributes for this class.
+            cname (str): the class name.
+            bases (tuple): the classes's base classes.
+            attrs (dict): the attributes for this class.
 
         Returns:
             Model: a new Model.
@@ -68,7 +69,11 @@ class ModelType(type):
         # Order the fields by the base Fields then by Field counter, this gets
         # the order that they are defined in their class, with args first then
         # kwargs.
-        fields = Fields(sorted(fields, key=lambda x: (x[1].optional, x[1].counter)))
+        def key(x):
+            name, field = x
+            return (field.optional, field.default is not None, field.counter)
+
+        fields = Fields(sorted(fields, key=key))
 
         # Create all the necessary functions for a ModelType. This will override
         # user defined methods with no warning.
@@ -84,24 +89,28 @@ class ModelType(type):
     @staticmethod
     def create___init__(fields):
         """
-        Create the __init__ method for the Model.
+        Create the __init__ method for the `Model`.
 
         The generated function will simply take the actual field values as
         parameters and set them as attributes on the instance. It will also
         validate the field values.
 
         Args:
-            fields (OrderedDict[Text, Field]): the Model's fields.
+            fields (OrderedDict): the Model's fields.
 
         Returns:
-            Callable: the __init__ method.
+            callable: the __init__ method.
         """
         parameters = ['self']
         setters = []
         defaults = []
 
         for name, field in fields.items():
-            parameters.append('{name}=None'.format(name=name) if field.optional else name)
+            if field.optional or field.default is not None:
+                parameters.append('{name}=None'.format(name=name))
+            else:
+                parameters.append(name)
+
             setters.append('    self.{name} = {name}'.format(name=name))
 
             if field.default is not None:
@@ -113,23 +122,23 @@ class ModelType(type):
                 defaults.extend(['', '    if self.{name} is None:'.format(name=name), setter])
 
         definition = 'def __init__({parameters}):'.format(parameters=', '.join(parameters))
-        lines = setters + defaults + ['', '    self.__validate__()']
+        lines = setters + defaults + ['', '    self.validate()']
 
         return create_function(definition, lines)
 
     @staticmethod
     def create___eq__(fields):
         """
-        Create the __eq__ method for the Model.
+        Create the __eq__ method for the `Model`.
 
         This method simply checks if the class is the same type and the field
         values are equal.
 
         Args:
-            fields (OrderedDict[Text, Field]): the class's fields.
+            fields (OrderedDict): the class's fields.
 
         Returns:
-            Callable: the __eq__ method.
+            callable: the __eq__ method.
         """
         definition = 'def __eq__(self, other):'
         lines = ['    return (isinstance(other, self.__class__)']
@@ -142,13 +151,13 @@ class ModelType(type):
     @staticmethod
     def create___hash__(fields):
         """
-        Create the __hash__ method for the Model.
+        Create the __hash__ method for the `Model`.
 
         Args:
-            fields (OrderedDict[Text, Field]): the class's fields.
+            fields (OrderedDict): the class's fields.
 
         Returns:
-            Callable: the __hash__ method.
+            callable: the __hash__ method.
         """
         definition = 'def __hash__(self):'
         lines = ['    return hash((']
@@ -163,15 +172,59 @@ class ModelType(type):
 
 class Model(metaclass=ModelType):
     """
-    The base Model.
+    The base Model to be subclassed.
+
+    Models are containers for `~serde.field.Field` elements. Models can be
+    serialized to and from dictionaries with `~Model.to_dict` and
+    `~Model.from_dict` and to and from JSON with `~Model.to_json` and
+    `~Model.from_json`.
+
+    Fields are serialized, deserialized, and validated according to their
+    specification, and you can easily create your own Field by subclassing
+    `~serde.field.Field`. Models also validate input data using the validators
+    specified on the Field classes.
+
+    The `Model.__init__` method will be auto-generated from the Field
+    attributes. Required Fields will become arguments and optional or default
+    Fields will become keyword arguments.
+
+    Examples:
+
+        A simple user model
+
+        .. testsetup::
+
+            from serde import Model, Integer, String
+
+        .. testcode::
+
+            class User(Model):
+                name = String()
+                age = Integer(optional=True)
+
+            user = User('Benedict Cumberbatch', age=42)
+            assert user.name == 'Benedict Cumberbatch'
+            assert user.age == 42
+
+        You can even subclass subclassed `Model` objects.
+
+        .. testcode::
+
+            class SuperUser(User):
+                level = Integer(default=10)
+
+            user = SuperUser('Benedict Cumberbatch', age=42)
+            assert user.name == 'Benedict Cumberbatch'
+            assert user.age == 42
+            assert user.level == 10
     """
 
-    def __validate__(self):
+    def validate(self):
         """
         Validate this Model.
 
         Raises:
-            ValidationError: when a field's validation fails.
+            `~serde.error.ValidationError`: when a Field value is invalid.
         """
         for name, field in self.__fields__.items():
             value = getattr(self, name)
@@ -186,21 +239,47 @@ class Model(metaclass=ModelType):
                 field.validate(value)
                 for validator in field.validators:
                     validator(self, value)
+            except ValidationError:
+                raise
             except Exception as e:
-                if isinstance(e, ValidationError):
-                    raise
                 raise ValidationError(str(e))
 
     @classmethod
     def from_dict(cls, d):
         """
-        Convert the dictionary to an instance of this Model.
+        Convert a dictionary to an instance of this Model.
 
         Args:
-            d (Dict[Text, Any]): a serialized version of this Model.
+            d (dict): a serialized version of this Model.
 
         Returns:
             Model: an instance of this Model.
+
+        Raises:
+            `~serde.error.DeserializationError`: when a Field value can not be
+                deserialized or there are unknown dictionary keys.
+            `~serde.error.ValidationError`: when a Field value is invalid.
+
+        Examples:
+
+            A simple user model deserialized from a dictionary
+
+            .. testsetup::
+
+                from serde import Model, Integer, String
+
+            .. testcode::
+
+                class User(Model):
+                    name = String()
+                    age = Integer(optional=True)
+
+                user = User.from_dict({
+                    'name': 'Benedict Cumberbatch',
+                    'age': 42
+                })
+                assert user.name == 'Benedict Cumberbatch'
+                assert user.age == 42
         """
         args = []
         kwargs = {}
@@ -210,7 +289,12 @@ class Model(metaclass=ModelType):
                 name = field.name(cls, name) if callable(field.name) else field.name
 
             if name in d:
-                value = field.deserialize(d.pop(name))
+                try:
+                    value = field.deserialize(d.pop(name))
+                except DeserializationError:
+                    raise
+                except Exception as e:
+                    raise DeserializationError(str(e))
 
                 if field.optional:
                     kwargs[name] = value
@@ -230,7 +314,7 @@ class Model(metaclass=ModelType):
         Load the Model from a JSON string.
 
         Args:
-            s (Text): the JSON string.
+            s (str): the JSON string.
             **kwargs: extra keyword arguments to pass directly to `json.loads`.
 
         Returns:
@@ -243,7 +327,28 @@ class Model(metaclass=ModelType):
         Convert this Model to a dictionary.
 
         Returns:
-            Dict[Text, Any]: the Model serialized as dictionary.
+            dict: the Model serialized as a dictionary.
+
+        Raises:
+            `~serde.error.SerializationError`: when a Field value cannot be
+                serialized.
+
+        Examples:
+
+            A simple user model serialized as a dictionary
+
+            .. testsetup::
+
+                from serde import Model, Integer, String
+
+            .. testcode::
+
+                class User(Model):
+                    name = String()
+                    age = Integer(optional=True)
+
+                user = User('Benedict Cumberbatch', age=42)
+                assert user.to_dict() == {'name': 'Benedict Cumberbatch', 'age': 42}
         """
         result = OrderedDict()
 
@@ -258,6 +363,8 @@ class Model(metaclass=ModelType):
 
             try:
                 result[name] = field.serialize(value)
+            except SerializationError:
+                raise
             except Exception as e:
                 raise SerializationError(str(e))
 
@@ -265,12 +372,12 @@ class Model(metaclass=ModelType):
 
     def to_json(self, **kwargs):
         """
-        Dump the Model to a JSON string.
+        Dump the Model as a JSON string.
 
         Args:
             **kwargs: extra keyword arguments to pass directly to `json.dumps`.
 
         Returns:
-            Text: a JSON representation of this Model.
+            str: a JSON representation of this Model.
         """
         return json.dumps(self.to_dict(), **kwargs)

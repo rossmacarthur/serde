@@ -49,6 +49,12 @@ test_requirements = [
     'pytest-cov'
 ]
 
+document_requirements = [
+    'recommonmark',
+    'sphinx',
+    'sphinx_readable_theme'
+]
+
 package_requirements = [
     'twine'
 ]
@@ -59,6 +65,7 @@ setup(
     version=version,
     extras_require={'linting': lint_requirements,
                     'testing': test_requirements,
+                    'documenting': document_requirements,
                     'packaging': package_requirements},
     python_requires='>=3.4',
 
@@ -68,7 +75,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='MIT',
-    keywords='serde serialization deserialization json',
+    keywords='serde serialization deserialization schema json',
     url=url,
     download_url='{url}/archive/{version}.tar.gz'.format(url=url, version=version),
     classifiers=[

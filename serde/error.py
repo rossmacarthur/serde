@@ -9,12 +9,6 @@ class SerdeError(Exception):
     """
 
 
-class ValidationError(SerdeError):
-    """
-    Raised when field validation fails.
-    """
-
-
 class SerializationError(SerdeError):
     """
     Raised when field serialization fails.
@@ -24,4 +18,10 @@ class SerializationError(SerdeError):
 class DeserializationError(SerdeError):
     """
     Raised when field deserialization fails.
+    """
+
+
+class ValidationError(SerdeError):
+    """
+    Raised when field validation fails.
     """

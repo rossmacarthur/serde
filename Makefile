@@ -1,4 +1,4 @@
-.PHONY: help clean venv install install-all lint sort-imports test dist release
+.PHONY: help clean venv install install-all lint sort-imports test docs dist release
 
 PYTHON := python3
 VIRTUAL_ENV := $(or $(VIRTUAL_ENV), $(VIRTUAL_ENV), venv)
@@ -10,6 +10,7 @@ help: ## Show this message and exit.
 clean: ## Remove all build artifacts.
 	rm -rf build dist wheels venv *.egg-info
 	find . \( -name *.pyc -o -name *.pyo -o -name __pycache__ \) -exec rm -rf {} +
+	$(MAKE) -C docs clean
 
 venv: ## Create virtualenv.
 	virtualenv --python=$(PYTHON) venv
@@ -18,7 +19,7 @@ install: ## Install package.
 	$(VIRTUAL_ENV)/bin/pip install -e .
 
 install-all: ## Install package and development dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[linting,testing,packaging]"
+	$(VIRTUAL_ENV)/bin/pip install -e ".[linting,testing,documenting,packaging]"
 
 lint: ## Run all lints.
 	$(VIRTUAL_ENV)/bin/flake8 --max-complexity 10 .
@@ -28,9 +29,14 @@ sort-imports: ## Sort import statements according to isort configuration.
 
 test: ## Run all tests.
 	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing --cov-fail-under 100 tests
+	$(MAKE) -C docs doctest
+
+docs: ## Compile docs.
+	$(MAKE) -C docs html
 
 dist: clean ## Build source and wheel package.
 	$(VIRTUAL_ENV)/bin/python setup.py sdist
+	ls -l dist
 
 release: dist ## Package and upload a release.
 	$(VIRTUAL_ENV)/bin/twine upload dist/*

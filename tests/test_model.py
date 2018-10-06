@@ -15,7 +15,7 @@ class TestModel:
         assert hasattr(Example, '__init__') and callable(Example.__init__)
         assert hasattr(Example, '__eq__') and callable(Example.__eq__)
         assert hasattr(Example, '__hash__') and callable(Example.__eq__)
-        assert hasattr(Example, '__validate__') and callable(Example.__validate__)
+        assert hasattr(Example, 'validate') and callable(Example.validate)
         assert hasattr(Example, 'to_dict') and callable(Example.to_dict)
         assert hasattr(Example, 'from_dict') and callable(Example.from_dict)
 
@@ -197,6 +197,16 @@ class TestModel:
         with raises(SerializationError):
             example.to_dict()
 
+        # Make the field always fail serialization
+        def serialize(value):
+            raise SerializationError('unable to serialize {}'.format(value))
+
+        example = Example([1, 2, 3, 4])
+        Example.__fields__.a.serialize = serialize
+
+        with raises(SerializationError):
+            example.to_dict()
+
     def test_from_dict(self):
         # A simple Model.
         class Example(Model):
@@ -229,6 +239,24 @@ class TestModel:
 
         example = Example.from_dict({'a': 5, 'b': {'x': 10.5}})
         assert isinstance(example.b, SubExample)
+
+        # Make the field always fail serialization
+        def deserialize(value):
+            raise DeserializationError('unable to deserialize {}'.format(value))
+
+        Example.__fields__.a.deserialize = deserialize
+
+        with raises(DeserializationError):
+            Example.from_dict({'a': 5, 'b': {'x': 10.5}})
+
+        # Generic exceptions should also be mapped to a Deserialization error
+        def deserialize(value):
+            raise Exception('unable to deserialize {}'.format(value))
+
+        Example.__fields__.a.deserialize = deserialize
+
+        with raises(DeserializationError):
+            Example.from_dict({'a': 5, 'b': {'x': 10.5}})
 
     def test_to_json(self):
         class Example(Model):
