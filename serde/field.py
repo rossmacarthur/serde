@@ -31,8 +31,8 @@ class Field:
 
             class Person(Model):
                 name = Field()
-                age = Field(optional=True, validators=[assert_is_positive])
-                favourite_color = Field(optional=True, default='pink')
+                age = Field(required=False, validators=[assert_is_positive])
+                favourite_color = Field(required=False, default='pink')
 
             person = Person('William Shakespeare', age=454)
             assert person.name == 'William Shakespeare'
@@ -62,7 +62,7 @@ class Field:
                 key = Uuid(default=lambda _: uuid4())
                 email = String()
 
-            user = User('john@smith.com')
+            user = User(email='john@smith.com')
             assert isinstance(user.key, UUID)
             assert user.email == 'john@smith.com'
     """
@@ -72,33 +72,32 @@ class Field:
     # because we wouldn't know the order of the Field arguments.
     __counter__ = 0
 
-    def __init__(self, optional=False, name=None, default=None, validators=None):
+    def __init__(self, name=None, required=True, default=None, validators=None):
         """
         Create a new Field.
 
         Args:
-            optional (bool): whether this field is optional. Optional fields are
-                not required to be present in deserialization, will become
-                kwargs on the `Model.__init__` method, and will not be
-                serialized if they are None.
             name: override the name for the field when serializing and expect
                 this name when deserializing. This can also be a function that
                 generates a value. The function needs to take the containing
                 `~serde.model.Model` and the default name as arguments.
-            default: a value to use if the field value is None. This can also be
-                a function that generates the default. The function needs to
-                take the containing `~serde.model.Model` as an argument.
+            required (bool): whether this field is required. Required fields
+                have to be present in instantiation and deserialization.
+            default: a value to use if there is no input field value. This can
+                also be a function that generates the default. The function
+                needs to take the containing `~serde.model.Model` as an
+                argument.
             validators (list): a list of validator functions taking
                 `~serde.model.Model` and the value as arguments. The functions
                 need to raise an `Exception` if they fail.
         """
         super().__init__()
 
-        self.counter = Field.__counter__
+        self.id = Field.__counter__
         Field.__counter__ += 1
 
-        self.optional = optional
         self.name = name
+        self.required = required
         self.default = default
         self.validators = validators or []
 
@@ -107,8 +106,8 @@ class Field:
         Whether two Fields are the same.
         """
         return (isinstance(other, self.__class__) and
-                self.optional == other.optional and
                 self.name == other.name and
+                self.required == other.required and
                 self.default == other.default and
                 self.validators == other.validators)
 
@@ -245,7 +244,7 @@ class ModelField(TypeField):
 
             class Person(Model):
                 name = String()
-                birthday = ModelField(Birthday, optional=True)
+                birthday = ModelField(Birthday, required=False)
 
             person = Person('Beyonce', birthday=Birthday(4, 'September'))
             assert person.name == 'Beyonce'

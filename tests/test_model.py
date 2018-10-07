@@ -8,17 +8,6 @@ from serde.model import Model
 class TestModel:
 
     def test___new__(self):
-        # A simple Model with no fields.
-        class Example(Model):
-            pass
-
-        assert hasattr(Example, '__init__') and callable(Example.__init__)
-        assert hasattr(Example, '__eq__') and callable(Example.__eq__)
-        assert hasattr(Example, '__hash__') and callable(Example.__eq__)
-        assert hasattr(Example, 'validate') and callable(Example.validate)
-        assert hasattr(Example, 'to_dict') and callable(Example.to_dict)
-        assert hasattr(Example, 'from_dict') and callable(Example.from_dict)
-
         class Example(Model):
             a = Integer()
             b = Boolean()
@@ -69,35 +58,37 @@ class TestModel:
         with raises(TypeError):
             Example(None)
 
-        # A simple Model with one arg and one kwarg
-        # optional fields become kwargs, non optional become args
+        with raises(TypeError):
+            Example(a=None)
+
+        # A simple Model with one required field and one optional
         class Example(Model):
-            a = Integer(optional=True)
+            a = Integer(required=False)
             b = Boolean()
 
-        # Just passing in the arg
-        example = Example(True)
+        # Just passing in the required
+        example = Example(b=True)
         assert example.__dict__ == {'b': True, 'a': None}
 
-        # Passing in kwargs as well
-        example = Example(False, a=5)
+        # Passing in optional as well
+        example = Example(a=5, b=False)
         assert example.__dict__ == {'b': False, 'a': 5}
 
         # Not passing in any args should fail.
-        with raises(TypeError):
+        with raises(ValidationError):
             Example()
 
         # Passing in arguments of the wrong type should fail validation
         with raises(ValidationError):
-            Example('test')
+            Example(b='test')
 
         with raises(ValidationError):
-            Example(None)
+            Example(b=None)
 
         with raises(ValidationError):
-            Example(True, a=5.5)
+            Example(a=5.5, b=True)
 
-        # A more complex Model with multiple args and kwargs
+        # A more complex Model
         class SubExample(Model):
             x = Integer()
 
@@ -106,46 +97,46 @@ class TestModel:
 
         class Example(Model):
             a = Integer(validators=[assert_value_between_0_and_20])
-            b = Boolean(optional=True, default=False)
-            c = ModelField(SubExample, optional=True)
+            b = Boolean(required=False, default=False)
+            c = ModelField(SubExample, required=False)
             d = ModelField(SubExample)
 
-        # Just passing in args
-        example = Example(5, SubExample(10))
-        assert example.__dict__ == {'a': 5, 'b': False, 'c': None, 'd': SubExample(10)}
+        # Just passing in required
+        example = Example(a=5, d=SubExample(x=10))
+        assert example.__dict__ == {'a': 5, 'b': False, 'c': None, 'd': SubExample(x=10)}
 
-        # Passing in args and kwargs
-        example = Example(5, SubExample(10), c=SubExample(50), b=True)
-        assert example.__dict__ == {'a': 5, 'b': True, 'c': SubExample(50), 'd': SubExample(10)}
+        # Passing in all
+        example = Example(a=5, c=SubExample(x=50), b=True, d=SubExample(x=10))
+        assert example.__dict__ == {'a': 5, 'b': True, 'c': SubExample(x=50), 'd': SubExample(x=10)}
 
-        # Not passing in all the args should fail.
-        with raises(TypeError):
-            Example(5)
+        # Not passing in all the required kwargs should fail.
+        with raises(ValidationError):
+            Example(a=5)
 
         # Passing in arguments of the wrong type should fail validation
         with raises(ValidationError):
-            Example('test', SubExample(10))
+            Example(a='test', d=SubExample(x=10))
 
         with raises(ValidationError):
-            Example(5, Example(5, SubExample(10)))
+            Example(a=5, d=Example(a=5, d=SubExample(x=10)))
 
         with raises(ValidationError):
-            Example(5, SubExample(10), b=5)
+            Example(a=5, d=SubExample(x=10), b=5)
 
         with raises(ValidationError):
-            Example(5, SubExample(10), c=Example(5, SubExample(10)))
+            Example(a=5, d=SubExample(x=10), c=Example(a=5, d=SubExample(x=10)))
 
         with raises(ValidationError):
-            Example(30, SubExample(10))
+            Example(a=30, d=SubExample(x=10))
 
     def test___eq__(self):
         class Example(Model):
             a = Integer()
-            b = Boolean(optional=True)
+            b = Boolean(required=False)
 
-        assert Example(5) != Example(6)
-        assert Example(5) != Example(6, b=True)
-        assert Example(5) == Example(5)
+        assert Example(a=5) != Example(a=6)
+        assert Example(a=5) != Example(a=6, b=True)
+        assert Example(a=5) == Example(a=5)
 
     def test___hash__(self):
         # A more complex Model with a sub Model
@@ -153,21 +144,23 @@ class TestModel:
             x = Float()
 
         class Example(Model):
-            a = Integer()
+            a = Array(Integer)
             b = ModelField(SubExample)
 
-        assert hash(Example(5, SubExample(10.5))) == hash(Example(5, SubExample(10.5)))
-        assert hash(Example(5, SubExample(10.5))) != hash(Example(5, SubExample(10.0)))
+        assert (hash(Example(a=[5], b=SubExample(x=10.5))) ==
+                hash(Example(a=[5], b=SubExample(x=10.5))))
+        assert (hash(Example(a=[5], b=SubExample(x=10.5))) !=
+                hash(Example(a=[5], b=SubExample(x=10.0))))
 
     def test_to_dict(self):
         class Example(Model):
             a = Integer()
-            b = Boolean(optional=True)
+            b = Boolean(required=False)
 
-        example = Example(5)
+        example = Example(a=5)
         assert example.to_dict() == {'a': 5}
 
-        example = Example(5, b=False)
+        example = Example(a=5, b=False)
         assert example.to_dict() == {'a': 5, 'b': False}
 
         # A more complex Model with a sub Model
@@ -175,21 +168,21 @@ class TestModel:
             x = Float()
 
         class Example(Model):
-            a = Integer(name='d')
+            a = Integer(name=lambda m, c: 'd')
             b = ModelField(SubExample)
-            c = Boolean(optional=True)
+            c = Boolean(required=False)
 
-        example = Example(5, SubExample(10.5))
+        example = Example(a=5, b=SubExample(x=10.5))
         assert example.a == 5
         assert example.to_dict() == {'d': 5, 'b': {'x': 10.5}}
 
-        example = Example(5, SubExample(10.5), c=True)
+        example = Example(a=5, b=SubExample(x=10.5), c=True)
         assert example.to_dict() == {'d': 5, 'b': {'x': 10.5}, 'c': True}
 
         class Example(Model):
             a = Array(Integer)
 
-        example = Example([1, 2, 3, 4])
+        example = Example(a=[1, 2, 3, 4])
 
         # set a bad value
         example.a = 5
@@ -201,7 +194,7 @@ class TestModel:
         def serialize(value):
             raise SerializationError('unable to serialize {}'.format(value))
 
-        example = Example([1, 2, 3, 4])
+        example = Example(a=[1, 2, 3, 4])
         Example.__fields__.a.serialize = serialize
 
         with raises(SerializationError):
@@ -211,12 +204,12 @@ class TestModel:
         # A simple Model.
         class Example(Model):
             a = Integer()
-            b = Boolean(optional=True)
+            b = Boolean(required=False)
 
-        example = Example(5)
+        example = Example(a=5)
         assert Example.from_dict({'a': 5}) == example
 
-        example = Example(5, b=False)
+        example = Example(a=5, b=False)
         assert Example.from_dict({'a': 5, 'b': False}) == example
 
         with raises(DeserializationError):
@@ -229,12 +222,12 @@ class TestModel:
         class Example(Model):
             a = Integer()
             b = ModelField(SubExample)
-            c = Boolean(optional=True)
+            c = Boolean(required=False)
 
-        example = Example(5, SubExample(10.5))
+        example = Example(a=5, b=SubExample(x=10.5))
         assert Example.from_dict({'a': 5, 'b': {'x': 10.5}}) == example
 
-        example = Example(5, SubExample(10.5), c=True)
+        example = Example(a=5, b=SubExample(x=10.5), c=True)
         assert Example.from_dict({'a': 5, 'b': {'x': 10.5}, 'c': True}) == example
 
         example = Example.from_dict({'a': 5, 'b': {'x': 10.5}})
@@ -263,7 +256,7 @@ class TestModel:
             a = Integer()
             b = String()
 
-        example = Example(50, 'test')
+        example = Example(a=50, b='test')
         assert example.to_json(sort_keys=True) == '{"a": 50, "b": "test"}'
 
     def test_from_json(self):
@@ -271,4 +264,4 @@ class TestModel:
             a = Integer()
             b = String()
 
-        assert Example.from_json('{"a": 50, "b": "test"}') == Example(50, 'test')
+        assert Example.from_json('{"a": 50, "b": "test"}') == Example(a=50, b='test')

@@ -24,20 +24,20 @@ class TestField:
     def test___init__(self):
         field = Field()
 
-        assert field.counter == 0
-        assert field.optional is False
+        assert field.id == 0
         assert field.name is None
+        assert field.required is True
         assert field.default is None
         assert field.validators == []
 
         # A second Field instantiated should have a higher counter.
         field2 = Field()
-        assert field2.counter == 1
+        assert field2.id == 1
 
         # A Field with extra options set.
-        field = Field(optional=True, name='test', default=lambda m: 5, validators=[None])
-        assert field.optional is True
+        field = Field(name='test', required=False, default=lambda m: 5, validators=[None])
         assert field.name == 'test'
+        assert field.required is False
         assert callable(field.default)
         assert field.validators == [None]
 
@@ -74,8 +74,8 @@ class TestInstanceField:
         class Example(InstanceField):
             type = int
 
-        example = Example(optional=True, validators=[None])
-        assert example.optional is True
+        example = Example(required=False, validators=[None])
+        assert example.required is False
         assert example.validators == [None]
 
         class Example(InstanceField):
@@ -131,12 +131,12 @@ class TestTypeField:
         example = TypeField(int)
 
         assert example.type == int
-        assert example.optional is False
+        assert example.required is True
         assert example.validators == []
 
-        example = TypeField(int, optional=True, validators=[None])
+        example = TypeField(int, required=False, validators=[None])
         assert example.type == int
-        assert example.optional is True
+        assert example.required is False
         assert example.validators == [None]
 
     def test_serialize(self):

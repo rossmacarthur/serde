@@ -26,7 +26,7 @@ First describe your data
     class Version(Model):
         major = Integer()
         minor = Integer()
-        patch = Integer(optional=True, default=0)
+        patch = Integer(required=False, default=0)
 
     class Package(Model):
         name = String(name='packageName')

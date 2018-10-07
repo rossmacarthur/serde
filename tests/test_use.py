@@ -17,7 +17,7 @@ def test_base_0():
             assert isinstance(value, UUID)
 
     class Player(Model):
-        key = Uuid(optional=True, default=lambda _: uuid4())
+        key = Uuid(required=False, default=lambda _: uuid4())
         name = Parts(String, String)
         age = Integer()
         rating = Float()
@@ -28,7 +28,7 @@ def test_base_0():
         board = Map(String, Integer)
 
     # Create a player manually
-    player = Player(('James', 'Williams'), 23, 52.3)
+    player = Player(name=('James', 'Williams'), age=23, rating=52.3)
 
     assert isinstance(player.key, UUID)
     assert player.name == ('James', 'Williams')
@@ -98,11 +98,11 @@ def test_base_1():
 
     class User(Model):
         name = String(name='username')
-        age = Integer(optional=True)
-        addresses = Array(Address, optional=True)
+        age = Integer(required=False)
+        addresses = Array(Address, required=False)
 
     # Serialization
-    user = User('John Smith', age=53, addresses=[Address('john@smith.com')])
+    user = User(name='John Smith', age=53, addresses=[Address(email='john@smith.com')])
     assert user.to_dict() == {'username': 'John Smith',
                               'age': 53,
                               'addresses': [{'email': 'john@smith.com'}]}
@@ -113,21 +113,21 @@ def test_base_1():
                            'addresses': [{'email': 'john@smith.com'}]})
     assert user.name == 'John Smith'
     assert user.age == 53
-    assert user.addresses == [Address('john@smith.com')]
+    assert user.addresses == [Address(email='john@smith.com')]
 
 
 def test_base_2():
     class Version(Model):
         major = Integer()
         minor = Integer()
-        patch = Integer(optional=True, default=0)
+        patch = Integer(required=False, default=0)
 
     class Package(Model):
         name = String(name='packageName')
         version = ModelField(Version)
 
     # Create an instance of the Model
-    package = Package('requests', Version(2, 19, 1))
+    package = Package(name='requests', version=Version(2, 19, 1))
     assert package.name == 'requests'
     assert package.version.major == 2
     assert package.version.minor == 19

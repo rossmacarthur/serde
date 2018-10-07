@@ -66,22 +66,14 @@ class ModelType(type):
         if len(bases) > 0 and hasattr(bases[-1], '__fields__'):
             fields += list(bases[-1].__fields__.items())
 
-        # Order the fields by the base Fields then by Field counter, this gets
-        # the order that they are defined in their class, with args first then
-        # kwargs.
-        def key(x):
-            name, field = x
-            return (field.optional, field.default is not None, field.counter)
+        # Order the fields by the Field ID this gets the order that they are
+        # defined on the Model.
+        fields = Fields(sorted(fields, key=lambda x: x[1].id))
 
-        fields = Fields(sorted(fields, key=key))
+        # Generate the __init__ method for the Model.
+        final_attrs['__init__'] = cls.create___init__(fields)
 
-        # Create all the necessary functions for a ModelType. This will override
-        # user defined methods with no warning.
-        for func_name in cls.__dict__:
-            if func_name.startswith('create_'):
-                final_attrs[func_name[7:]] = getattr(cls, func_name)(fields)
-
-        # Finally, add the fields to the Model.
+        # Add the fields to the Model.
         final_attrs['__fields__'] = fields
 
         return super().__new__(cls, cname, bases, final_attrs)
@@ -106,11 +98,7 @@ class ModelType(type):
         defaults = []
 
         for name, field in fields.items():
-            if field.optional or field.default is not None:
-                parameters.append('{name}=None'.format(name=name))
-            else:
-                parameters.append(name)
-
+            parameters.append('{name}=None'.format(name=name))
             setters.append('    self.{name} = {name}'.format(name=name))
 
             if field.default is not None:
@@ -123,49 +111,6 @@ class ModelType(type):
 
         definition = 'def __init__({parameters}):'.format(parameters=', '.join(parameters))
         lines = setters + defaults + ['', '    self.validate()']
-
-        return create_function(definition, lines)
-
-    @staticmethod
-    def create___eq__(fields):
-        """
-        Create the __eq__ method for the `Model`.
-
-        This method simply checks if the class is the same type and the field
-        values are equal.
-
-        Args:
-            fields (OrderedDict): the class's fields.
-
-        Returns:
-            callable: the __eq__ method.
-        """
-        definition = 'def __eq__(self, other):'
-        lines = ['    return (isinstance(other, self.__class__)']
-        lines.extend(
-            '   and self.{name} == other.{name}'.format(name=name) for name in fields.keys()
-        )
-        lines.append('    )')
-        return create_function(definition, lines)
-
-    @staticmethod
-    def create___hash__(fields):
-        """
-        Create the __hash__ method for the `Model`.
-
-        Args:
-            fields (OrderedDict): the class's fields.
-
-        Returns:
-            callable: the __hash__ method.
-        """
-        definition = 'def __hash__(self):'
-        lines = ['    return hash((']
-        lines.extend(
-            '        frozenset(self.{name}) if isinstance(self.{name}, list) else self.{name},'
-            .format(name=name) for name in fields.keys()
-        )
-        lines.append('    ))')
 
         return create_function(definition, lines)
 
@@ -185,8 +130,7 @@ class Model(metaclass=ModelType):
     specified on the Field classes.
 
     The `Model.__init__` method will be auto-generated from the Field
-    attributes. Required Fields will become arguments and optional or default
-    Fields will become keyword arguments.
+    attributes.
 
     Examples:
 
@@ -200,7 +144,7 @@ class Model(metaclass=ModelType):
 
             class User(Model):
                 name = String()
-                age = Integer(optional=True)
+                age = Integer(required=False)
 
             user = User('Benedict Cumberbatch', age=42)
             assert user.name == 'Benedict Cumberbatch'
@@ -219,6 +163,30 @@ class Model(metaclass=ModelType):
             assert user.level == 10
     """
 
+    def __eq__(self, other):
+        """
+        Whether two Models are the same.
+        """
+        return (isinstance(other, self.__class__) and
+                all(getattr(self, name) == getattr(other, name)
+                    for name in self.__fields__.keys()))
+
+    def __hash__(self):
+        """
+        Return a hash value for this Model.
+        """
+        values = []
+
+        for name in self.__fields__.keys():
+            value = getattr(self, name)
+
+            if isinstance(value, list):
+                values.append(frozenset(value))
+            else:
+                values.append(value)
+
+        return hash(tuple(values))
+
     def validate(self):
         """
         Validate this Model.
@@ -230,10 +198,10 @@ class Model(metaclass=ModelType):
             value = getattr(self, name)
 
             if value is None:
-                if field.optional:
+                if field.required is not True:
                     continue
-                else:
-                    raise ValidationError('{!r} can not be None'.format(name))
+
+                raise ValidationError('{!r} is required'.format(name))
 
             try:
                 field.validate(value)
@@ -272,7 +240,7 @@ class Model(metaclass=ModelType):
 
                 class User(Model):
                     name = String()
-                    age = Integer(optional=True)
+                    age = Integer(required=False)
 
                 user = User.from_dict({
                     'name': 'Benedict Cumberbatch',
@@ -281,12 +249,13 @@ class Model(metaclass=ModelType):
                 assert user.name == 'Benedict Cumberbatch'
                 assert user.age == 42
         """
-        args = []
         kwargs = {}
 
-        for name, field in cls.__fields__.items():
+        for name_, field in cls.__fields__.items():
             if field.name:
-                name = field.name(cls, name) if callable(field.name) else field.name
+                name = field.name(cls, name_) if callable(field.name) else field.name
+            else:
+                name = name_
 
             if name in d:
                 try:
@@ -296,17 +265,14 @@ class Model(metaclass=ModelType):
                 except Exception as e:
                     raise DeserializationError(str(e))
 
-                if field.optional:
-                    kwargs[name] = value
-                else:
-                    args.append(value)
+                kwargs[name_] = value
 
         if d:
             unknowns = ', '.join('{!r}'.format(k) for k in d.keys())
             plural = '' if len(d.keys()) == 1 else 's'
             raise DeserializationError('unknown dictionary key{} {}'.format(plural, unknowns))
 
-        return cls(*args, **kwargs)
+        return cls(**kwargs)
 
     @classmethod
     def from_json(cls, s, **kwargs):
@@ -345,7 +311,7 @@ class Model(metaclass=ModelType):
 
                 class User(Model):
                     name = String()
-                    age = Integer(optional=True)
+                    age = Integer(required=False)
 
                 user = User('Benedict Cumberbatch', age=42)
                 assert user.to_dict() == {'name': 'Benedict Cumberbatch', 'age': 42}
@@ -358,7 +324,7 @@ class Model(metaclass=ModelType):
             if field.name:
                 name = field.name(self, name) if callable(field.name) else field.name
 
-            if value is None and field.optional:
+            if value is None and field.required is not True:
                 continue
 
             try:
