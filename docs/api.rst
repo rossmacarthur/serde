@@ -1,5 +1,19 @@
+API Reference
+=============
+
+This part of the documentation lists the full API reference of all public
+classes and functions.
+
+
+Model
+-----
+
+.. autoclass:: serde.model.Model
+    :members:
+
+
 Fields
-======
+------
 
 .. autoclass:: serde.field.Field
     :members:
@@ -26,7 +40,7 @@ Fields
 
 
 Fields for built-in types
-=========================
+-------------------------
 
 .. autoclass:: serde.field.InstanceField
     :members:
@@ -62,4 +76,27 @@ Fields for built-in types
 
 
 .. autoclass:: serde.field.Tuple
+    :show-inheritance:
+
+
+Exceptions
+----------
+
+.. autoclass:: serde.error.SerdeError
+    :members:
+    :show-inheritance:
+
+
+.. autoclass:: serde.error.SerializationError
+    :members:
+    :show-inheritance:
+
+
+.. autoclass:: serde.error.DeserializationError
+    :members:
+    :show-inheritance:
+
+
+.. autoclass:: serde.error.ValidationError
+    :members:
     :show-inheritance:

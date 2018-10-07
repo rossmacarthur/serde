@@ -148,7 +148,7 @@ class Field:
 
 class InstanceField(Field):
     """
-    A `Field` that validates a value is an instance of a ype.
+    A `Field` that validates a value is an instance of a type.
 
     Attributes:
         type (type): the type to validate for this InstanceField.

@@ -32,7 +32,7 @@ version = find_version()
 
 url = 'https://github.com/rossmacarthur/serde'
 
-long_description = read('README.md')
+long_description = read('README.rst')
 
 lint_requirements = [
     'flake8',
@@ -50,9 +50,7 @@ test_requirements = [
 ]
 
 document_requirements = [
-    'recommonmark',
-    'sphinx',
-    'sphinx_readable_theme'
+    'sphinx'
 ]
 
 package_requirements = [
@@ -73,7 +71,6 @@ setup(
     author_email='macarthur.ross@gmail.com',
     description='A framework for serializing and deserializing Python objects.',
     long_description=long_description,
-    long_description_content_type='text/markdown',
     license='MIT',
     keywords='serde serialization deserialization schema json',
     url=url,

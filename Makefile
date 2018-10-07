@@ -34,6 +34,9 @@ test: ## Run all tests.
 docs: ## Compile docs.
 	$(MAKE) -C docs html
 
+docs-open: docs ## Compile and open the docs.
+	open docs/_build/html/index.html
+
 dist: clean ## Build source and wheel package.
 	$(VIRTUAL_ENV)/bin/python setup.py sdist
 	ls -l dist
