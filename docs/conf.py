@@ -45,3 +45,4 @@ html_sidebars = {
         'searchbox.html'
     ]
 }
+html_static_path = ['static']

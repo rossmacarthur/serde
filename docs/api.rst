@@ -16,51 +16,51 @@ Core Fields
 -----------
 
 .. autoclass:: serde.field.Field
-    :members:
+    :members: __init__, serialize, deserialize, validate
 
 
 .. autoclass:: serde.field.ModelField
-    :members:
+    :members: __init__, serialize, deserialize, validate
     :show-inheritance:
 
 
 .. autoclass:: serde.field.InstanceField
-    :members:
+    :members: __init__, serialize, deserialize, validate
     :show-inheritance:
 
 
 .. autoclass:: serde.field.Bool
-    :members:
+    :members: __init__, serialize, deserialize, validate
     :show-inheritance:
 
 
 .. autoclass:: serde.field.Dict
-    :members:
+    :members: __init__, serialize, deserialize, validate
     :show-inheritance:
 
 
 .. autoclass:: serde.field.Float
-    :members:
+    :members: __init__, serialize, deserialize, validate
     :show-inheritance:
 
 
 .. autoclass:: serde.field.Int
-    :members:
+    :members: __init__, serialize, deserialize, validate
     :show-inheritance:
 
 
 .. autoclass:: serde.field.List
-    :members:
+    :members: __init__, serialize, deserialize, validate
     :show-inheritance:
 
 
 .. autoclass:: serde.field.Str
-    :members:
+    :members: __init__, serialize, deserialize, validate
     :show-inheritance:
 
 
 .. autoclass:: serde.field.Tuple
-    :members:
+    :members: __init__, serialize, deserialize, validate
     :show-inheritance:
 
 
