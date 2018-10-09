@@ -3,8 +3,8 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde.error import ValidationError
-from serde.field import (Bool, Dict, Field, Float, Int, List, ModelField,
-                         Str, Tuple, TypeField, resolve_to_field_instance)
+from serde.field import (Bool, Dict, Field, Float, InstanceField, Int, List,
+                         ModelField, Str, Tuple, resolve_to_field_instance)
 from serde.model import Model
 
 
@@ -33,10 +33,10 @@ class TestField:
         assert field2.id == 1
 
         # A Field with extra options set.
-        field = Field(name='test', required=False, default=lambda m: 5, validators=[None])
+        field = Field(name='test', required=False, default=5, validators=[None])
         assert field.name == 'test'
         assert field.required is False
-        assert callable(field.default)
+        assert field.default == 5
         assert field.validators == [None]
 
     def test___repr__(self):
@@ -65,22 +65,22 @@ class TestField:
             field.validate(value)
 
 
-class TestTypeField:
+class TestInstanceField:
 
     def test___init__(self):
-        example = TypeField(int)
+        example = InstanceField(int)
 
         assert example.type == int
         assert example.required is True
         assert example.validators == []
 
-        example = TypeField(int, required=False, validators=[None])
+        example = InstanceField(int, required=False, validators=[None])
         assert example.type == int
         assert example.required is False
         assert example.validators == [None]
 
     def test_serialize(self):
-        example = TypeField(int)
+        example = InstanceField(int)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes all values through.
@@ -88,7 +88,7 @@ class TestTypeField:
             example.serialize(value) == value
 
     def test_deserialize(self):
-        example = TypeField(int)
+        example = InstanceField(int)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes all values through.
@@ -96,7 +96,7 @@ class TestTypeField:
             example.deserialize(value) == value
 
     def test_validate(self):
-        example = TypeField(int)
+        example = InstanceField(int)
 
         # All integers should pass the validation.
         example.validate(-1000)

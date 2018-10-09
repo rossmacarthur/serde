@@ -24,7 +24,7 @@ Core Fields
     :show-inheritance:
 
 
-.. autoclass:: serde.field.TypeField
+.. autoclass:: serde.field.InstanceField
     :members:
     :show-inheritance:
 

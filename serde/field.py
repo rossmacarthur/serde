@@ -44,7 +44,7 @@ def resolve_to_field_instance(thing, none_allowed=True):
     except TypeError:
         pass
 
-    # If the thing is a built-in type then create a TypeField with that type.
+    # If the thing is a built-in type then create a InstanceField with that type.
     field_class = {
         bool: Bool,
         dict: Dict,
@@ -204,25 +204,46 @@ class Field:
         pass
 
 
-class TypeField(Field):
+class InstanceField(Field):
     """
     A `Field` that validates a value is an instance of the given type.
     """
 
-    def __init__(self, type, **kwargs):
+    def __init__(self, type, coerce=False, **kwargs):
         """
-        Create a new TypeField.
+        Create a new InstanceField.
 
         Args:
             type: the type that this Field wraps.
+            coerce (bool): whether to apply the given type constructor to the
+                data before deserializing. Warning: this blindly calls the given
+                type as a function on the data. If it a fails on a Model a
+                `~serde.error.DeserializationError` will be raised but many of
+                these types accept many inputs. For example `str`.
             **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(**kwargs)
         self.type = type
+        self.coerce = coerce
+
+    def deserialize(self, value):
+        """
+        Deserialize the given value.
+
+        Args:
+            value: the value to deserialize.
+
+        Returns:
+            the deserialized value
+        """
+        if self.coerce is True:
+            value = self.type(value)
+
+        return super().deserialize(value)
 
     def validate(self, value):
         """
-        Validate the deserialized value.
+        Validate the given value according to this Field's specification.
 
         Args:
             value: the value to validate.
@@ -231,12 +252,14 @@ class TypeField(Field):
             `~serde.error.ValidationError`: when the given value is not an
                 instance of the specified type.
         """
+        super().validate(value)
+
         if not isinstance(value, self.type):
             raise ValidationError('expected {!r} but got {!r}'
                                   .format(self.type.__name__, value.__class__.__name__))
 
 
-class ModelField(TypeField):
+class ModelField(InstanceField):
     """
     A `Field` for `~serde.model.Model` fields.
 
@@ -297,6 +320,16 @@ class ModelField(TypeField):
             assert person.birthday.month == 'September'
     """
 
+    def __init__(self, model, **kwargs):
+        """
+        Create a new ModelField.
+
+        Args:
+            model: the Model class that this Field wraps.
+            **kwargs: keyword arguments for the `InstanceField` constructor.
+        """
+        super().__init__(model, **kwargs)
+
     def serialize(self, value):
         """
         Serialize the given `Model` as a dictionary.
@@ -307,7 +340,8 @@ class ModelField(TypeField):
         Returns:
             dict: the serialized dictionary.
         """
-        return value.to_dict()
+        value = value.to_dict()
+        return super().serialize(value)
 
     def deserialize(self, value):
         """
@@ -319,14 +353,16 @@ class ModelField(TypeField):
         Returns:
             Model: the deserialized model.
         """
-        return self.type.from_dict(value)
+        value = self.type.from_dict(value)
+        return super().deserialize(value)
 
 
-class Bool(Field):
+class Bool(InstanceField):
     """
     A boolean Field.
 
-    This field represents the built-in `bool` type.
+    This field represents the built-in `bool` type. The Bool constructor accepts
+    all keyword arguments accepted by `InstanceField`.
 
     Examples:
 
@@ -334,63 +370,31 @@ class Bool(Field):
 
             from serde import Model, Bool
 
-        Consider an example model with two `Bool` fields, one that will coerce
-        things and one that won't.
+        Consider an example model with two `Bool` fields, one with extra options
+        and one with no arguments.
 
         .. testcode::
 
             class Example(Model):
                 enabled = Bool()
-                something = Bool(coerce=True)
+                something = Bool(required=False, default=True)
 
-            example = Example.from_dict({'enabled': False, 'something': 'Test'})
+            example = Example.from_dict({'enabled': False})
             assert example.enabled is False
             assert example.something is True
     """
 
-    def __init__(self, coerce=False, **kwargs):
+    def __init__(self, **kwargs):
         """
         Create a new Bool.
 
         Args:
-            coerce (bool): whether to apply the `bool` constructor to the data
-                before deserializing.
-            **kwargs: keyword arguments for the `Field` constructor.
+            **kwargs: keyword arguments for the `InstanceField` constructor.
         """
-        super().__init__(**kwargs)
-        self.coerce = coerce
-
-    def deserialize(self, value):
-        """
-        Deserialize the given value.
-
-        Args:
-            value: the value to deserialize.
-
-        Returns:
-            bool: the deserialized bool.
-        """
-        if self.coerce is True:
-            value = bool(value)
-
-        return value
-
-    def validate(self, value):
-        """
-        Validate the deserialized value.
-
-        Args:
-            value: the value to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is invalid.
-        """
-        if not isinstance(value, bool):
-            raise ValidationError('expected {!r} but got {!r}'
-                                  .format(bool.__name__, value.__class__.__name__))
+        super().__init__(bool, **kwargs)
 
 
-class Dict(Field):
+class Dict(InstanceField):
     """
     A dict Field with a required key and value type.
 
@@ -438,8 +442,7 @@ class Dict(Field):
             serde.error.ValidationError: expected 'str' but got 'int'
     """
 
-    def __init__(self, key=None, value=None, min_length=None, max_length=None, coerce=False,
-                 **kwargs):
+    def __init__(self, key=None, value=None, min_length=None, max_length=None, **kwargs):
         """
         Create a new Dict.
 
@@ -448,16 +451,13 @@ class Dict(Field):
             value (Field): the Field class/instance for values in this Dict.
             min_length (int): the minimum number of elements allowed.
             max_length (int): the maximum number of elements allowed.
-            coerce (bool): whether to apply the `dict` constructor to the data
-                before deserializing.
-            **kwargs: keyword arguments for the `Field` constructor.
+            **kwargs: keyword arguments for the `InstanceField` constructor.
         """
-        super().__init__(**kwargs)
+        super().__init__(dict, **kwargs)
         self.key = resolve_to_field_instance(key)
         self.value = resolve_to_field_instance(value)
         self.min_length = min_length
         self.max_length = max_length
-        self.coerce = coerce
 
     def serialize(self, value):
         """
@@ -469,7 +469,8 @@ class Dict(Field):
         Returns:
             dict: the serialized dictionary.
         """
-        return {self.key.serialize(k): self.value.serialize(v) for k, v in value.items()}
+        value = {self.key.serialize(k): self.value.serialize(v) for k, v in value.items()}
+        return super().serialize(value)
 
     def deserialize(self, value):
         """
@@ -481,14 +482,12 @@ class Dict(Field):
         Returns:
             dict: the deserialized dictionary.
         """
-        if self.coerce is True:
-            value = dict(value)
-
+        value = super().deserialize(value)
         return {self.key.deserialize(k): self.value.deserialize(v) for k, v in value.items()}
 
     def validate(self, value):
         """
-        Validate the deserialized value.
+        Validate the given value according to this Field's specification.
 
         Args:
             value: the value to validate.
@@ -496,9 +495,7 @@ class Dict(Field):
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
         """
-        if not isinstance(value, dict):
-            raise ValidationError('expected {!r} but got {!r}'
-                                  .format(dict.__name__, value.__class__.__name__))
+        super().validate(value)
 
         count = len(value.keys())
 
@@ -515,7 +512,7 @@ class Dict(Field):
             self.value.validate(v)
 
 
-class Float(Field):
+class Float(InstanceField):
     """
     A float Field.
 
@@ -550,40 +547,22 @@ class Float(Field):
             serde.error.ValidationError: expected at most 0.0 but got 1.5
     """
 
-    def __init__(self, min=None, max=None, coerce=False, **kwargs):
+    def __init__(self, min=None, max=None, **kwargs):
         """
         Create a new Float.
 
         Args:
             min (float): the minimum value allowed.
             max (float): the maximum value allowed.
-            coerce (bool): whether to apply the `float` constructor to the data
-                before deserializing.
-            **kwargs: keyword arguments for the `Field` constructor.
+            **kwargs: keyword arguments for the `InstanceField` constructor.
         """
-        super().__init__(**kwargs)
+        super().__init__(float, **kwargs)
         self.min = min
         self.max = max
-        self.coerce = coerce
-
-    def deserialize(self, value):
-        """
-        Deserialize the given value.
-
-        Args:
-            value: the value to deserialize.
-
-        Returns:
-            float: the deserialized integer.
-        """
-        if self.coerce is True:
-            value = float(value)
-
-        return value
 
     def validate(self, value):
         """
-        Validate the deserialized value.
+        Validate the given value according to this Field's specification.
 
         Args:
             value: the value to validate.
@@ -591,9 +570,7 @@ class Float(Field):
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
         """
-        if not isinstance(value, float):
-            raise ValidationError('expected {!r} but got {!r}'
-                                  .format(float.__name__, value.__class__.__name__))
+        super().validate(value)
 
         if self.min is not None and value < self.min:
             raise ValidationError('expected at least {} but got {}'.format(self.min, value))
@@ -602,7 +579,7 @@ class Float(Field):
             raise ValidationError('expected at most {} but got {}'.format(self.max, value))
 
 
-class Int(Field):
+class Int(InstanceField):
     """
     An integer Field.
 
@@ -637,40 +614,22 @@ class Int(Field):
             serde.error.ValidationError: expected at most 0 but got 1
     """
 
-    def __init__(self, min=None, max=None, coerce=False, **kwargs):
+    def __init__(self, min=None, max=None, **kwargs):
         """
         Create a new Int.
 
         Args:
             min (int): the minimum value allowed.
             max (int): the maximum value allowed.
-            coerce (bool): whether to apply the `int` constructor to the data
-                before deserializing.
-            **kwargs: keyword arguments for the `Field` constructor.
+            **kwargs: keyword arguments for the `InstanceField` constructor.
         """
-        super().__init__(**kwargs)
+        super().__init__(int, **kwargs)
         self.min = min
         self.max = max
-        self.coerce = coerce
-
-    def deserialize(self, value):
-        """
-        Deserialize the given value.
-
-        Args:
-            value: the value to deserialize.
-
-        Returns:
-            int: the deserialized integer.
-        """
-        if self.coerce is True:
-            value = int(value)
-
-        return value
 
     def validate(self, value):
         """
-        Validate the deserialized value.
+        Validate the given value according to this Field's specification.
 
         Args:
             value: the value to validate.
@@ -678,9 +637,7 @@ class Int(Field):
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
         """
-        if not isinstance(value, int):
-            raise ValidationError('expected {!r} but got {!r}'
-                                  .format(int.__name__, value.__class__.__name__))
+        super().validate(value)
 
         if self.min is not None and value < self.min:
             raise ValidationError('expected at least {} but got {}'.format(self.min, value))
@@ -689,7 +646,7 @@ class Int(Field):
             raise ValidationError('expected at most {} but got {}'.format(self.max, value))
 
 
-class List(Field):
+class List(InstanceField):
     """
     A list Field with a required element type.
 
@@ -736,7 +693,7 @@ class List(Field):
             serde.error.ValidationError: expected 'str' but got 'int'
     """
 
-    def __init__(self, field=None, min_length=None, max_length=None, coerce=False, **kwargs):
+    def __init__(self, field=None, min_length=None, max_length=None, **kwargs):
         """
         Create a new List.
 
@@ -744,15 +701,12 @@ class List(Field):
             field (Field): the Field class/instance for this List's elements.
             min_length (int): the minimum number of elements allowed.
             max_length (int): the maximum number of elements allowed.
-            coerce (bool): whether to apply the `list` constructor to the data
-                before deserializing.
-            **kwargs: keyword arguments for the `Field` constructor.
+            **kwargs: keyword arguments for the `InstanceField` constructor.
         """
-        super().__init__(**kwargs)
+        super().__init__(list, **kwargs)
         self.field = resolve_to_field_instance(field)
         self.min_length = min_length
         self.max_length = max_length
-        self.coerce = coerce
 
     def serialize(self, value):
         """
@@ -764,7 +718,8 @@ class List(Field):
         Returns:
             list: the serialized list.
         """
-        return [self.field.serialize(v) for v in value]
+        value = [self.field.serialize(v) for v in value]
+        return super().serialize(value)
 
     def deserialize(self, value):
         """
@@ -776,14 +731,12 @@ class List(Field):
         Returns:
             list: the deserialized list.
         """
-        if self.coerce is True:
-            value = list(value)
-
+        value = super().deserialize(value)
         return [self.field.deserialize(v) for v in value]
 
     def validate(self, value):
         """
-        Validate the deserialized value.
+        Validate the given value according to this Field's specification.
 
         Args:
             value: the value to validate.
@@ -791,9 +744,7 @@ class List(Field):
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
         """
-        if not isinstance(value, list):
-            raise ValidationError('expected {!r} but got {!r}'
-                                  .format(list.__name__, value.__class__.__name__))
+        super().validate(value)
 
         count = len(value)
 
@@ -809,7 +760,7 @@ class List(Field):
             self.field.validate(v)
 
 
-class Str(Field):
+class Str(InstanceField):
     """
     A string Field.
 
@@ -843,32 +794,21 @@ class Str(Field):
             serde.error.ValidationError: expected at least 1 characters but got 0 characters
     """
 
-    def __init__(self, min_length=None, max_length=None, strip=False, coerce=False, **kwargs):
+    def __init__(self, min_length=None, max_length=None, strip=False, **kwargs):
         """
         Create a new Str.
 
         Args:
             min_length (int): the minimum number of characters allowed.
             max_length (int): the maximum number of characters allowed.
-            strip (bool): whether to call `str.strip()` the data when
+            strip (bool): whether to call `str.strip()` on the data when
                 deserializing.
-            coerce (bool): whether to apply the `str` constructor to the data
-                before deserializing. Warning: all this does is apply the `str`
-                constructor so it can have unexpected interactions. For example
-
-                .. doctest::
-
-                    >>> value = b'some bytes'
-                    >>> str(value)
-                    "b'some bytes'"
-
-            **kwargs: keyword arguments for the `Field` constructor.
+            **kwargs: keyword arguments for the `InstanceField` constructor.
         """
-        super().__init__(**kwargs)
+        super().__init__(str, **kwargs)
         self.min_length = min_length
         self.max_length = max_length
         self.strip = strip
-        self.coerce = coerce
 
     def deserialize(self, value):
         """
@@ -880,8 +820,7 @@ class Str(Field):
         Returns:
             int: the deserialized integer.
         """
-        if self.coerce is True:
-            value = str(value)
+        value = super().deserialize(value)
 
         if self.strip is True:
             value = value.strip()
@@ -898,9 +837,7 @@ class Str(Field):
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
         """
-        if not isinstance(value, str):
-            raise ValidationError('expected {!r} but got {!r}'
-                                  .format(str.__name__, value.__class__.__name__))
+        super().validate(value)
 
         count = len(value)
 
@@ -913,7 +850,7 @@ class Str(Field):
                                   .format(self.max_length, count))
 
 
-class Tuple(Field):
+class Tuple(InstanceField):
     """
     A tuple Field with required element types.
 
@@ -962,20 +899,17 @@ class Tuple(Field):
             serde.error.ValidationError: expected 'str' but got 'int'
     """
 
-    def __init__(self, *fields, coerce=False, **kwargs):
+    def __init__(self, *fields, **kwargs):
         """
         Create a new Tuple.
 
         Args:
             *fields (Field): the Field classes/instances for elements in this
                 Tuple.
-            coerce (bool): whether to apply the `tuple` constructor to the data
-                before deserializing.
-            **kwargs: keyword arguments for the `Field` constructor.
+            **kwargs: keyword arguments for the `InstanceField` constructor.
         """
-        super().__init__(**kwargs)
+        super().__init__(tuple, **kwargs)
         self.fields = tuple(resolve_to_field_instance(f, none_allowed=False) for f in fields)
-        self.coerce = coerce
 
     def serialize(self, value):
         """
@@ -999,14 +933,12 @@ class Tuple(Field):
         Returns:
             tuple: the deserialized tuple.
         """
-        if self.coerce is True:
-            value = tuple(value)
-
+        value = super().deserialize(value)
         return tuple(f.deserialize(v) for f, v in zip_equal(self.fields, value))
 
     def validate(self, value):
         """
-        Validate the deserialized value.
+        Validate the given value according to this Field's specification.
 
         Args:
             value: the value to validate.
@@ -1014,9 +946,7 @@ class Tuple(Field):
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
         """
-        if not isinstance(value, tuple):
-            raise ValidationError('expected {!r} but got {!r}'
-                                  .format(tuple.__name__, value.__class__.__name__))
+        super().validate(value)
 
         if len(self.fields) != len(value):
             raise ValidationError('expected {} elements but got {} elements'
