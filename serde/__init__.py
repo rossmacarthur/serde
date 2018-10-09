@@ -3,16 +3,14 @@ Serde - A framework for serializing and deserializing Python objects.
 """
 
 
-from .error import DeserializationError, SerdeError, SerializationError, ValidationError
-from .field import (Array, Boolean, Bytes, Dictionary, Field, Float, InstanceField,
-                    Integer, List, Map, ModelField, Parts, String, Tuple, TypeField)
-from .model import Model
+from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
+from serde.field import Bool, Dict, Field, Float, Int, List, ModelField, Str, Tuple, TypeField
+from serde.model import Model
 
 
-__all__ = ['Array', 'Boolean', 'Bytes', 'DeserializationError', 'Dictionary',
-           'Field', 'Float', 'InstanceField', 'Integer', 'List', 'Map',
-           'Model', 'ModelField', 'Parts', 'SerdeError', 'SerializationError',
-           'String', 'Tuple', 'TypeField', 'ValidationError', 'error', 'field']
+__all__ = ['Bool', 'DeserializationError', 'Dict', 'Field', 'Float', 'Int',
+           'List', 'Model', 'ModelField', 'SerdeError', 'SerializationError',
+           'Str', 'Tuple', 'TypeField', 'ValidationError']
 __author__ = 'Ross MacArthur'
 __email__ = 'macarthur.ross@gmail.com'
 __version__ = '0.1.0'

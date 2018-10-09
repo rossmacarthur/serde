@@ -12,8 +12,8 @@ Model
     :members:
 
 
-Fields
-------
+Core Fields
+-----------
 
 .. autoclass:: serde.field.Field
     :members:
@@ -24,59 +24,49 @@ Fields
     :show-inheritance:
 
 
-.. autoclass:: serde.field.Array
+.. autoclass:: serde.field.TypeField
     :members:
     :show-inheritance:
 
 
-.. autoclass:: serde.field.Map
+.. autoclass:: serde.field.Bool
     :members:
     :show-inheritance:
 
 
-.. autoclass:: serde.field.Parts
+.. autoclass:: serde.field.Dict
     :members:
-    :show-inheritance:
-
-
-Fields for built-in types
--------------------------
-
-.. autoclass:: serde.field.InstanceField
-    :members:
-    :show-inheritance:
-
-
-.. autoclass:: serde.field.Boolean
-    :show-inheritance:
-
-
-.. autoclass:: serde.field.Bytes
-    :show-inheritance:
-
-
-.. autoclass:: serde.field.Dictionary
     :show-inheritance:
 
 
 .. autoclass:: serde.field.Float
+    :members:
     :show-inheritance:
 
 
-.. autoclass:: serde.field.Integer
+.. autoclass:: serde.field.Int
+    :members:
     :show-inheritance:
 
 
 .. autoclass:: serde.field.List
+    :members:
     :show-inheritance:
 
 
-.. autoclass:: serde.field.String
+.. autoclass:: serde.field.Str
+    :members:
     :show-inheritance:
 
 
 .. autoclass:: serde.field.Tuple
+    :members:
     :show-inheritance:
+
+
+Extended Fields
+---------------
+
 
 
 Exceptions

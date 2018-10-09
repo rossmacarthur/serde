@@ -1,12 +1,10 @@
 from collections import OrderedDict
-from uuid import UUID
 
 from pytest import raises
 
 from serde.error import ValidationError
-from serde.field import (Array, Boolean, Bytes, Dictionary, Field, Float,
-                         InstanceField, Integer, List, Map, ModelField, Parts,
-                         String, Tuple, TypeField, resolve_to_field_instance)
+from serde.field import (Bool, Dict, Field, Float, Int, List, ModelField,
+                         Str, Tuple, TypeField, resolve_to_field_instance)
 from serde.model import Model
 
 
@@ -63,68 +61,6 @@ class TestField:
             field.validate(value)
 
 
-class TestInstanceField:
-
-    def test___init__(self):
-        # You must extend a InstanceField and you should not be able to
-        # instantiate it directly.
-        with raises(TypeError):
-            InstanceField()
-
-        class Example(InstanceField):
-            type = int
-
-        example = Example(required=False, validators=[None])
-        assert example.required is False
-        assert example.validators == [None]
-
-        class Example(InstanceField):
-            pass
-
-        # You should not be able to instantiate an InstanceField that has not
-        # set the "type" attribute.
-        with raises(AttributeError):
-            Example()
-
-    def test_serialize(self):
-        class Example(InstanceField):
-            type = int
-
-        example = Example()
-
-        # Validation only happens when this Field is part of a Model. So it
-        # still passes all values through.
-        for value in (None, 0, 'string', object(), type):
-            example.serialize(value) == value
-
-    def test_deserialize(self):
-        class Example(InstanceField):
-            type = int
-
-        example = Example()
-
-        # Validation only happens when this Field is part of a Model. So it
-        # still passes all values through.
-        for value in (None, 0, 'string', object(), type):
-            example.deserialize(value) == value
-
-    def test_validate(self):
-        class Example(InstanceField):
-            type = int
-
-        example = Example()
-
-        # All integers should pass the validation.
-        example.validate(-1000)
-        example.validate(0)
-        example.validate(1000)
-
-        # Anything that is not an int should raise a ValidationError.
-        for value in (None, 20.0, 'string', object, type):
-            with raises(ValidationError):
-                example.validate(value)
-
-
 class TestTypeField:
 
     def test___init__(self):
@@ -169,11 +105,177 @@ class TestTypeField:
                 example.validate(value)
 
 
-class TestArray:
+class TestBool:
+
+    def test___init__(self):
+        field = Bool(name='test', required=False, default=False)
+        assert field.coerce is False
+        assert field.name is 'test'
+        assert field.required is False
+        assert field.default is False
+        assert field.validators == []
+
+        field = Bool(coerce=True)
+        assert field.coerce is True
+
+    def test_deserialize(self):
+        field = Bool()
+        assert field.deserialize(False) is False
+        assert field.deserialize(True) is True
+
+        field = Bool(coerce=True)
+        assert field.deserialize('test') is True
+        assert field.deserialize(0) is False
+
+    def test_validate(self):
+        field = Bool()
+        field.validate(False)
+        field.validate(True)
+
+        with raises(ValidationError):
+            field.validate('True')
+
+
+class TestDict:
+
+    def test_serialize(self):
+        # A field that is a key value pair of Strs and Stringifys.
+        field = Dict(Str, Stringify)
+
+        # Validation only happens when this Field is part of a Model. So it
+        # still passes any Dict like value through.
+        for value in ({}, OrderedDict()):
+            field.serialize(value) == value
+
+        # Any value that is not an Dict will raise a AttributeError
+        # because it doesn't have the `.items()` method.
+        for value in (None, 20.0, object, type):
+            with raises(AttributeError):
+                field.serialize(value)
+
+        # Serialize calls the key and value serialize methods.
+        assert field.serialize({'a': False, 'b': ['s'], 'c': {'a': 5}}) == \
+            {'a': 'False', 'b': "['s']", 'c': "{'a': 5}"}
+
+    def test_deserialize(self):
+        # A field that is a key value pair of Strs and Stringifys.
+        field = Dict(Str, Stringify, coerce=True)
+
+        # Validation only happens when this Field is part of a Model. So it
+        # still passes any Dict like value through.
+        for value in ({}, OrderedDict()):
+            field.deserialize(value) == value
+
+        # Any value that is not an Dict will raise a AttributeError
+        # because it doesn't have the `.items()` method.
+        for value in (None, 20.0, object, type):
+            with raises((AttributeError, TypeError)):
+                field.deserialize(value)
+
+        # Deserialize calls the subfield deserialize method.
+        assert field.deserialize({'a': 'False', 'b': "['s']", 'c': "{'a': 5}"}) == \
+            {'a': False, 'b': ['s'], 'c': {'a': 5}}
+
+    def test_validate(self):
+        # A field that is a key value pair of Strs and Stringifys.
+        field = Dict(Str, Stringify, min_length=3, max_length=5)
+
+        # A list of Stringifyiable serializable types will pass validation.
+        field.validate({'a': False, 'b': ['s'], 'c': {'a': 5}})
+
+        # Any value that is not an Dict will raise a ValidationError
+        for value in (None, 20.0, object, type):
+            with raises(ValidationError):
+                field.validate(value)
+
+        # A dictionary of with keys that aren't Strs should fail validation.
+        with raises(ValidationError):
+            field.validate({5: 'hello'})
+
+        # Less than the required amount
+        with raises(ValidationError):
+            field.validate({'a': 0, 'b': 1})
+
+        # More than the allowed amount
+        with raises(ValidationError):
+            field.validate({'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5})
+
+
+class TestFloat:
+
+    def test___init__(self):
+        field = Float(name='test', required=False, default=False)
+        assert field.coerce is False
+        assert field.min is None
+        assert field.max is None
+        assert field.name is 'test'
+        assert field.required is False
+        assert field.default is False
+        assert field.validators == []
+
+        field = Float(coerce=True)
+        assert field.coerce is True
+
+    def test_deserialize(self):
+        field = Float()
+        assert field.deserialize(0.5) == 0.5
+        assert field.deserialize(-1000.0) == -1000.0
+
+        field = Float(coerce=True)
+        assert field.deserialize('0.5') == 0.5
+        assert field.deserialize(10) == 10.0
+
+    def test_validate(self):
+        field = Float(min=-100.0, max=500.0)
+        field.validate(-100.0)
+        field.validate(0.0)
+        field.validate(500.0)
+
+        for value in (0, -1000.0, -100.1, 500.1, 1000.0):
+            with raises(ValidationError):
+                field.validate(value)
+
+
+class TestInt:
+
+    def test___init__(self):
+        field = Int(name='test', required=False, default=False)
+        assert field.coerce is False
+        assert field.min is None
+        assert field.max is None
+        assert field.name is 'test'
+        assert field.required is False
+        assert field.default is False
+        assert field.validators == []
+
+        field = Int(coerce=True)
+        assert field.coerce is True
+
+    def test_deserialize(self):
+        field = Int()
+        assert field.deserialize(0.5) == 0.5
+        assert field.deserialize(-1000.0) == -1000.0
+
+        field = Int(coerce=True)
+        assert field.deserialize('5') == 5
+        assert field.deserialize(10.0) == 10
+
+    def test_validate(self):
+        field = Int(min=-100, max=500)
+        field.validate(-100)
+        field.validate(0)
+        field.validate(500)
+
+        for value in (0.0, -1000, -101, 501, 1000):
+            with raises(ValidationError):
+                field.validate(value)
+
+
+class TestList:
 
     def test_serialize(self):
         # A field that must be a list of Stringifys.
-        example = Array(Stringify)
+        example = List(Stringify)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes any Iterable value through.
@@ -190,7 +292,7 @@ class TestArray:
 
     def test_deserialize(self):
         # A field that must be a list of Stringifys.
-        example = Array(Stringify)
+        example = List(Stringify, coerce=True)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes any Iterable value through.
@@ -207,79 +309,56 @@ class TestArray:
 
     def test_validate(self):
         # A field that must be a list of Stringifys.
-        example = Array(Stringify)
+        example = List(Stringify, min_length=2, max_length=3)
 
-        # A list of Stringyfiable types will pass validation.
+        # A list of Stryfiable types will pass validation.
         example.validate([False, ['s'], {'a': 5}])
 
         # Any value that is not an Iterable will raise a ValidationError
-        for value in (None, 20.0, object, type):
+        for value in (None, 20.0, object, type, [0], [0, 1, 2, 4]):
             with raises(ValidationError):
                 example.validate(value)
 
 
-class TestMap:
+class TestStr:
 
-    def test_serialize(self):
-        # A field that is a key value pair of Strings and Stringifys.
-        example = Map(String, Stringify)
+    def test___init__(self):
+        field = Str(name='test', required=False, default=False)
+        assert field.coerce is False
+        assert field.min_length is None
+        assert field.max_length is None
+        assert field.name is 'test'
+        assert field.required is False
+        assert field.default is False
+        assert field.validators == []
 
-        # Validation only happens when this Field is part of a Model. So it
-        # still passes any Dict like value through.
-        for value in ({}, OrderedDict()):
-            example.serialize(value) == value
-
-        # Any value that is not an Dictionary will raise a AttributeError
-        # because it doesn't have the `.items()` method.
-        for value in (None, 20.0, object, type):
-            with raises(AttributeError):
-                example.serialize(value)
-
-        # Serialize calls the key and value serialize methods.
-        assert example.serialize({'a': False, 'b': ['s'], 'c': {'a': 5}}) == \
-            {'a': 'False', 'b': "['s']", 'c': "{'a': 5}"}
+        field = Str(coerce=True)
+        assert field.coerce is True
 
     def test_deserialize(self):
-        # A field that is a key value pair of Strings and Stringifys.
-        example = Map(String, Stringify)
+        field = Str()
+        assert field.deserialize('a') == 'a'
+        assert field.deserialize(' ') == ' '
 
-        # Validation only happens when this Field is part of a Model. So it
-        # still passes any Dict like value through.
-        for value in ({}, OrderedDict()):
-            example.deserialize(value) == value
-
-        # Any value that is not an Dictionary will raise a AttributeError
-        # because it doesn't have the `.items()` method.
-        for value in (None, 20.0, object, type):
-            with raises(AttributeError):
-                example.deserialize(value)
-
-        # Deserialize calls the subfield deserialize method.
-        assert example.deserialize({'a': 'False', 'b': "['s']", 'c': "{'a': 5}"}) == \
-            {'a': False, 'b': ['s'], 'c': {'a': 5}}
+        field = Str(coerce=True)
+        assert field.deserialize(5) == '5'
+        assert field.deserialize('hello ') == 'hello '
 
     def test_validate(self):
-        # A field that is a key value pair of Strings and Stringifys.
-        example = Map(String, Stringify)
+        field = Str(min_length=1, max_length=5)
+        field.validate('hello')
+        field.validate('a')
 
-        # A list of Stringifyiable serializable types will pass validation.
-        example.validate({'a': False, 'b': ['s'], 'c': {'a': 5}})
-
-        # Any value that is not an Dictionary will raise a ValidationError
-        for value in (None, 20.0, object, type):
+        for value in (None, 'hello2', ''):
             with raises(ValidationError):
-                example.validate(value)
-
-        # A dictionary of with keys that aren't Strings should fail validation.
-        with raises(ValidationError):
-            example.validate({5: 'hello'})
+                field.validate(value)
 
 
-class TestParts:
+class TestTuple:
 
     def test_serialize(self):
         # A field that is a tuple (bool, str, Stringify)
-        example = Parts(Boolean, String, Stringify)
+        example = Tuple(Bool, Str, Stringify)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes any Iterable value through as long as its the correct
@@ -297,7 +376,7 @@ class TestParts:
 
     def test_deserialize(self):
         # A field that is a tuple (bool, str, Stringify)
-        example = Parts(Boolean, String, Stringify)
+        example = Tuple(Bool, Str, Stringify, coerce=True)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes any Iterable value through as long as its the correct
@@ -315,7 +394,7 @@ class TestParts:
 
     def test_validate(self):
         # A field that is a tuple (bool, str, Stringify)
-        example = Parts(Boolean, String, Stringify)
+        example = Tuple(Bool, Str, Stringify)
 
         # A list of a tuple that will pass validation.
         example.validate((True, 'test', None))
@@ -345,17 +424,13 @@ def test_resolve_to_field_instance():
     assert resolve_to_field_instance(Example) == ModelField(Example)
 
     # All the base types should resolve correctly
-    assert resolve_to_field_instance(bool) == Boolean()
-    assert resolve_to_field_instance(bytes) == Bytes()
-    assert resolve_to_field_instance(dict) == Dictionary()
+    assert resolve_to_field_instance(bool) == Bool()
+    assert resolve_to_field_instance(dict) == Dict()
     assert resolve_to_field_instance(float) == Float()
-    assert resolve_to_field_instance(int) == Integer()
+    assert resolve_to_field_instance(int) == Int()
     assert resolve_to_field_instance(list) == List()
-    assert resolve_to_field_instance(str) == String()
+    assert resolve_to_field_instance(str) == Str()
     assert resolve_to_field_instance(tuple) == Tuple()
-
-    # Arbitrary types should resolve to a TypeField for that type
-    assert resolve_to_field_instance(UUID) == TypeField(UUID)
 
     # A Model instance should not work
     with raises(TypeError):

@@ -2,16 +2,72 @@
 Field types for Serde Models.
 """
 
-from .error import ValidationError
-from .util import zip_equal
+from serde.error import ValidationError
+from serde.util import zip_equal
+
+
+def resolve_to_field_instance(thing, none_allowed=True):
+    """
+    Resolve an arbitrary object to a `Field` instance.
+
+    Args:
+        thing (object): anything to resolve to a Field instance.
+        none_allowed (bool): if set then a thing of None will be resolved to a
+            generic Field.
+
+    Returns:
+        Field: a field instance.
+    """
+    # We import Model here to avoid circular dependency problems.
+    from serde.model import Model
+
+    # If the things is None
+    if none_allowed is True and thing is None:
+        return Field()
+
+    # If the thing is a Field then thats great.
+    if isinstance(thing, Field):
+        return thing
+
+    # If the thing is a subclass of Field then attempt to create an instance.
+    # This could fail the Field expects arguments.
+    try:
+        if issubclass(thing, Field):
+            return thing()
+    except TypeError:
+        pass
+
+    # If the thing is a subclass of Model then create a ModelField instance.
+    try:
+        if issubclass(thing, Model):
+            return ModelField(thing)
+    except TypeError:
+        pass
+
+    # If the thing is a built-in type then create a TypeField with that type.
+    field_class = {
+        bool: Bool,
+        dict: Dict,
+        float: Float,
+        int: Int,
+        list: List,
+        str: Str,
+        tuple: Tuple
+    }.get(thing, None)
+
+    if field_class is not None:
+        return field_class()
+
+    raise TypeError('{!r} is not a Field, an instance of a Field, or a supported type'
+                    .format(thing))
 
 
 class Field:
     """
     A field on a `~serde.model.Model`.
 
-    Fields handle serializing, deserializing, and validation of individual
-    values for Model objects.
+    Fields handle serializing, deserializing, and validation of input values for
+    Model objects.
 
     Examples:
 
@@ -22,21 +78,21 @@ class Field:
 
         .. testsetup::
 
-            from serde import Model, Field
+            from serde import Model, Field, Str
 
         .. testcode::
 
-            def assert_is_positive(model, value):
-                assert value >= 0
+            def assert_is_even(model, value):
+                assert value % 2 == 0
 
             class Person(Model):
                 name = Field()
-                age = Field(required=False, validators=[assert_is_positive])
+                favourite_number = Field(required=False, validators=[assert_is_even])
                 favourite_color = Field(required=False, default='pink')
 
-            person = Person('William Shakespeare', age=454)
+            person = Person('William Shakespeare', favourite_number=454)
             assert person.name == 'William Shakespeare'
-            assert person.age == 454
+            assert person.favourite_number == 454
             assert person.favourite_color == 'pink'
 
         Here is a more advanced example where we subclass a field and override
@@ -45,7 +101,7 @@ class Field:
 
         .. testcode::
 
-            from uuid import UUID, uuid4
+            import uuid
 
             class Uuid(Field):
 
@@ -53,23 +109,19 @@ class Field:
                     return str(value)
 
                 def deserialize(self, value):
-                    return UUID(value)
+                    return uuid.UUID(value)
 
                 def validate(self, value):
-                    assert isinstance(value, UUID)
+                    assert isinstance(value, uuid.UUID)
 
             class User(Model):
-                key = Uuid(default=lambda _: uuid4())
-                email = String()
+                key = Uuid(default=lambda _: uuid.uuid4())
 
-            user = User(email='john@smith.com')
-            assert isinstance(user.key, UUID)
-            assert user.email == 'john@smith.com'
+            user = User()
+            assert isinstance(user.key, uuid.UUID)
     """
 
-    # This is so we can get the order the fields were instantiated in. If not
-    # done this would cause problems when creating the Model's __init__ method,
-    # because we wouldn't know the order of the Field arguments.
+    # This is so we can get the order the fields were instantiated in.
     __counter__ = 0
 
     def __init__(self, name=None, required=True, default=None, validators=None):
@@ -85,11 +137,10 @@ class Field:
                 have to be present in instantiation and deserialization.
             default: a value to use if there is no input field value. This can
                 also be a function that generates the default. The function
-                needs to take the containing `~serde.model.Model` as an
-                argument.
-            validators (list): a list of validator functions taking
-                `~serde.model.Model` and the value as arguments. The functions
-                need to raise an `Exception` if they fail.
+                must take no arguments.
+            validators (list): a list of validator functions taking the value
+                to validate as an argument. The functions need to raise an
+                `Exception` if they fail.
         """
         super().__init__()
 
@@ -101,15 +152,17 @@ class Field:
         self.default = default
         self.validators = validators or []
 
+    def __attrs__(self):
+        """
+        Return all attributes of this Field except "id".
+        """
+        return {name: value for name, value in vars(self).items() if name != 'id'}
+
     def __eq__(self, other):
         """
         Whether two Fields are the same.
         """
-        return (isinstance(other, self.__class__) and
-                self.name == other.name and
-                self.required == other.required and
-                self.default == other.default and
-                self.validators == other.validators)
+        return isinstance(other, self.__class__) and self.__attrs__() == other.__attrs__()
 
     def serialize(self, value):
         """
@@ -143,48 +196,6 @@ class Field:
             value: the value to validate.
         """
         pass
-
-
-class InstanceField(Field):
-    """
-    A `Field` that validates a value is an instance of a type.
-
-    Attributes:
-        type (type): the type to validate for this InstanceField.
-    """
-
-    def __init__(self, **kwargs):
-        """
-        Create a new InstanceField.
-
-        Args:
-            **kwargs: keyword arguments for the `Field` constructor.
-        """
-        if type(self) == InstanceField:
-            raise TypeError('{!r} class must be subclassed'
-                            .format(self.__class__.__name__))
-
-        attr = 'type'
-        if not hasattr(self.__class__, attr):
-            raise AttributeError('{!r} class must set the attribute {!r}'
-                                 .format(self.__class__.__name__, attr))
-
-        super().__init__(**kwargs)
-
-    def validate(self, value):
-        """
-        Validate the deserialized value.
-
-        Args:
-            value: the value to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is not an
-                instance of the specified type.
-        """
-        if not isinstance(value, self.__class__.type):
-            raise ValidationError('expected {!r} but got {!r}'
-                                  .format(self.__class__.type.__name__, value.__class__.__name__))
 
 
 class TypeField(Field):
@@ -223,8 +234,8 @@ class ModelField(TypeField):
     """
     A `Field` for `~serde.model.Model` fields.
 
-    This is wrapper Field for sub-Model fields. The serialize and deserialize
-    methods call the `~serde.model.Model.to_dict()` and
+    This is wrapper Field for Models to support sub-Models. The serialize and
+    deserialize methods call the `~serde.model.Model.to_dict()` and
     `~serde.model.Model.from_dict()`  methods on the Model class. This allows
     complex nested Models.
 
@@ -232,18 +243,18 @@ class ModelField(TypeField):
 
         .. testsetup::
 
-            from serde import Model, ModelField, String, Integer
+            from serde import Model, ModelField, Str, Int
 
         Consider a person model that has a birthday
 
         .. testcode::
 
             class Birthday(Model):
-                day = Integer()
-                month = String()
+                day = Int(min=1, max=31)
+                month = Str()
 
             class Person(Model):
-                name = String()
+                name = Str()
                 birthday = ModelField(Birthday, required=False)
 
             person = Person('Beyonce', birthday=Birthday(4, 'September'))
@@ -282,7 +293,7 @@ class ModelField(TypeField):
 
     def serialize(self, value):
         """
-        Serialize the given `Model` into a dictionary.
+        Serialize the given `Model` as a dictionary.
 
         Args:
             value (Model): the model to serialize.
@@ -294,7 +305,7 @@ class ModelField(TypeField):
 
     def deserialize(self, value):
         """
-        Deserialize the given dictionary into a `Model`.
+        Deserialize the given dictionary to a `Model` instance.
 
         Args:
             value (dict): the dictionary to deserialize.
@@ -305,194 +316,58 @@ class ModelField(TypeField):
         return self.type.from_dict(value)
 
 
-class Boolean(InstanceField):
+class Bool(Field):
     """
-    A `Field` for the built-in `bool` type.
-    """
-    type = bool
+    A boolean Field.
 
-
-class Bytes(InstanceField):
-    """
-    A `Field` for the built-in `bytes` type.
-    """
-    type = bytes
-
-
-class Dictionary(InstanceField):
-    """
-    A `Field` for the built-in `dict` type.
-    """
-    type = dict
-
-
-class Float(InstanceField):
-    """
-    A `Field` for the built-in `float` type.
-    """
-    type = float
-
-
-class Integer(InstanceField):
-    """
-    A `Field` for the built-in `int` type.
-    """
-    type = int
-
-
-class List(InstanceField):
-    """
-    A `Field` for the built-in `list` type.
-    """
-    type = list
-
-
-class String(InstanceField):
-    """
-    A `Field` for the built-in `str` type.
-    """
-    type = str
-
-
-class Tuple(InstanceField):
-    """
-    A `Field` for the built-in `tuple` type.
-    """
-    type = tuple
-
-
-def resolve_to_field_instance(thing):
-    """
-    Resolve an arbitrary object to a `Field` instance.
-
-    Args:
-        thing (object): anything to resolve to a Field instance.
-
-    Returns:
-        Field: a field instance.
-    """
-    # We import Model here to avoid circular dependency problems.
-    from serde.model import Model
-
-    # If the thing is a Field then thats great.
-    if isinstance(thing, Field):
-        return thing
-
-    try:
-        # If the thing is a subclass of Field then attempt to create an
-        # instance. This could fail the Field expects arguments.
-        if issubclass(thing, Field):
-            return thing()
-    except TypeError:
-        pass
-
-    try:
-        # If the thing is a subclass of Model then create a ModelField instance.
-        if issubclass(thing, Model):
-            return ModelField(thing)
-    except TypeError:
-        pass
-
-    # If the thing is one of the supported base types, then return an instance
-    # of the corresponding Field type.
-    type_map = {
-        bool: Boolean,
-        bytes: Bytes,
-        dict: Dictionary,
-        float: Float,
-        int: Integer,
-        list: List,
-        str: String,
-        tuple: Tuple
-    }
-    if thing in type_map:
-        return type_map[thing]()
-
-    # If the thing is a type then create a TypeField with that type.
-    if isinstance(thing, type):
-        return TypeField(thing)
-
-    raise TypeError('{!r} is not a Field, an instance of a Field, or a type'.format(thing))
-
-
-class Array(Field):
-    """
-    A List Field with a required element type.
-
-    Each element in the list will be serialized, deserialized, and validated
-    with the specified type.
+    This field represents the built-in `bool` type.
 
     Examples:
 
         .. testsetup::
 
-            from serde import Model, Array, String
+            from serde import Model, Bool
 
-        Consider a user model that can have multiple emails
+        Consider an example model with two `Bool` fields, one that will coerce
+        things and one that won't.
 
         .. testcode::
 
-            class User(Model):
-                emails = Array(String, default=[])
+            class Example(Model):
+                enabled = Bool()
+                something = Bool(coerce=True)
 
-            user = User(['john@smith.com', 'john.smith@email.com'])
-            assert user.emails[0] == 'john@smith.com'
-            assert user.emails[1] == 'john.smith@email.com'
-
-        Invalid keys and values that do not match the specified type will not be
-        accepted, for example when instantiating
-
-        .. doctest::
-
-            >>> User({})
-            Traceback (most recent call last):
-                ...
-            serde.error.ValidationError: expected 'list' but got 'dict'
-
-        Or when deserializing
-
-        .. doctest::
-
-            >>> User.from_dict({'emails': [1234]})
-            Traceback (most recent call last):
-                ...
-            serde.error.ValidationError: expected 'str' but got 'int'
+            example = Example.from_dict({'enabled': False, 'something': 'Test'})
+            assert example.enabled is False
+            assert example.something is True
     """
 
-    def __init__(self, field, **kwargs):
+    def __init__(self, coerce=False, **kwargs):
         """
-        Create a new Array.
+        Create a new Bool.
 
         Args:
-            field (Field): the Field class/instance for this Array's elements.
+            coerce (bool): whether to apply the `bool` constructor to the data
+                before deserializing.
             **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(**kwargs)
-        self.field = resolve_to_field_instance(field)
-
-    def serialize(self, value):
-        """
-        Serialize the given value.
-
-        Args:
-            value (Iterable): the value to serialize.
-
-        Returns:
-            list: the serialized list.
-        """
-        return [self.field.serialize(v) for v in value]
+        self.coerce = coerce
 
     def deserialize(self, value):
         """
         Deserialize the given value.
 
         Args:
-            value (Iterable): the value to deserialize.
+            value: the value to deserialize.
 
         Returns:
-            list: the deserialized list.
+            bool: the deserialized bool.
         """
-        return [self.field.deserialize(v) for v in value]
+        if self.coerce is True:
+            value = bool(value)
+
+        return value
 
     def validate(self, value):
         """
@@ -504,34 +379,34 @@ class Array(Field):
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
         """
-        if not isinstance(value, list):
+        if not isinstance(value, bool):
             raise ValidationError('expected {!r} but got {!r}'
-                                  .format(list.__name__, value.__class__.__name__))
-
-        for v in value:
-            self.field.validate(v)
+                                  .format(bool.__name__, value.__class__.__name__))
 
 
-class Map(Field):
+class Dict(Field):
     """
-    A Dictionary Field with a required key and value type.
+    A dict Field with a required key and value type.
 
-    Each key and value will be serialized, deserialized, and validated with the
-    specified key and value types.
+    This field represents the built-in `dict` type. Each key and value will be
+    serialized, deserialized, and validated with the specified key and value
+    types. The key and value types can be specified using Field classes, Field
+    instances, Model classes, or built-in types that have a corresponding Field
+    type in this library.
 
     Examples:
 
         .. testsetup::
 
-            from serde import Model, Map, String, Float
+            from serde import Model, Dict
 
         Consider an example model with a constants attribute which is map of
-        strings to floats
+        strings to floats.
 
         .. testcode::
 
             class Example(Model):
-                constants = Map(String, Float)
+                constants = Dict(str, float)
 
             example = Example({'pi': 3.1415927, 'e': 2.7182818})
             assert example.constants['pi'] == 3.1415927
@@ -557,25 +432,33 @@ class Map(Field):
             serde.error.ValidationError: expected 'str' but got 'int'
     """
 
-    def __init__(self, key, value, **kwargs):
+    def __init__(self, key=None, value=None, min_length=None, max_length=None, coerce=False,
+                 **kwargs):
         """
-        Create a new Map.
+        Create a new Dict.
 
         Args:
-            key (Field): the Field class/instance for key's in this Map.
-            value (Field): the Field class/instance for values in this Map.
+            key (Field): the Field class/instance for key's in this Dict.
+            value (Field): the Field class/instance for values in this Dict.
+            min_length (int): the minimum number of elements allowed.
+            max_length (int): the maximum number of elements allowed.
+            coerce (bool): whether to apply the `dict` constructor to the data
+                before deserializing.
             **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(**kwargs)
         self.key = resolve_to_field_instance(key)
         self.value = resolve_to_field_instance(value)
+        self.min_length = min_length
+        self.max_length = max_length
+        self.coerce = coerce
 
     def serialize(self, value):
         """
         Serialize the given value.
 
         Args:
-            value (dict): the value to serialize.
+            value: the value to serialize.
 
         Returns:
             dict: the serialized dictionary.
@@ -587,11 +470,14 @@ class Map(Field):
         Deserialize the given value.
 
         Args:
-            value (dict): the value to deserialize.
+            value: the value to deserialize.
 
         Returns:
             dict: the deserialized dictionary.
         """
+        if self.coerce is True:
+            value = dict(value)
+
         return {self.key.deserialize(k): self.value.deserialize(v) for k, v in value.items()}
 
     def validate(self, value):
@@ -608,31 +494,441 @@ class Map(Field):
             raise ValidationError('expected {!r} but got {!r}'
                                   .format(dict.__name__, value.__class__.__name__))
 
+        count = len(value.keys())
+
+        if self.min_length is not None and count < self.min_length:
+            raise ValidationError('expected at least {} elements but got {} elements'
+                                  .format(self.min_length, count))
+
+        if self.max_length is not None and count > self.max_length:
+            raise ValidationError('expected at most {} elements but got {} elements'
+                                  .format(self.max_length, count))
+
         for k, v in value.items():
             self.key.validate(k)
             self.value.validate(v)
 
 
-class Parts(Field):
+class Float(Field):
     """
-    A Tuple Field with required element types.
+    A float Field.
 
-    Each element will be serialized, deserialized, and validated with the
-    specified element type.
+    This field represents the built-in `float` type. But there are a few extra
+    options to help constrain the Field further.
+
+    Example:
+
+        .. testsetup::
+
+            from serde import Model, Float
+
+        Consider an example model Point, with two `Float` fields, but we
+        constrain the x and y such that the Point has to be in the second
+        quadrant.
+
+        .. testcode::
+
+            class Point(Model):
+                x = Float(max=0.0)
+                y = Float(min=0.0)
+
+            point = Point(-1.5, 5.5)
+
+        Invalid values will not be accepted
+
+        .. doctest::
+
+            >>> Point(1.5, 5.5)
+            Traceback (most recent call last):
+                ...
+            serde.error.ValidationError: expected at most 0.0 but got 1.5
+    """
+
+    def __init__(self, min=None, max=None, coerce=False, **kwargs):
+        """
+        Create a new Float.
+
+        Args:
+            min (float): the minimum value allowed.
+            max (float): the maximum value allowed.
+            coerce (bool): whether to apply the `float` constructor to the data
+                before deserializing.
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super().__init__(**kwargs)
+        self.min = min
+        self.max = max
+        self.coerce = coerce
+
+    def deserialize(self, value):
+        """
+        Deserialize the given value.
+
+        Args:
+            value: the value to deserialize.
+
+        Returns:
+            float: the deserialized integer.
+        """
+        if self.coerce is True:
+            value = float(value)
+
+        return value
+
+    def validate(self, value):
+        """
+        Validate the deserialized value.
+
+        Args:
+            value: the value to validate.
+
+        Raises:
+            `~serde.error.ValidationError`: when the given value is invalid.
+        """
+        if not isinstance(value, float):
+            raise ValidationError('expected {!r} but got {!r}'
+                                  .format(float.__name__, value.__class__.__name__))
+
+        if self.min is not None and value < self.min:
+            raise ValidationError('expected at least {} but got {}'.format(self.min, value))
+
+        if self.max is not None and value > self.max:
+            raise ValidationError('expected at most {} but got {}'.format(self.max, value))
+
+
+class Int(Field):
+    """
+    An integer Field.
+
+    This field represents the built-in `int` type. But there are a few extra
+    options to help constrain the Field further.
+
+    Example:
+
+        .. testsetup::
+
+            from serde import Model, Int
+
+        Consider an example model Point, with two `Int` fields, but we
+        constrain the x and y such that the Point has to be in the second
+        quadrant.
+
+        .. testcode::
+
+            class Point(Model):
+                x = Int(max=0)
+                y = Int(min=0)
+
+            point = Point(-1, 5)
+
+        Invalid values will not be accepted
+
+        .. doctest::
+
+            >>> Point(1, 5)
+            Traceback (most recent call last):
+                ...
+            serde.error.ValidationError: expected at most 0 but got 1
+    """
+
+    def __init__(self, min=None, max=None, coerce=False, **kwargs):
+        """
+        Create a new Int.
+
+        Args:
+            min (int): the minimum value allowed.
+            max (int): the maximum value allowed.
+            coerce (bool): whether to apply the `int` constructor to the data
+                before deserializing.
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super().__init__(**kwargs)
+        self.min = min
+        self.max = max
+        self.coerce = coerce
+
+    def deserialize(self, value):
+        """
+        Deserialize the given value.
+
+        Args:
+            value: the value to deserialize.
+
+        Returns:
+            int: the deserialized integer.
+        """
+        if self.coerce is True:
+            value = int(value)
+
+        return value
+
+    def validate(self, value):
+        """
+        Validate the deserialized value.
+
+        Args:
+            value: the value to validate.
+
+        Raises:
+            `~serde.error.ValidationError`: when the given value is invalid.
+        """
+        if not isinstance(value, int):
+            raise ValidationError('expected {!r} but got {!r}'
+                                  .format(int.__name__, value.__class__.__name__))
+
+        if self.min is not None and value < self.min:
+            raise ValidationError('expected at least {} but got {}'.format(self.min, value))
+
+        if self.max is not None and value > self.max:
+            raise ValidationError('expected at most {} but got {}'.format(self.max, value))
+
+
+class List(Field):
+    """
+    A list Field with a required element type.
+
+    This field represents the built-in `list` type. Each element will be
+    serialized, deserialized, and validated with the specified element type. The
+    element type can be specified using Field classes, Field instances, Model
+    classes, or built-in types that have a corresponding Field type in this
+    library.
 
     Examples:
 
         .. testsetup::
 
-            from serde import Model, Parts, Integer, String
+            from serde import Model, List
+
+        Consider a user model that can have multiple emails
+
+        .. testcode::
+
+            class User(Model):
+                emails = List(str, min_length=1, default=[])
+
+            user = User(['john@smith.com', 'john.smith@email.com'])
+            assert user.emails[0] == 'john@smith.com'
+            assert user.emails[1] == 'john.smith@email.com'
+
+        Invalid elements that do not match the specified type will not be
+        accepted, for example when instantiating
+
+        .. doctest::
+
+            >>> User(emails={'john@smith.com': None })
+            Traceback (most recent call last):
+                ...
+            serde.error.ValidationError: expected 'list' but got 'dict'
+
+        Or when deserializing
+
+        .. doctest::
+
+            >>> User.from_dict({'emails': [1234]})
+            Traceback (most recent call last):
+                ...
+            serde.error.ValidationError: expected 'str' but got 'int'
+    """
+
+    def __init__(self, field=None, min_length=None, max_length=None, coerce=False, **kwargs):
+        """
+        Create a new List.
+
+        Args:
+            field (Field): the Field class/instance for this List's elements.
+            min_length (int): the minimum number of elements allowed.
+            max_length (int): the maximum number of elements allowed.
+            coerce (bool): whether to apply the `list` constructor to the data
+                before deserializing.
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super().__init__(**kwargs)
+        self.field = resolve_to_field_instance(field)
+        self.min_length = min_length
+        self.max_length = max_length
+        self.coerce = coerce
+
+    def serialize(self, value):
+        """
+        Serialize the given value.
+
+        Args:
+            value: the value to serialize.
+
+        Returns:
+            list: the serialized list.
+        """
+        return [self.field.serialize(v) for v in value]
+
+    def deserialize(self, value):
+        """
+        Deserialize the given value.
+
+        Args:
+            value: the value to deserialize.
+
+        Returns:
+            list: the deserialized list.
+        """
+        if self.coerce is True:
+            value = list(value)
+
+        return [self.field.deserialize(v) for v in value]
+
+    def validate(self, value):
+        """
+        Validate the deserialized value.
+
+        Args:
+            value: the value to validate.
+
+        Raises:
+            `~serde.error.ValidationError`: when the given value is invalid.
+        """
+        if not isinstance(value, list):
+            raise ValidationError('expected {!r} but got {!r}'
+                                  .format(list.__name__, value.__class__.__name__))
+
+        count = len(value)
+
+        if self.min_length is not None and count < self.min_length:
+            raise ValidationError('expected at least {} elements but got {} elements'
+                                  .format(self.min_length, count))
+
+        if self.max_length is not None and count > self.max_length:
+            raise ValidationError('expected at most {} elements but got {} elements'
+                                  .format(self.max_length, count))
+
+        for v in value:
+            self.field.validate(v)
+
+
+class Str(Field):
+    """
+    A string Field.
+
+    This field represents the built-in `str` type. But there are a few extra
+    options to help constrain the Field further.
+
+    Example:
+
+        .. testsetup::
+
+            from serde import Model, Str
+
+        Consider an example model User
+
+        .. testcode::
+
+            class User(Model):
+                name = Str(min_length=1, strip=True)
+                address = Str(required=False)
+
+            user = User.from_dict({'name': '    George Clooney  '})
+            assert user.name == 'George Clooney'
+
+        Invalid values will not be accepted
+
+        .. doctest::
+
+            >>> User('')
+            Traceback (most recent call last):
+                ...
+            serde.error.ValidationError: expected at least 1 characters but got 0 characters
+    """
+
+    def __init__(self, min_length=None, max_length=None, strip=False, coerce=False, **kwargs):
+        """
+        Create a new Str.
+
+        Args:
+            min_length (int): the minimum number of characters allowed.
+            max_length (int): the maximum number of characters allowed.
+            strip (bool): whether to call `str.strip()` the data when
+                deserializing.
+            coerce (bool): whether to apply the `str` constructor to the data
+                before deserializing. Warning: all this does is apply the `str`
+                constructor so it can have unexpected interactions. For example
+
+                .. doctest::
+
+                    >>> value = b'some bytes'
+                    >>> str(value)
+                    "b'some bytes'"
+
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super().__init__(**kwargs)
+        self.min_length = min_length
+        self.max_length = max_length
+        self.strip = strip
+        self.coerce = coerce
+
+    def deserialize(self, value):
+        """
+        Deserialize the given value.
+
+        Args:
+            value: the value to deserialize.
+
+        Returns:
+            int: the deserialized integer.
+        """
+        if self.coerce is True:
+            value = str(value)
+
+        if self.strip is True:
+            value = value.strip()
+
+        return value
+
+    def validate(self, value):
+        """
+        Validate the deserialized value.
+
+        Args:
+            value: the value to validate.
+
+        Raises:
+            `~serde.error.ValidationError`: when the given value is invalid.
+        """
+        if not isinstance(value, str):
+            raise ValidationError('expected {!r} but got {!r}'
+                                  .format(str.__name__, value.__class__.__name__))
+
+        count = len(value)
+
+        if self.min_length is not None and count < self.min_length:
+            raise ValidationError('expected at least {} characters but got {} characters'
+                                  .format(self.min_length, count))
+
+        if self.max_length is not None and count > self.max_length:
+            raise ValidationError('expected at most {} characters but got {} characters'
+                                  .format(self.max_length, count))
+
+
+class Tuple(Field):
+    """
+    A tuple Field with required element types.
+
+    Each element will be serialized, deserialized, and validated with the
+    specified element type. The given element types can be specified using Field
+    classes, Field instances, Model classes, or built-in types that have a
+    corresponding Field type in this library.
+
+    Examples:
+
+        .. testsetup::
+
+            from serde import Model, Str, Tuple
 
         Consider an example person that has a name and a birthday
 
         .. testcode::
 
             class Person(Model):
-                name = String()
-                birthday = Parts(Integer, String, Integer)
+                name = Str()
+                birthday = Tuple(int, str, int)
 
             person = Person('Ross MacArthur', (19, 'June', 1994))
             assert person.name == 'Ross MacArthur'
@@ -660,24 +956,27 @@ class Parts(Field):
             serde.error.ValidationError: expected 'str' but got 'int'
     """
 
-    def __init__(self, *fields, **kwargs):
+    def __init__(self, *fields, coerce=False, **kwargs):
         """
-        Create a new Parts.
+        Create a new Tuple.
 
         Args:
             *fields (Field): the Field classes/instances for elements in this
-                Parts.
+                Tuple.
+            coerce (bool): whether to apply the `tuple` constructor to the data
+                before deserializing.
             **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(**kwargs)
-        self.fields = tuple(resolve_to_field_instance(f) for f in fields)
+        self.fields = tuple(resolve_to_field_instance(f, none_allowed=False) for f in fields)
+        self.coerce = coerce
 
     def serialize(self, value):
         """
         Serialize the given value.
 
         Args:
-            value (tuple): the value to serialize.
+            value: the value to serialize.
 
         Returns:
             tuple: the serialized tuple.
@@ -689,11 +988,14 @@ class Parts(Field):
         Deserialize the given value.
 
         Args:
-            value (tuple): the value to deserialize.
+            value: the value to deserialize.
 
         Returns:
             tuple: the deserialized tuple.
         """
+        if self.coerce is True:
+            value = tuple(value)
+
         return tuple(f.deserialize(v) for f, v in zip_equal(self.fields, value))
 
     def validate(self, value):

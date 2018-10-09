@@ -1,7 +1,7 @@
 from pytest import raises
 
 from serde.error import DeserializationError, SerializationError, ValidationError
-from serde.field import Array, Boolean, Float, Integer, ModelField, String
+from serde.field import Bool, Float, Int, List, ModelField, Str
 from serde.model import Model
 
 
@@ -9,8 +9,8 @@ class TestModel:
 
     def test___new__(self):
         class Example(Model):
-            a = Integer()
-            b = Boolean()
+            a = Int()
+            b = Bool()
 
         # The field attributes should not be present on the final class.
         assert not hasattr(Example, 'a')
@@ -30,7 +30,7 @@ class TestModel:
             c = Float()
 
         assert hasattr(Example2.__fields__, 'a')
-        assert isinstance(Example2.__fields__.a, Integer)
+        assert isinstance(Example2.__fields__.a, Int)
         assert hasattr(Example2.__fields__, 'b')
         assert isinstance(Example2.__fields__.b, Float)
         assert hasattr(Example2.__fields__, 'c')
@@ -40,7 +40,7 @@ class TestModel:
             pass
 
         assert hasattr(Example2.__fields__, 'a')
-        assert isinstance(Example2.__fields__.a, Integer)
+        assert isinstance(Example2.__fields__.a, Int)
         assert hasattr(Example2.__fields__, 'b')
         assert isinstance(Example2.__fields__.b, Float)
         assert hasattr(Example2.__fields__, 'c')
@@ -63,8 +63,8 @@ class TestModel:
 
         # A simple Model with one required field and one optional
         class Example(Model):
-            a = Integer(required=False)
-            b = Boolean()
+            a = Int(required=False)
+            b = Bool()
 
         # Just passing in the required
         example = Example(b=True)
@@ -90,14 +90,14 @@ class TestModel:
 
         # A more complex Model
         class SubExample(Model):
-            x = Integer()
+            x = Int()
 
         def assert_value_between_0_and_20(self, value):
             assert 0 <= value < 20
 
         class Example(Model):
-            a = Integer(validators=[assert_value_between_0_and_20])
-            b = Boolean(required=False, default=False)
+            a = Int(validators=[assert_value_between_0_and_20])
+            b = Bool(required=False, default=False)
             c = ModelField(SubExample, required=False)
             d = ModelField(SubExample)
 
@@ -131,8 +131,8 @@ class TestModel:
 
     def test___eq__(self):
         class Example(Model):
-            a = Integer()
-            b = Boolean(required=False)
+            a = Int()
+            b = Bool(required=False)
 
         assert Example(a=5) != Example(a=6)
         assert Example(a=5) != Example(a=6, b=True)
@@ -144,7 +144,7 @@ class TestModel:
             x = Float()
 
         class Example(Model):
-            a = Array(Integer)
+            a = List(Int)
             b = ModelField(SubExample)
 
         assert (hash(Example(a=[5], b=SubExample(x=10.5))) ==
@@ -154,8 +154,8 @@ class TestModel:
 
     def test_to_dict(self):
         class Example(Model):
-            a = Integer()
-            b = Boolean(required=False)
+            a = Int()
+            b = Bool(required=False)
 
         example = Example(a=5)
         assert example.to_dict() == {'a': 5}
@@ -168,9 +168,9 @@ class TestModel:
             x = Float()
 
         class Example(Model):
-            a = Integer(name=lambda m, c: 'd')
+            a = Int(name=lambda m, c: 'd')
             b = ModelField(SubExample)
-            c = Boolean(required=False)
+            c = Bool(required=False)
 
         example = Example(a=5, b=SubExample(x=10.5))
         assert example.a == 5
@@ -180,7 +180,7 @@ class TestModel:
         assert example.to_dict() == {'d': 5, 'b': {'x': 10.5}, 'c': True}
 
         class Example(Model):
-            a = Array(Integer)
+            a = List(Int)
 
         example = Example(a=[1, 2, 3, 4])
 
@@ -203,8 +203,8 @@ class TestModel:
     def test_from_dict(self):
         # A simple Model.
         class Example(Model):
-            a = Integer()
-            b = Boolean(required=False)
+            a = Int()
+            b = Bool(required=False)
 
         example = Example(a=5)
         assert Example.from_dict({'a': 5}) == example
@@ -220,9 +220,9 @@ class TestModel:
             x = Float()
 
         class Example(Model):
-            a = Integer()
+            a = Int()
             b = ModelField(SubExample)
-            c = Boolean(required=False)
+            c = Bool(required=False)
 
         example = Example(a=5, b=SubExample(x=10.5))
         assert Example.from_dict({'a': 5, 'b': {'x': 10.5}}) == example
@@ -253,15 +253,15 @@ class TestModel:
 
     def test_to_json(self):
         class Example(Model):
-            a = Integer()
-            b = String()
+            a = Int()
+            b = Str()
 
         example = Example(a=50, b='test')
         assert example.to_json(sort_keys=True) == '{"a": 50, "b": "test"}'
 
     def test_from_json(self):
         class Example(Model):
-            a = Integer()
-            b = String()
+            a = Int()
+            b = Str()
 
         assert Example.from_json('{"a": 50, "b": "test"}') == Example(a=50, b='test')

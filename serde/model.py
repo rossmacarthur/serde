@@ -138,13 +138,13 @@ class Model(metaclass=ModelType):
 
         .. testsetup::
 
-            from serde import Model, Integer, String
+            from serde import Model, Int, Str
 
         .. testcode::
 
             class User(Model):
-                name = String()
-                age = Integer(required=False)
+                name = Str()
+                age = Int(required=False)
 
             user = User('Benedict Cumberbatch', age=42)
             assert user.name == 'Benedict Cumberbatch'
@@ -155,7 +155,7 @@ class Model(metaclass=ModelType):
         .. testcode::
 
             class SuperUser(User):
-                level = Integer(default=10)
+                level = Int(default=10)
 
             user = SuperUser('Benedict Cumberbatch', age=42)
             assert user.name == 'Benedict Cumberbatch'
@@ -234,13 +234,13 @@ class Model(metaclass=ModelType):
 
             .. testsetup::
 
-                from serde import Model, Integer, String
+                from serde import Model, Int, Str
 
             .. testcode::
 
                 class User(Model):
-                    name = String()
-                    age = Integer(required=False)
+                    name = Str()
+                    age = Int(required=False)
 
                 user = User.from_dict({
                     'name': 'Benedict Cumberbatch',
@@ -305,13 +305,13 @@ class Model(metaclass=ModelType):
 
             .. testsetup::
 
-                from serde import Model, Integer, String
+                from serde import Model, Int, Str
 
             .. testcode::
 
                 class User(Model):
-                    name = String()
-                    age = Integer(required=False)
+                    name = Str()
+                    age = Int(required=False)
 
                 user = User('Benedict Cumberbatch', age=42)
                 assert user.to_dict() == {'name': 'Benedict Cumberbatch', 'age': 42}

@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 
-from serde import Array, Boolean, Field, Float, Integer, Map, Model, ModelField, Parts, String
+from serde import Bool, Dict, Field, Float, Int, List, Model, ModelField, Str, Tuple
 
 
 def test_base_0():
@@ -18,14 +18,14 @@ def test_base_0():
 
     class Player(Model):
         key = Uuid(required=False, default=lambda _: uuid4())
-        name = Parts(String, String)
-        age = Integer()
+        name = Tuple(Str, Str)
+        age = Int()
         rating = Float()
 
     class Game(Model):
-        finished = Boolean()
-        players = Array(Player)
-        board = Map(String, Integer)
+        finished = Bool()
+        players = List(Player)
+        board = Dict(Str, Int)
 
     # Create a player manually
     player = Player(name=('James', 'Williams'), age=23, rating=52.3)
@@ -94,12 +94,12 @@ def test_base_0():
 
 def test_base_1():
     class Address(Model):
-        email = String()
+        email = Str()
 
     class User(Model):
-        name = String(name='username')
-        age = Integer(required=False)
-        addresses = Array(Address, required=False)
+        name = Str(name='username', strip=True)
+        age = Int(required=False)
+        addresses = List(Address, required=False)
 
     # Serialization
     user = User(name='John Smith', age=53, addresses=[Address(email='john@smith.com')])
@@ -118,12 +118,12 @@ def test_base_1():
 
 def test_base_2():
     class Version(Model):
-        major = Integer()
-        minor = Integer()
-        patch = Integer(required=False, default=0)
+        major = Int()
+        minor = Int()
+        patch = Int(required=False, default=0)
 
     class Package(Model):
-        name = String(name='packageName')
+        name = Str(name='packageName')
         version = ModelField(Version)
 
     # Create an instance of the Model
