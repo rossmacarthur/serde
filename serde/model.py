@@ -52,28 +52,44 @@ class ModelType(type):
         Returns:
             Model: a new Model.
         """
-        # Split the attrs into Fields and non-Fields.
-        fields = []
+        fields = Fields()
         final_attrs = OrderedDict()
 
+        # Add all the base classes __fields__ attributes.
+        for base in bases:
+            if hasattr(base, '__fields__'):
+                fields.update(base.__fields__)
+
+        # If we are creating an intermediate class, remove this from the attrs
+        # add update our __fields__.
+        if '__fields__' in attrs:
+            fields.update(attrs.pop('__fields__'))
+
+        # Split the attrs into Fields and non-Fields.
         for name, value in attrs.items():
             if isinstance(value, Field):
-                fields.append((name, value))
+                fields[name] = value
             else:
                 final_attrs[name] = value
 
-        # Get the most recent base class __fields__ attribute if it exists.
-        if len(bases) > 0 and hasattr(bases[-1], '__fields__'):
-            fields += list(bases[-1].__fields__.items())
-
-        # Order the fields by the Field ID this gets the order that they are
-        # defined on the Model.
-        fields = Fields(sorted(fields, key=lambda x: x[1].id))
+        # Order the fields by the Field ID. This gets the order that they are
+        # defined on the Models.
+        fields = Fields(sorted(fields.items(), key=lambda x: x[1].id))
 
         # Generate the __init__ method for the Model.
-        final_attrs['__init__'] = cls.create___init__(fields)
+        init = cls.create___init__(fields)
 
-        # Add the fields to the Model.
+        # If the user is trying to override the __init__ method, then we create
+        # an intermediate class and make that the base of the class we are
+        # creating.
+        if '__init__' in final_attrs:
+            interm_base = cls(cname + 'Intermediate', bases, {'__fields__': fields})
+            bases = (interm_base,)
+        # Else we add the __init__ method to the Model.
+        else:
+            final_attrs['__init__'] = init
+
+        # Finally the fields to the Model.
         final_attrs['__fields__'] = fields
 
         return super().__new__(cls, cname, bases, final_attrs)
@@ -105,7 +121,7 @@ class ModelType(type):
                 setter = '        self.{name} = self.__fields__.{name}.default'.format(name=name)
 
                 if callable(field.default):
-                    setter += '(self)'
+                    setter += '()'
 
                 defaults.extend(['', '    if self.{name} is None:'.format(name=name), setter])
 
@@ -181,11 +197,19 @@ class Model(metaclass=ModelType):
             value = getattr(self, name)
 
             if isinstance(value, list):
-                values.append(frozenset(value))
+                values.append((name, frozenset(value)))
             else:
-                values.append(value)
+                values.append((name, value))
 
         return hash(tuple(values))
+
+    def __repr__(self):
+        """
+        Return the canonical string representation of this Model.
+        """
+        values = ', '.join('{}={!r}'.format(name, getattr(self, name))
+                           for name in self.__fields__.keys())
+        return '{name}({values})'.format(name=self.__class__.__name__, values=values)
 
     def validate(self):
         """
@@ -206,7 +230,7 @@ class Model(metaclass=ModelType):
             try:
                 field.validate(value)
                 for validator in field.validators:
-                    validator(self, value)
+                    validator(value)
             except ValidationError:
                 raise
             except Exception as e:
@@ -253,7 +277,7 @@ class Model(metaclass=ModelType):
 
         for name_, field in cls.__fields__.items():
             if field.name:
-                name = field.name(cls, name_) if callable(field.name) else field.name
+                name = field.name
             else:
                 name = name_
 
@@ -322,7 +346,7 @@ class Model(metaclass=ModelType):
             value = getattr(self, name)
 
             if field.name:
-                name = field.name(self, name) if callable(field.name) else field.name
+                name = field.name
 
             if value is None and field.required is not True:
                 continue

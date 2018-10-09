@@ -39,6 +39,10 @@ class TestField:
         assert callable(field.default)
         assert field.validators == [None]
 
+    def test___repr__(self):
+        field = Field(name='test', required=False)
+        assert repr(field) == "Field(default=None, name='test', required=False, validators=[])"
+
     def test_serialize(self):
         field = Field()
 

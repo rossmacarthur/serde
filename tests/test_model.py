@@ -46,6 +46,41 @@ class TestModel:
         assert hasattr(Example2.__fields__, 'c')
         assert isinstance(Example2.__fields__.c, Float)
 
+        class Example4(Model):
+            a = Int()
+            b = Float()
+
+            def __init__(self):
+                super().__init__(a=5, b=50.5)
+
+        assert hasattr(Example4.__fields__, 'a')
+        assert isinstance(Example4.__fields__.a, Int)
+        assert hasattr(Example4.__fields__, 'b')
+        assert isinstance(Example4.__fields__.b, Float)
+
+        example = Example4()
+        assert example.a == 5
+        assert example.b == 50.5
+
+        class Example5(Example4):
+            b = Int()
+            c = Float()
+
+            def __init__(self):
+                super().__init__(a=5, b=50, c=100.5)
+
+        assert hasattr(Example5.__fields__, 'a')
+        assert isinstance(Example5.__fields__.a, Int)
+        assert hasattr(Example5.__fields__, 'b')
+        assert isinstance(Example5.__fields__.b, Int)
+        assert hasattr(Example5.__fields__, 'c')
+        assert isinstance(Example5.__fields__.c, Float)
+
+        example = Example5()
+        assert example.a == 5
+        assert example.b == 50
+        assert example.c == 100.5
+
     def test___init__(self):
         # A simple Model with no fields.
         class Example(Model):
@@ -92,7 +127,7 @@ class TestModel:
         class SubExample(Model):
             x = Int()
 
-        def assert_value_between_0_and_20(self, value):
+        def assert_value_between_0_and_20(value):
             assert 0 <= value < 20
 
         class Example(Model):
@@ -168,7 +203,7 @@ class TestModel:
             x = Float()
 
         class Example(Model):
-            a = Int(name=lambda m, c: 'd')
+            a = Int(name='d')
             b = ModelField(SubExample)
             c = Bool(required=False)
 

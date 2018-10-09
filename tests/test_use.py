@@ -17,7 +17,7 @@ def test_base_0():
             assert isinstance(value, UUID)
 
     class Player(Model):
-        key = Uuid(required=False, default=lambda _: uuid4())
+        key = Uuid(required=False, default=uuid4)
         name = Tuple(Str, Str)
         age = Int()
         rating = Float()

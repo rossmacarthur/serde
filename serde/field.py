@@ -82,7 +82,7 @@ class Field:
 
         .. testcode::
 
-            def assert_is_even(model, value):
+            def assert_is_even(value):
                 assert value % 2 == 0
 
             class Person(Model):
@@ -115,7 +115,7 @@ class Field:
                     assert isinstance(value, uuid.UUID)
 
             class User(Model):
-                key = Uuid(default=lambda _: uuid.uuid4())
+                key = Uuid(default= uuid.uuid4)
 
             user = User()
             assert isinstance(user.key, uuid.UUID)
@@ -129,10 +129,8 @@ class Field:
         Create a new Field.
 
         Args:
-            name: override the name for the field when serializing and expect
-                this name when deserializing. This can also be a function that
-                generates a value. The function needs to take the containing
-                `~serde.model.Model` and the default name as arguments.
+            name (str): override the name for the field when serializing and
+                expect this name when deserializing.
             required (bool): whether this field is required. Required fields
                 have to be present in instantiation and deserialization.
             default: a value to use if there is no input field value. This can
@@ -163,6 +161,14 @@ class Field:
         Whether two Fields are the same.
         """
         return isinstance(other, self.__class__) and self.__attrs__() == other.__attrs__()
+
+    def __repr__(self):
+        """
+        Return the canonical string representation of this Field.
+        """
+        values = ', '.join('{}={!r}'.format(name, value)
+                           for name, value in sorted(self.__attrs__().items()))
+        return '{name}({values})'.format(name=self.__class__.__name__, values=values)
 
     def serialize(self, value):
         """
