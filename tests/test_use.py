@@ -5,7 +5,7 @@ from serde import Bool, Dict, Field, Float, Int, List, Model, ModelField, Str, T
 
 def test_base_0():
 
-    class Uuid(Field):
+    class MyUuid(Field):
 
         def serialize(self, value):
             return str(value)
@@ -17,7 +17,7 @@ def test_base_0():
             assert isinstance(value, UUID)
 
     class Player(Model):
-        key = Uuid(required=False, default=uuid4)
+        key = MyUuid(required=False, default=uuid4)
         name = Tuple(Str, Str)
         age = Int()
         rating = Float()

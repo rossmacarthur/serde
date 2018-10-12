@@ -148,35 +148,33 @@ class Model(metaclass=ModelType):
     The `Model.__init__` method will be auto-generated from the Field
     attributes.
 
-    Examples:
+    Consider a simple example user model. Observe how easy it is to subclass
+    models.
+
+    .. doctest::
 
         A simple user model
 
-        .. testsetup::
+        >>> class User(Model):
+        ...     name = Str()
+        ...     age = Int(required=False)
 
-            from serde import Model, Int, Str
+        >>> user = User('Benedict Cumberbatch', age=42)
+        >>> user.name
+        'Benedict Cumberbatch'
+        >>> user.age
+        42
 
-        .. testcode::
+        >>> class SuperUser(User):
+        ...     level = Int(default=10)
 
-            class User(Model):
-                name = Str()
-                age = Int(required=False)
-
-            user = User('Benedict Cumberbatch', age=42)
-            assert user.name == 'Benedict Cumberbatch'
-            assert user.age == 42
-
-        You can even subclass subclassed `Model` objects.
-
-        .. testcode::
-
-            class SuperUser(User):
-                level = Int(default=10)
-
-            user = SuperUser('Benedict Cumberbatch', age=42)
-            assert user.name == 'Benedict Cumberbatch'
-            assert user.age == 42
-            assert user.level == 10
+        >>> user = SuperUser('Benedict Cumberbatch', age=42)
+        >>> user.name
+        'Benedict Cumberbatch'
+        >>> user.age
+        42
+        >>> user.level
+        10
     """
 
     def __eq__(self, other):
@@ -225,16 +223,17 @@ class Model(metaclass=ModelType):
                 if field.required is not True:
                     continue
 
-                raise ValidationError('{!r} is required'.format(name))
+                raise ValidationError('{!r} is required'.format(name), field=field, model=self)
 
             try:
                 field.validate(value)
                 for validator in field.validators:
                     validator(value)
-            except ValidationError:
+            except ValidationError as e:
+                e.add_context(field=field, model=self)
                 raise
             except Exception as e:
-                raise ValidationError(str(e))
+                raise ValidationError(str(e) or repr(e), cause=e, field=field, model=self)
 
     @classmethod
     def from_dict(cls, d):
@@ -252,26 +251,23 @@ class Model(metaclass=ModelType):
                 deserialized or there are unknown dictionary keys.
             `~serde.error.ValidationError`: when a Field value is invalid.
 
-        Examples:
+        A simple user model deserialized from a dictionary
 
-            A simple user model deserialized from a dictionary
+        .. doctest:;
 
-            .. testsetup::
+            >>> class User(Model):
+            ...     name = Str()
+            ...     age = Int(required=False)
 
-                from serde import Model, Int, Str
+            >>> user = User.from_dict({
+            ...     'name': 'Benedict Cumberbatch',
+            ...     'age': 42
+            ... })
 
-            .. testcode::
-
-                class User(Model):
-                    name = Str()
-                    age = Int(required=False)
-
-                user = User.from_dict({
-                    'name': 'Benedict Cumberbatch',
-                    'age': 42
-                })
-                assert user.name == 'Benedict Cumberbatch'
-                assert user.age == 42
+            >>> user.name
+            'Benedict Cumberbatch'
+            >>> user.age
+            42
         """
         kwargs = {}
 
@@ -284,10 +280,11 @@ class Model(metaclass=ModelType):
             if name in d:
                 try:
                     value = field.deserialize(d.pop(name))
-                except DeserializationError:
+                except DeserializationError as e:
+                    e.add_context(field=field, model=cls)
                     raise
                 except Exception as e:
-                    raise DeserializationError(str(e))
+                    raise DeserializationError(str(e), field=field, model=cls)
 
                 kwargs[name_] = value
 
@@ -323,22 +320,19 @@ class Model(metaclass=ModelType):
             `~serde.error.SerializationError`: when a Field value cannot be
                 serialized.
 
-        Examples:
+        A simple user model serialized as a dictionary
 
-            A simple user model serialized as a dictionary
+        .. doctest::
 
-            .. testsetup::
+            >>> class User(Model):
+            ...     name = Str()
+            ...     age = Int(required=False)
 
-                from serde import Model, Int, Str
-
-            .. testcode::
-
-                class User(Model):
-                    name = Str()
-                    age = Int(required=False)
-
-                user = User('Benedict Cumberbatch', age=42)
-                assert user.to_dict() == {'name': 'Benedict Cumberbatch', 'age': 42}
+            >>> user = User('Benedict Cumberbatch', age=42)
+            >>> assert user.to_dict() == {
+            ...     'name': 'Benedict Cumberbatch',
+            ...     'age': 42
+            ... }
         """
         result = OrderedDict()
 
@@ -353,10 +347,11 @@ class Model(metaclass=ModelType):
 
             try:
                 result[name] = field.serialize(value)
-            except SerializationError:
+            except SerializationError as e:
+                e.add_context(field=field, model=self)
                 raise
             except Exception as e:
-                raise SerializationError(str(e))
+                raise SerializationError(str(e), field=field, model=self)
 
         return result
 

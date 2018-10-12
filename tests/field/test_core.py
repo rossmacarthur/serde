@@ -3,8 +3,8 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde.error import ValidationError
-from serde.field import (Bool, Dict, Field, Float, InstanceField, Int, List,
-                         ModelField, Str, Tuple, resolve_to_field_instance)
+from serde.field import Bool, Dict, Field, Float, InstanceField, Int, List, ModelField, Str, Tuple
+from serde.field.core import resolve_to_field_instance
 from serde.model import Model
 
 
@@ -22,7 +22,7 @@ class TestField:
     def test___init__(self):
         field = Field()
 
-        assert field.id == 0
+        assert field.id >= 0
         assert field.name is None
         assert field.required is True
         assert field.default is None
@@ -30,7 +30,7 @@ class TestField:
 
         # A second Field instantiated should have a higher counter.
         field2 = Field()
-        assert field2.id == 1
+        assert field2.id > field.id
 
         # A Field with extra options set.
         field = Field(name='test', required=False, default=5, validators=[None])
@@ -113,23 +113,15 @@ class TestBool:
 
     def test___init__(self):
         field = Bool(name='test', required=False, default=False)
-        assert field.coerce is False
         assert field.name is 'test'
         assert field.required is False
         assert field.default is False
         assert field.validators == []
 
-        field = Bool(coerce=True)
-        assert field.coerce is True
-
     def test_deserialize(self):
         field = Bool()
         assert field.deserialize(False) is False
         assert field.deserialize(True) is True
-
-        field = Bool(coerce=True)
-        assert field.deserialize('test') is True
-        assert field.deserialize(0) is False
 
     def test_validate(self):
         field = Bool()
@@ -163,7 +155,7 @@ class TestDict:
 
     def test_deserialize(self):
         # A field that is a key value pair of Strs and Stringifys.
-        field = Dict(Str, Stringify, coerce=True)
+        field = Dict(Str, Stringify)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes any Dict like value through.
@@ -209,7 +201,6 @@ class TestFloat:
 
     def test___init__(self):
         field = Float(name='test', required=False, default=False)
-        assert field.coerce is False
         assert field.min is None
         assert field.max is None
         assert field.name is 'test'
@@ -217,17 +208,10 @@ class TestFloat:
         assert field.default is False
         assert field.validators == []
 
-        field = Float(coerce=True)
-        assert field.coerce is True
-
     def test_deserialize(self):
         field = Float()
         assert field.deserialize(0.5) == 0.5
         assert field.deserialize(-1000.0) == -1000.0
-
-        field = Float(coerce=True)
-        assert field.deserialize('0.5') == 0.5
-        assert field.deserialize(10) == 10.0
 
     def test_validate(self):
         field = Float(min=-100.0, max=500.0)
@@ -244,7 +228,6 @@ class TestInt:
 
     def test___init__(self):
         field = Int(name='test', required=False, default=False)
-        assert field.coerce is False
         assert field.min is None
         assert field.max is None
         assert field.name is 'test'
@@ -252,17 +235,10 @@ class TestInt:
         assert field.default is False
         assert field.validators == []
 
-        field = Int(coerce=True)
-        assert field.coerce is True
-
     def test_deserialize(self):
         field = Int()
         assert field.deserialize(0.5) == 0.5
         assert field.deserialize(-1000.0) == -1000.0
-
-        field = Int(coerce=True)
-        assert field.deserialize('5') == 5
-        assert field.deserialize(10.0) == 10
 
     def test_validate(self):
         field = Int(min=-100, max=500)
@@ -296,7 +272,7 @@ class TestList:
 
     def test_deserialize(self):
         # A field that must be a list of Stringifys.
-        example = List(Stringify, coerce=True)
+        example = List(Stringify)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes any Iterable value through.
@@ -328,7 +304,6 @@ class TestStr:
 
     def test___init__(self):
         field = Str(name='test', required=False, default=False)
-        assert field.coerce is False
         assert field.min_length is None
         assert field.max_length is None
         assert field.name is 'test'
@@ -336,17 +311,10 @@ class TestStr:
         assert field.default is False
         assert field.validators == []
 
-        field = Str(coerce=True)
-        assert field.coerce is True
-
     def test_deserialize(self):
         field = Str()
         assert field.deserialize('a') == 'a'
         assert field.deserialize(' ') == ' '
-
-        field = Str(coerce=True)
-        assert field.deserialize(5) == '5'
-        assert field.deserialize('hello ') == 'hello '
 
     def test_validate(self):
         field = Str(min_length=1, max_length=5)
@@ -380,7 +348,7 @@ class TestTuple:
 
     def test_deserialize(self):
         # A field that is a tuple (bool, str, Stringify)
-        example = Tuple(Bool, Str, Stringify, coerce=True)
+        example = Tuple(Bool, Str, Stringify)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes any Iterable value through as long as its the correct

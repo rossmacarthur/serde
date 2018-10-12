@@ -34,6 +34,10 @@ url = 'https://github.com/rossmacarthur/serde'
 
 long_description = read('README.rst')
 
+install_requirements = [
+    'validators>=0.12.0<0.13.0'
+]
+
 lint_requirements = [
     'flake8',
     'flake8-docstrings',
@@ -61,6 +65,7 @@ setup(
     name='serde',
     packages=['serde'],
     version=version,
+    install_requires=install_requirements,
     extras_require={'linting': lint_requirements,
                     'testing': test_requirements,
                     'documenting': document_requirements,
