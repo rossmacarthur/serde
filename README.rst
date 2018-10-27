@@ -21,7 +21,7 @@ Example usage
 
 First describe your data
 
-::
+.. code:: python
 
     class Version(Model):
         major = Integer()
@@ -34,7 +34,7 @@ First describe your data
 
 Easily instantiate and use a model
 
-::
+.. code:: python
 
     package = Package('requests', Version(2, 19, 1))
 
@@ -45,7 +45,7 @@ Easily instantiate and use a model
 
 Serialize the Model as a dictionary
 
-::
+.. code:: python
 
     assert package.to_dict() == {
         'packageName': 'requests',
@@ -58,7 +58,7 @@ Serialize the Model as a dictionary
 
 Deserialize another Model from a dictionary
 
-::
+.. code:: python
 
     package = Package.from_dict({
         'packageName': 'click',

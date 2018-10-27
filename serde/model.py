@@ -179,9 +179,9 @@ class Model(metaclass=ModelType):
         """
         Whether two Models are the same.
         """
-        return (isinstance(other, self.__class__) and
-                all(getattr(self, name) == getattr(other, name)
-                    for name in self.__fields__.keys()))
+        return (isinstance(other, self.__class__)
+                and all(getattr(self, name) == getattr(other, name)
+                        for name in self.__fields__.keys()))
 
     def __hash__(self):
         """

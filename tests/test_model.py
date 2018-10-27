@@ -182,10 +182,10 @@ class TestModel:
             a = List(Int)
             b = ModelField(SubExample)
 
-        assert (hash(Example(a=[5], b=SubExample(x=10.5))) ==
-                hash(Example(a=[5], b=SubExample(x=10.5))))
-        assert (hash(Example(a=[5], b=SubExample(x=10.5))) !=
-                hash(Example(a=[5], b=SubExample(x=10.0))))
+        assert (hash(Example(a=[5], b=SubExample(x=10.5)))
+                == hash(Example(a=[5], b=SubExample(x=10.5))))
+        assert (hash(Example(a=[5], b=SubExample(x=10.5)))
+                != hash(Example(a=[5], b=SubExample(x=10.0))))
 
     def test_to_dict(self):
         class Example(Model):
