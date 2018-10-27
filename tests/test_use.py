@@ -97,7 +97,7 @@ def test_base_1():
         email = Str()
 
     class User(Model):
-        name = Str(name='username', strip=True)
+        name = Str(rename='username', strip=True)
         age = Int(required=False)
         addresses = List(Address, required=False)
 
@@ -123,7 +123,7 @@ def test_base_2():
         patch = Int(required=False, default=0)
 
     class Package(Model):
-        name = Str(name='packageName')
+        name = Str(rename='packageName')
         version = ModelField(Version)
 
     # Create an instance of the Model

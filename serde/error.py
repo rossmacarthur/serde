@@ -20,7 +20,6 @@ class SerdeError(Exception):
         super().__init__()
         self.message = message
         self.cause = cause
-        self.field = field
         self.model = model
 
     def add_context(self, cause=None, field=None, model=None):

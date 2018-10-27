@@ -2,7 +2,7 @@
 Core Field types for Serde Models.
 """
 
-from serde.error import ValidationError
+from serde.error import SerdeError, ValidationError
 from serde.util import zip_equal
 
 
@@ -114,7 +114,7 @@ class Field:
         ...         assert isinstance(value, str)
 
         >>> class Example(Model):
-        ...     silly = Reversed(name='sILLy')
+        ...     silly = Reversed(rename='sILLy')
 
         >>> example = Example('test')
         >>> example.silly
@@ -127,12 +127,12 @@ class Field:
     # This is so we can get the order the fields were instantiated in.
     __counter__ = 0
 
-    def __init__(self, name=None, required=True, default=None, validators=None):
+    def __init__(self, rename=None, required=True, default=None, validators=None):
         """
         Create a new Field.
 
         Args:
-            name (str): override the name for the field when serializing and
+            rename (str): override the name for the field when serializing and
                 expect this name when deserializing.
             required (bool): whether this field is required. Required fields
                 have to be present in instantiation and deserialization.
@@ -148,7 +148,7 @@ class Field:
         self.id = Field.__counter__
         Field.__counter__ += 1
 
-        self.name = name
+        self.rename = rename
         self.required = required
         self.default = default
         self.validators = validators or []
@@ -157,7 +157,8 @@ class Field:
         """
         Return all attributes of this Field except "id".
         """
-        return {name: value for name, value in vars(self).items() if name != 'id'}
+        return {name: value for name, value in vars(self).items()
+                if name not in ('id', '__name__')}
 
     def __eq__(self, other):
         """
@@ -172,6 +173,55 @@ class Field:
         values = ', '.join('{}={!r}'.format(name, value)
                            for name, value in sorted(self.__attrs__().items()))
         return '{name}({values})'.format(name=self.__class__.__name__, values=values)
+
+    def __setattr__(self, name, value):
+        """
+        Set a named attribute on a Field.
+
+        Raises:
+            `~serde.error.SerdeError`: when the __name__ attribute is set after
+                it has already been set.
+        """
+        if name == '__name__' and hasattr(self, '__name__'):
+            raise SerdeError('field instance used multiple times')
+
+        super().__setattr__(name, value)
+
+    def __validate__(self, value):
+        """
+        Validate the given value according to this Field's specification.
+
+        This method is called by the Model.
+
+        Args:
+            value: the value to validate.
+        """
+        if value is None:
+            if self.required is True:
+                raise ValidationError('{!r} is required'.format(self.name))
+
+            return
+
+        self.validate(value)
+
+        for validator in self.validators:
+            validator(value)
+
+    @property
+    def name(self):
+        """
+        The name of this Field.
+
+        This is the rename value, given when the Field is instantiated,
+        otherwise the attribute name of this Field on the Model.
+        """
+        if not hasattr(self, '__name__'):
+            raise SerdeError('field is not on a Model')
+
+        if self.rename is None:
+            return self.__name__
+
+        return self.rename
 
     def serialize(self, value):
         """
@@ -251,8 +301,6 @@ class ModelField(InstanceField):
     complex nested Models.
 
     .. doctest::
-
-        Consider a person model that has a birthday
 
         >>> class Birthday(Model):
         ...     day = Int(min=1, max=31)
@@ -401,7 +449,7 @@ class Dict(InstanceField):
         Create a new Dict.
 
         Args:
-            key (Field): the Field class/instance for key's in this Dict.
+            key (Field): the Field class/instance for keys in this Dict.
             value (Field): the Field class/instance for values in this Dict.
             min_length (int): the minimum number of elements allowed.
             max_length (int): the maximum number of elements allowed.

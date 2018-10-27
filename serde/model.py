@@ -68,6 +68,7 @@ class ModelType(type):
         # Split the attrs into Fields and non-Fields.
         for name, value in attrs.items():
             if isinstance(value, Field):
+                value.__name__ = name
                 fields[name] = value
             else:
                 final_attrs[name] = value
@@ -148,12 +149,9 @@ class Model(metaclass=ModelType):
     The `Model.__init__` method will be auto-generated from the Field
     attributes.
 
-    Consider a simple example user model. Observe how easy it is to subclass
-    models.
+    Consider a simple example user model and how it can be easily subclassed.
 
     .. doctest::
-
-        A simple user model
 
         >>> class User(Model):
         ...     name = Str()
@@ -209,31 +207,35 @@ class Model(metaclass=ModelType):
                            for name in self.__fields__.keys())
         return '{name}({values})'.format(name=self.__class__.__name__, values=values)
 
-    def validate(self):
+    def validate_field(self, name, field):
         """
-        Validate this Model.
+        Validate a field on this Model.
+
+        Args:
+            name (str): the name of this field. This will be overridden if field
+                has a name set.
+            field (Field): the field to validate.
 
         Raises:
             `~serde.error.ValidationError`: when a Field value is invalid.
         """
+        try:
+            field.__validate__(getattr(self, name))
+        except ValidationError as e:
+            e.add_context(field=field, model=self)
+            raise
+        except Exception as e:
+            raise ValidationError(str(e) or repr(e), cause=e, field=field, model=self)
+
+    def validate(self):
+        """
+        Validate this Model.
+
+        This called in the constructor, so this is only needed if you modify
+        attributes directly and with to validate the Model.
+        """
         for name, field in self.__fields__.items():
-            value = getattr(self, name)
-
-            if value is None:
-                if field.required is not True:
-                    continue
-
-                raise ValidationError('{!r} is required'.format(name), field=field, model=self)
-
-            try:
-                field.validate(value)
-                for validator in field.validators:
-                    validator(value)
-            except ValidationError as e:
-                e.add_context(field=field, model=self)
-                raise
-            except Exception as e:
-                raise ValidationError(str(e) or repr(e), cause=e, field=field, model=self)
+            self.validate_field(name, field)
 
     @classmethod
     def from_dict(cls, d):
@@ -271,22 +273,17 @@ class Model(metaclass=ModelType):
         """
         kwargs = {}
 
-        for name_, field in cls.__fields__.items():
-            if field.name:
-                name = field.name
-            else:
-                name = name_
-
-            if name in d:
+        for name, field in cls.__fields__.items():
+            if field.name in d:
                 try:
-                    value = field.deserialize(d.pop(name))
+                    value = field.deserialize(d.pop(field.name))
                 except DeserializationError as e:
                     e.add_context(field=field, model=cls)
                     raise
                 except Exception as e:
                     raise DeserializationError(str(e), field=field, model=cls)
 
-                kwargs[name_] = value
+                kwargs[name] = value
 
         if d:
             unknowns = ', '.join('{!r}'.format(k) for k in d.keys())
@@ -339,14 +336,11 @@ class Model(metaclass=ModelType):
         for name, field in self.__fields__.items():
             value = getattr(self, name)
 
-            if field.name:
-                name = field.name
-
             if value is None and field.required is not True:
                 continue
 
             try:
-                result[name] = field.serialize(value)
+                result[field.name] = field.serialize(value)
             except SerializationError as e:
                 e.add_context(field=field, model=self)
                 raise

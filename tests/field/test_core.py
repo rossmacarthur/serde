@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from pytest import raises
 
-from serde.error import ValidationError
+from serde.error import SerdeError, ValidationError
 from serde.field import Bool, Dict, Field, Float, InstanceField, Int, List, ModelField, Str, Tuple
 from serde.field.core import resolve_to_field_instance
 from serde.model import Model
@@ -23,7 +23,7 @@ class TestField:
         field = Field()
 
         assert field.id >= 0
-        assert field.name is None
+        assert field.rename is None
         assert field.required is True
         assert field.default is None
         assert field.validators == []
@@ -33,15 +33,29 @@ class TestField:
         assert field2.id > field.id
 
         # A Field with extra options set.
-        field = Field(name='test', required=False, default=5, validators=[None])
-        assert field.name == 'test'
+        field = Field(rename='test', required=False, default=5, validators=[None])
+        assert field.rename == 'test'
         assert field.required is False
         assert field.default == 5
         assert field.validators == [None]
 
     def test___repr__(self):
-        field = Field(name='test', required=False)
-        assert repr(field) == "Field(default=None, name='test', required=False, validators=[])"
+        field = Field(rename='test', required=False)
+        assert repr(field) == "Field(default=None, rename='test', required=False, validators=[])"
+
+    def test__setattr__(self):
+        field = Field()
+
+        with raises(SerdeError):
+            class Example(Model):
+                a = field
+                b = field
+
+    def test_name(self):
+        field = Field()
+
+        with raises(SerdeError):
+            field.name()
 
     def test_serialize(self):
         field = Field()
@@ -112,8 +126,8 @@ class TestInstanceField:
 class TestBool:
 
     def test___init__(self):
-        field = Bool(name='test', required=False, default=False)
-        assert field.name is 'test'
+        field = Bool(rename='test', required=False, default=False)
+        assert field.rename is 'test'
         assert field.required is False
         assert field.default is False
         assert field.validators == []
@@ -200,10 +214,10 @@ class TestDict:
 class TestFloat:
 
     def test___init__(self):
-        field = Float(name='test', required=False, default=False)
+        field = Float(rename='test', required=False, default=False)
         assert field.min is None
         assert field.max is None
-        assert field.name is 'test'
+        assert field.rename is 'test'
         assert field.required is False
         assert field.default is False
         assert field.validators == []
@@ -227,10 +241,10 @@ class TestFloat:
 class TestInt:
 
     def test___init__(self):
-        field = Int(name='test', required=False, default=False)
+        field = Int(rename='test', required=False, default=False)
         assert field.min is None
         assert field.max is None
-        assert field.name is 'test'
+        assert field.rename is 'test'
         assert field.required is False
         assert field.default is False
         assert field.validators == []
@@ -303,10 +317,10 @@ class TestList:
 class TestStr:
 
     def test___init__(self):
-        field = Str(name='test', required=False, default=False)
+        field = Str(rename='test', required=False, default=False)
         assert field.min_length is None
         assert field.max_length is None
-        assert field.name is 'test'
+        assert field.rename is 'test'
         assert field.required is False
         assert field.default is False
         assert field.validators == []

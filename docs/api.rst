@@ -9,7 +9,7 @@ Model
 -----
 
 .. autoclass:: serde.model.Model
-    :members:
+    :members: from_dict, from_json, to_dict, to_json, validate
 
 
 Core Fields
@@ -53,16 +53,12 @@ Extended Fields
     :members: __init__
 
 .. autoclass:: serde.field.Domain
-    :members: __init__
 
 .. autoclass:: serde.field.Email
-    :members: __init__
 
 .. autoclass:: serde.field.Slug
-    :members: __init__
 
 .. autoclass:: serde.field.Url
-    :members: __init__
 
 .. autoclass:: serde.field.Uuid
     :members: __init__

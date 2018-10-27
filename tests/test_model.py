@@ -203,7 +203,7 @@ class TestModel:
             x = Float()
 
         class Example(Model):
-            a = Int(name='d')
+            a = Int(rename='d')
             b = ModelField(SubExample)
             c = Bool(required=False)
 

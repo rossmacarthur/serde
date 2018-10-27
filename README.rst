@@ -29,7 +29,7 @@ First describe your data
         patch = Integer(required=False, default=0)
 
     class Package(Model):
-        name = String(name='packageName')
+        name = String(rename='packageName')
         version = ModelField(Version)
 
 Easily instantiate and use a model
