@@ -430,8 +430,11 @@ class Dict(InstanceField):
         >>> example.constants['e']
         2.7182818
 
-        >>> example.to_dict()
-        OrderedDict([('constants', {'pi': 3.1415927, 'e': 2.7182818})])
+        >>> d = example.to_dict()
+        >>> d['constants']['pi']
+        3.1415927
+        >>> d['constants']['e']
+        2.7182818
 
         >>> Example({'pi': '3.1415927'})
         Traceback (most recent call last):

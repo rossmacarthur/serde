@@ -17,6 +17,9 @@ venv: ## Create virtualenv.
 install: ## Install package.
 	$(VIRTUAL_ENV)/bin/pip install -e .
 
+install-travis: ## Install package and linting and testing dependencies.
+	$(VIRTUAL_ENV)/bin/pip install -e ".[linting,testing]"
+
 install-all: ## Install package and development dependencies.
 	$(VIRTUAL_ENV)/bin/pip install -e ".[linting,testing,documenting,packaging]"
 
