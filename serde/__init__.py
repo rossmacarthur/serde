@@ -14,4 +14,4 @@ __all__ = ['Bool', 'Choice', 'DeserializationError', 'Dict', 'Domain', 'Email', 
            'SerializationError', 'Slug', 'Str', 'Tuple', 'Url', 'Uuid', 'ValidationError']
 __author__ = 'Ross MacArthur'
 __email__ = 'macarthur.ross@gmail.com'
-__version__ = '0.1.0'
+__version__ = '0.1.1'
