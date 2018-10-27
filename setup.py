@@ -2,7 +2,7 @@ import io
 import os
 import re
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def read(*path):
@@ -63,7 +63,7 @@ package_requirements = [
 
 setup(
     name='serde',
-    packages=['serde'],
+    packages=find_packages(exclude=['docs', 'tests']),
     version=version,
     install_requires=install_requirements,
     extras_require={'linting': lint_requirements,
