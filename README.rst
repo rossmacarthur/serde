@@ -1,6 +1,18 @@
 Serde
 =====
 
+.. image:: https://img.shields.io/pypi/v/serde.svg?colorB=6699CC
+    :target: https://pypi.org/project/serde/
+    :alt: PyPI Version
+
+.. image:: https://readthedocs.org/projects/pip/badge/?version=stable
+    :target: https://serde.readthedocs.io/en/latest/
+    :alt: Documentation Status
+
+.. image:: https://travis-ci.org/rossmacarthur/serde.svg?branch=master
+    :target: https://travis-ci.org/rossmacarthur/serde
+    :alt: Build Status
+
 Serde is a general-purpose, extendable framework for serializing and
 deserializing Python objects. Objects are defined with a Model schema and can be
 converted to and from dictionaries and other data formats. Input values can be
