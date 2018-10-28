@@ -268,6 +268,12 @@ class TestModel:
         example = Example.from_dict({'a': 5, 'b': {'x': 10.5}})
         assert isinstance(example.b, SubExample)
 
+        with raises(DeserializationError):
+            Example.from_dict({'a': 5, 'b': {'x': 10.5}, 'z': True})
+
+        example = Example.from_dict({'a': 5, 'b': {'x': 10.5}, 'z': True}, strict=False)
+        assert not hasattr(example, 'z')
+
         # Make the field always fail serialization
         def deserialize(value):
             raise DeserializationError('unable to deserialize {}'.format(value))

@@ -238,12 +238,14 @@ class Model(metaclass=ModelType):
             self.validate_field(name, field)
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d, strict=True):
         """
         Convert a dictionary to an instance of this Model.
 
         Args:
             d (dict): a serialized version of this Model.
+            strict (bool): if set to False then no exception will be raised when
+                unknown dictionary keys are present.
 
         Returns:
             Model: an instance of this Model.
@@ -285,7 +287,7 @@ class Model(metaclass=ModelType):
 
                 kwargs[name] = value
 
-        if d:
+        if strict and d:
             unknowns = ', '.join('{!r}'.format(k) for k in d.keys())
             plural = '' if len(d.keys()) == 1 else 's'
             raise DeserializationError('unknown dictionary key{} {}'.format(plural, unknowns))
