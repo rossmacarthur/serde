@@ -336,15 +336,18 @@ class ModelField(InstanceField):
         Person(name='Beyonce', birthday=Birthday(day=4, month='September'))
     """
 
-    def __init__(self, model, **kwargs):
+    def __init__(self, model, strict=True, **kwargs):
         """
         Create a new ModelField.
 
         Args:
             model: the Model class that this Field wraps.
+            strict (bool): if set to False then no exception will be raised when
+                unknown dictionary keys are present when deserializing.
             **kwargs: keyword arguments for the `InstanceField` constructor.
         """
         super().__init__(model, **kwargs)
+        self.strict = strict
 
     def serialize(self, value):
         """
@@ -369,7 +372,7 @@ class ModelField(InstanceField):
         Returns:
             Model: the deserialized model.
         """
-        value = self.type.from_dict(value)
+        value = self.type.from_dict(value, strict=self.strict)
         return super().deserialize(value)
 
 
