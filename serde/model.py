@@ -5,7 +5,7 @@ Defines the core Serde Model and the ModelType metaclass.
 import json
 from collections import OrderedDict
 
-from .error import DeserializationError, SerializationError, ValidationError, NormalizationError
+from .error import DeserializationError, NormalizationError, SerializationError, ValidationError
 from .field import Field
 from .util import create_function
 
@@ -230,8 +230,8 @@ class Model(metaclass=ModelType):
         """
         Validate this Model.
 
-        This called in the constructor, so this is only needed if you modify
-        attributes directly and want to validate the Model.
+        This is called in the Model constructor, so this is only needed if you
+        modify attributes directly and want to validate the Model.
         """
         for name, field in self.__fields__.items():
             self.validate_field(name, field)
@@ -257,8 +257,8 @@ class Model(metaclass=ModelType):
         """
         Normalize this Model.
 
-        This called in the constructor, so this is only needed if you modify
-        attributes directly and want to normalize the Model.
+        This is called in the Model constructor, so this is only needed if you
+        modify attributes directly and want to normalize the Model.
         """
         for name, field in self.__fields__.items():
             self.normalize_field(name, field)

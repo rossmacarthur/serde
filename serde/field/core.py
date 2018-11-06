@@ -67,7 +67,7 @@ class Field:
     """
     A field on a `~serde.model.Model`.
 
-    Fields handle deserializing, validating, normalizing, and serializing of
+    Fields handle serializing, deserializing, validating, and normalizing of
     input values for Model objects (usually in that order).
 
     Here is a simple example of how Fields can be used on a Model. In this
@@ -790,8 +790,8 @@ class Str(InstanceField):
         Args:
             min_length (int): the minimum number of characters allowed.
             max_length (int): the maximum number of characters allowed.
-            strip (bool): whether to call `str.strip()` on the data when
-                normalizing the value.
+            strip (bool): whether to call `str.strip()` on the data after
+                validation.
             **kwargs: keyword arguments for the `InstanceField` constructor.
         """
         super().__init__(str, **kwargs)
@@ -823,7 +823,7 @@ class Str(InstanceField):
 
     def normalize(self, value):
         """
-        Normalize the given value.
+        Normalize the given value according to this Field's specification.
 
         Args:
             value (str): the value to normalize.
