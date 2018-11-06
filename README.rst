@@ -15,8 +15,7 @@ Serde
 
 Serde is a general-purpose, extendable framework for serializing and
 deserializing Python objects. Objects are defined with a Model schema and can be
-converted to and from dictionaries and other data formats. Input values can be
-validated with arbitrary functions.
+converted to and from dictionaries and other data formats.
 
 Installing
 ----------
@@ -36,12 +35,12 @@ First describe your data
 .. code:: python
 
     class Version(Model):
-        major = Integer()
-        minor = Integer()
-        patch = Integer(required=False, default=0)
+        major = Int()
+        minor = Int()
+        patch = Int(required=False, default=0)
 
     class Package(Model):
-        name = String(rename='packageName')
+        name = Str(rename='packageName')
         version = ModelField(Version)
 
 Easily instantiate and use a model
