@@ -61,3 +61,9 @@ class ValidationError(SerdeError):
     """
     Raised when field validation fails.
     """
+
+
+class NormalizationError(SerdeError):
+    """
+    Raised when field normalization fails.
+    """

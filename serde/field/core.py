@@ -11,7 +11,7 @@ def resolve_to_field_instance(thing, none_allowed=True):
     Resolve an arbitrary object to a `Field` instance.
 
     Args:
-        thing (object): anything to resolve to a Field instance.
+        thing: anything to resolve to a Field instance.
         none_allowed (bool): if set then a thing of None will be resolved to a
             generic Field.
 
@@ -21,16 +21,16 @@ def resolve_to_field_instance(thing, none_allowed=True):
     # We import Model here to avoid circular dependency problems.
     from serde.model import Model
 
-    # If the things is None
-    if none_allowed is True and thing is None:
+    # If the thing is None then create a generic Field.
+    if none_allowed and thing is None:
         return Field()
 
     # If the thing is a Field then thats great.
-    if isinstance(thing, Field):
+    elif isinstance(thing, Field):
         return thing
 
     # If the thing is a subclass of Field then attempt to create an instance.
-    # This could fail the Field expects arguments.
+    # This could fail the Field expects positional arguments.
     try:
         if issubclass(thing, Field):
             return thing()
@@ -44,7 +44,8 @@ def resolve_to_field_instance(thing, none_allowed=True):
     except TypeError:
         pass
 
-    # If the thing is a built-in type then create a InstanceField with that type.
+    # If the thing is a built-in type that we support then create an
+    # InstanceField with that type.
     field_class = {
         bool: Bool,
         dict: Dict,
@@ -66,13 +67,13 @@ class Field:
     """
     A field on a `~serde.model.Model`.
 
-    Fields handle serializing, deserializing, and validation of input values for
-    Model objects.
+    Fields handle deserializing, validating, normalizing, and serializing of
+    input values for Model objects (usually in that order).
 
     Here is a simple example of how Fields can be used on a Model. In this
     example we use the base class Field which does not have any of its own
     validation, and simply passes values through when serializing and
-    deserializing.
+    deserializing. Typically, more constrained Field classes would be used.
 
     .. doctest::
 
@@ -98,7 +99,7 @@ class Field:
         serde.error.ValidationError: value is not odd!
 
     Here is a more advanced example where we subclass a field and override the
-    serialize, deserialize, and validate methods.
+    serialize, deserialize, validate, and normalize methods.
 
     .. doctest::
 
@@ -112,11 +113,14 @@ class Field:
         ...
         ...     def validate(self, value):
         ...         assert isinstance(value, str)
+        ...
+        ...     def normalize(self, value):
+        ...         return value.strip()
 
         >>> class Example(Model):
         ...     silly = Reversed(rename='sILLy')
 
-        >>> example = Example('test')
+        >>> example = Example('test ')
         >>> example.silly
         'test'
 
@@ -197,7 +201,7 @@ class Field:
             value: the value to validate.
         """
         if value is None:
-            if self.required is True:
+            if self.required:
                 raise ValidationError('{!r} is required'.format(self.name))
 
             return
@@ -206,6 +210,18 @@ class Field:
 
         for validator in self.validators:
             validator(value)
+
+    def __normalize__(self, value):
+        """
+        Normalize the given value according to this Field's specification.
+
+        This method is called by the Model.
+
+        Args:
+            value: the value to normalize.
+        """
+        if value is not None:
+            return self.normalize(value)
 
     @property
     def name(self):
@@ -255,6 +271,15 @@ class Field:
             value: the value to validate.
         """
         pass
+
+    def normalize(self, value):
+        """
+        Normalize the given value according to this Field's specification.
+
+        Args:
+            value: the value to normalize.
+        """
+        return value
 
 
 class InstanceField(Field):
@@ -411,13 +436,13 @@ class Bool(InstanceField):
 
 class Dict(InstanceField):
     """
-    A dict Field with a required key and value type.
+    A dict Field with a required key and/or value type.
 
     This field represents the built-in `dict` type. Each key and value will be
-    serialized, deserialized, and validated with the specified key and value
-    types. The key and value types can be specified using Field classes, Field
-    instances, Model classes, or built-in types that have a corresponding Field
-    type in this library.
+    serialized, deserialized, validated, and normalized with the specified key
+    and value types. The key and value types can be specified using Field
+    classes, Field instances, Model classes, or built-in types that have a
+    corresponding Field type in this library.
 
     Consider an example model with a constants attribute which is map of strings
     to floats.
@@ -637,10 +662,10 @@ class List(InstanceField):
     A list Field with a required element type.
 
     This field represents the built-in `list` type. Each element will be
-    serialized, deserialized, and validated with the specified element type. The
-    element type can be specified using Field classes, Field instances, Model
-    classes, or built-in types that have a corresponding Field type in this
-    library.
+    serialized, deserialized, validated, and normalized with the specified
+    element type. The element type can be specified using Field classes, Field
+    instances, Model classes, or built-in types that have a corresponding Field
+    type in this library.
 
     Consider a user model that can have multiple emails
 
@@ -766,7 +791,7 @@ class Str(InstanceField):
             min_length (int): the minimum number of characters allowed.
             max_length (int): the maximum number of characters allowed.
             strip (bool): whether to call `str.strip()` on the data when
-                deserializing.
+                normalizing the value.
             **kwargs: keyword arguments for the `InstanceField` constructor.
         """
         super().__init__(str, **kwargs)
@@ -774,26 +799,9 @@ class Str(InstanceField):
         self.max_length = max_length
         self.strip = strip
 
-    def deserialize(self, value):
-        """
-        Deserialize the given value.
-
-        Args:
-            value (str): the value to deserialize.
-
-        Returns:
-            str: the deserialized string.
-        """
-        value = super().deserialize(value)
-
-        if self.strip is True:
-            value = value.strip()
-
-        return value
-
     def validate(self, value):
         """
-        Validate the deserialized value.
+        Validate the given value according to this Field's specification.
 
         Args:
             value: the value to validate.
@@ -813,16 +821,32 @@ class Str(InstanceField):
             raise ValidationError('expected at most {} characters but got {} characters'
                                   .format(self.max_length, count))
 
+    def normalize(self, value):
+        """
+        Normalize the given value.
+
+        Args:
+            value (str): the value to normalize.
+
+        Returns:
+            str: the normalized string.
+        """
+        value = super().normalize(value)
+
+        if self.strip:
+            value = value.strip()
+
+        return value
+
 
 class Tuple(InstanceField):
     """
     A tuple Field with required element types.
 
-    Each element will be serialized, deserialized, and validated with the
-    specified element type. The given element types can be specified using Field
-    classes, Field instances, Model classes, or built-in types that have a
-    corresponding Field type in this library.
-
+    Each element will be serialized, deserialized, validated, and normalized
+    with the specified element type. The given element types can be specified
+    using Field classes, Field instances, Model classes, or built-in types that
+    have a corresponding Field type in this library.
 
     Consider an example person that has a name and a birthday
 

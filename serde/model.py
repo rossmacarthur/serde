@@ -5,7 +5,7 @@ Defines the core Serde Model and the ModelType metaclass.
 import json
 from collections import OrderedDict
 
-from .error import DeserializationError, SerializationError, ValidationError
+from .error import DeserializationError, SerializationError, ValidationError, NormalizationError
 from .field import Field
 from .util import create_function
 
@@ -127,7 +127,7 @@ class ModelType(type):
                 defaults.extend(['', '    if self.{name} is None:'.format(name=name), setter])
 
         definition = 'def __init__({parameters}):'.format(parameters=', '.join(parameters))
-        lines = setters + defaults + ['', '    self.validate()']
+        lines = setters + defaults + ['', '    self.validate()', '    self.normalize()']
 
         return create_function(definition, lines)
 
@@ -212,8 +212,7 @@ class Model(metaclass=ModelType):
         Validate a field on this Model.
 
         Args:
-            name (str): the name of this field. This will be overridden if field
-                has a name set.
+            name (str): the attribute name of the value to validate.
             field (Field): the field to validate.
 
         Raises:
@@ -232,10 +231,37 @@ class Model(metaclass=ModelType):
         Validate this Model.
 
         This called in the constructor, so this is only needed if you modify
-        attributes directly and with to validate the Model.
+        attributes directly and want to validate the Model.
         """
         for name, field in self.__fields__.items():
             self.validate_field(name, field)
+
+    def normalize_field(self, name, field):
+        """
+        Normalize a field on this Model.
+
+        Args:
+            name (str): the attribute name of the value to validate.
+            field (Field): the field to validate.
+        """
+        try:
+            value = getattr(self, name)
+            setattr(self, name, field.normalize(value))
+        except NormalizationError as e:
+            e.add_context(field=field, model=self)
+            raise
+        except Exception as e:
+            raise NormalizationError(str(e) or repr(e), cause=e, field=field, model=self)
+
+    def normalize(self):
+        """
+        Normalize this Model.
+
+        This called in the constructor, so this is only needed if you modify
+        attributes directly and want to normalize the Model.
+        """
+        for name, field in self.__fields__.items():
+            self.normalize_field(name, field)
 
     @classmethod
     def from_dict(cls, d, strict=True):
