@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.2.0
+-------------
+
+*Unreleased*
+
+- Support normalization of Field values (`#4`_)
+
+.. _#4: https://github.com/rossmacarthur/serde/pull/4
+
 Version 0.1.2
 -------------
 
