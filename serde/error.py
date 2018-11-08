@@ -17,9 +17,9 @@ class SerdeError(Exception):
             field (~serde.field.Field): the field context.
             model (~serde.model.Model): the model context.
         """
-        super().__init__()
-        self.message = message
+        super().__init__(message)
         self.cause = cause
+        self.field = field
         self.model = model
 
     def add_context(self, cause=None, field=None, model=None):
@@ -36,13 +36,13 @@ class SerdeError(Exception):
         """
         return '<{}.{}: {}>'.format(self.__class__.__module__,
                                     self.__class__.__qualname__,
-                                    self.message)
+                                    str(self))
 
     def __str__(self):
         """
         Return a string representation of this SerdeError.
         """
-        return self.message
+        return self.args[0]
 
 
 class SerializationError(SerdeError):
