@@ -200,7 +200,7 @@ class TestModel:
 
         # A more complex Model with a sub Model
         class SubExample(Model):
-            x = Float()
+            x = Float(serializers=[lambda x: x])
 
         class Example(Model):
             a = Int(rename='d')
@@ -255,7 +255,7 @@ class TestModel:
 
         # A more complex Model with a sub Model
         class SubExample(Model):
-            x = Float()
+            x = Float(deserializers=[lambda x: x])
 
         class Example(Model):
             a = Int()

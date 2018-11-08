@@ -6,8 +6,10 @@ Version 0.2.0
 
 *Unreleased*
 
+- Support arbitrary serializers and deserializers (`#6`_)
 - General internal enhancements (`#5`_)
 
+.. _#6: https://github.com/rossmacarthur/serde/pull/6
 .. _#5: https://github.com/rossmacarthur/serde/pull/5
 
 Version 0.1.2
