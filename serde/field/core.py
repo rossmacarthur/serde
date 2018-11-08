@@ -128,7 +128,8 @@ class Field:
     # This is so we can get the order the fields were instantiated in.
     __counter = 0
 
-    def __init__(self, rename=None, required=True, default=None, validators=None):
+    def __init__(self, rename=None, required=True, default=None,
+                 serializers=None, deserializers=None, validators=None):
         """
         Create a new Field.
 
@@ -140,6 +141,16 @@ class Field:
             default: a value to use if there is no input field value. This can
                 also be a function that generates the default. The function
                 must take no arguments.
+            serializers (list): a list of serializer functions taking the value
+                to serialize as an argument. The functions need to raise an
+                `Exception` if they fail. These serializer functions will be
+                applied in order to the value before the serializer on this
+                Field.
+            deserializers (list): a list of deserializer functions taking the
+                value to deserialize as an argument. The functions need to raise
+                an `Exception` if they fail. These deserializer functions will
+                be applied in order to the value after the deserializer on this
+                Field.
             validators (list): a list of validator functions taking the value
                 to validate as an argument. The functions need to raise an
                 `Exception` if they fail.
@@ -152,6 +163,8 @@ class Field:
         self.rename = rename
         self.required = required
         self.default = default
+        self.serializers = serializers or []
+        self.deserializers = deserializers or []
         self.validators = validators or []
 
     def __attrs__(self):
@@ -188,6 +201,40 @@ class Field:
 
         super().__setattr__(name, value)
 
+    def _serialize(self, value):
+        """
+        Serialize the given value according to this Field's specification.
+
+        Args:
+            value: the value to serialize.
+
+        Returns:
+            the serialized value.
+        """
+        for serializer in self.serializers:
+            value = serializer(value)
+
+        value = self.serialize(value)
+
+        return value
+
+    def _deserialize(self, value):
+        """
+        Deserialize the given value according to this Field's specification.
+
+        Args:
+            value: the value to deserialize.
+
+        Returns:
+            the deserialized value.
+        """
+        value = self.deserialize(value)
+
+        for deserializer in self.deserializers:
+            value = deserializer(value)
+
+        return value
+
     def _validate(self, value):
         """
         Validate the given value according to this Field's specification.
@@ -197,12 +244,6 @@ class Field:
         Args:
             value: the value to validate.
         """
-        if value is None:
-            if self.required:
-                raise ValidationError('{!r} is required'.format(self.name))
-
-            return
-
         self.validate(value)
 
         for validator in self.validators:

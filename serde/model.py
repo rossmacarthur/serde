@@ -251,7 +251,7 @@ class Model(metaclass=ModelType):
         Raises:
             `~serde.error.SerializationError`: when the serialization fails.
         """
-        return field.serialize(value)
+        return field._serialize(value)
 
     @classmethod
     @handle_field_errors(DeserializationError)
@@ -266,7 +266,7 @@ class Model(metaclass=ModelType):
         Raises:
             `~serde.error.DeserializationError`: when the deserialization fails.
         """
-        return field.deserialize(value)
+        return field._deserialize(value)
 
     @handle_field_errors(ValidationError)
     def _validate_field(self, field, value):
@@ -291,7 +291,12 @@ class Model(metaclass=ModelType):
         """
         for name, field in self._fields.items():
             value = getattr(self, name)
-            self._validate_field(field, value)
+
+            if value is None:
+                if field.required:
+                    raise ValidationError('{!r} is required'.format(name), field=field, model=self)
+            else:
+                self._validate_field(field, value)
 
     @classmethod
     def from_dict(cls, d, strict=True):
