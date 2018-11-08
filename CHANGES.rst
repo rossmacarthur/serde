@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.2.0
+-------------
+
+*Unreleased*
+
+- General internal enhancements (`#5`_)
+
+.. _#5: https://github.com/rossmacarthur/serde/pull/5
+
 Version 0.1.2
 -------------
 
