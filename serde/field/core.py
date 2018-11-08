@@ -144,13 +144,11 @@ class Field:
             serializers (list): a list of serializer functions taking the value
                 to serialize as an argument. The functions need to raise an
                 `Exception` if they fail. These serializer functions will be
-                applied in order to the value before the serializer on this
-                Field.
+                applied before the primary serializer on this Field.
             deserializers (list): a list of deserializer functions taking the
                 value to deserialize as an argument. The functions need to raise
                 an `Exception` if they fail. These deserializer functions will
-                be applied in order to the value after the deserializer on this
-                Field.
+                be applied after the primary deserializer on this Field.
             validators (list): a list of validator functions taking the value
                 to validate as an argument. The functions need to raise an
                 `Exception` if they fail.
