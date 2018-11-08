@@ -42,7 +42,7 @@ class TestField:
     def test___repr__(self):
         field = Field(rename='test', required=False)
         assert repr(field) == ("Field(default=None, deserializers=[], rename='test'"
-                               ", required=False, serializers=[], validators=[])")
+                               ', required=False, serializers=[], validators=[])')
 
     def test__setattr__(self):
         field = Field()
