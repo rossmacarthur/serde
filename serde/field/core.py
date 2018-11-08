@@ -11,7 +11,7 @@ def resolve_to_field_instance(thing, none_allowed=True):
     Resolve an arbitrary object to a `Field` instance.
 
     Args:
-        thing (object): anything to resolve to a Field instance.
+        thing: anything to resolve to a Field instance.
         none_allowed (bool): if set then a thing of None will be resolved to a
             generic Field.
 
@@ -21,16 +21,16 @@ def resolve_to_field_instance(thing, none_allowed=True):
     # We import Model here to avoid circular dependency problems.
     from serde.model import Model
 
-    # If the things is None
-    if none_allowed is True and thing is None:
+    # If the thing is None then create a generic Field.
+    if none_allowed and thing is None:
         return Field()
 
     # If the thing is a Field then thats great.
-    if isinstance(thing, Field):
+    elif isinstance(thing, Field):
         return thing
 
     # If the thing is a subclass of Field then attempt to create an instance.
-    # This could fail the Field expects arguments.
+    # This could fail the Field expects positional arguments.
     try:
         if issubclass(thing, Field):
             return thing()
@@ -44,7 +44,8 @@ def resolve_to_field_instance(thing, none_allowed=True):
     except TypeError:
         pass
 
-    # If the thing is a built-in type then create a InstanceField with that type.
+    # If the thing is a built-in type that we support then create an
+    # InstanceField with that type.
     field_class = {
         bool: Bool,
         dict: Dict,
@@ -72,7 +73,7 @@ class Field:
     Here is a simple example of how Fields can be used on a Model. In this
     example we use the base class Field which does not have any of its own
     validation, and simply passes values through when serializing and
-    deserializing.
+    deserializing. Typically, more constrained Field classes would be used.
 
     .. doctest::
 
@@ -125,7 +126,7 @@ class Field:
     """
 
     # This is so we can get the order the fields were instantiated in.
-    __counter__ = 0
+    __counter = 0
 
     def __init__(self, rename=None, required=True, default=None, validators=None):
         """
@@ -145,8 +146,8 @@ class Field:
         """
         super().__init__()
 
-        self.id = Field.__counter__
-        Field.__counter__ += 1
+        self.id = Field.__counter
+        Field.__counter += 1
 
         self.rename = rename
         self.required = required
@@ -155,10 +156,10 @@ class Field:
 
     def __attrs__(self):
         """
-        Return all attributes of this Field except "id".
+        Return all attributes of this Field except "id" and "_name".
         """
         return {name: value for name, value in vars(self).items()
-                if name not in ('id', '__name__')}
+                if name not in ('id', '_name')}
 
     def __eq__(self, other):
         """
@@ -179,15 +180,15 @@ class Field:
         Set a named attribute on a Field.
 
         Raises:
-            `~serde.error.SerdeError`: when the __name__ attribute is set after
-                it has already been set.
+            `~serde.error.SerdeError`: when the _name attribute is set after it
+                has already been set.
         """
-        if name == '__name__' and hasattr(self, '__name__'):
+        if name == '_name' and hasattr(self, '_name'):
             raise SerdeError('field instance used multiple times')
 
         super().__setattr__(name, value)
 
-    def __validate__(self, value):
+    def _validate(self, value):
         """
         Validate the given value according to this Field's specification.
 
@@ -197,7 +198,7 @@ class Field:
             value: the value to validate.
         """
         if value is None:
-            if self.required is True:
+            if self.required:
                 raise ValidationError('{!r} is required'.format(self.name))
 
             return
@@ -215,11 +216,11 @@ class Field:
         This is the rename value, given when the Field is instantiated,
         otherwise the attribute name of this Field on the Model.
         """
-        if not hasattr(self, '__name__'):
+        if not hasattr(self, '_name'):
             raise SerdeError('field is not on a Model')
 
         if self.rename is None:
-            return self.__name__
+            return self._name
 
         return self.rename
 
@@ -786,7 +787,7 @@ class Str(InstanceField):
         """
         value = super().deserialize(value)
 
-        if self.strip is True:
+        if self.strip:
             value = value.strip()
 
         return value

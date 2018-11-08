@@ -16,12 +16,12 @@ class TestModel:
         assert not hasattr(Example, 'a')
         assert not hasattr(Example, 'b')
 
-        # But they should be in the __fields__ attribute
-        assert hasattr(Example.__fields__, 'a')
-        assert hasattr(Example.__fields__, 'b')
+        # But they should be in the _fields attribute
+        assert hasattr(Example._fields, 'a')
+        assert hasattr(Example._fields, 'b')
 
         with raises(AttributeError):
-            Example.__fields__.c
+            Example._fields.c
 
         # When extending a model the parent field attributes should also be
         # present, but subclass fields of the same name should override them.
@@ -29,22 +29,22 @@ class TestModel:
             b = Float()
             c = Float()
 
-        assert hasattr(Example2.__fields__, 'a')
-        assert isinstance(Example2.__fields__.a, Int)
-        assert hasattr(Example2.__fields__, 'b')
-        assert isinstance(Example2.__fields__.b, Float)
-        assert hasattr(Example2.__fields__, 'c')
-        assert isinstance(Example2.__fields__.c, Float)
+        assert hasattr(Example2._fields, 'a')
+        assert isinstance(Example2._fields.a, Int)
+        assert hasattr(Example2._fields, 'b')
+        assert isinstance(Example2._fields.b, Float)
+        assert hasattr(Example2._fields, 'c')
+        assert isinstance(Example2._fields.c, Float)
 
         class Example3(Example2):
             pass
 
-        assert hasattr(Example2.__fields__, 'a')
-        assert isinstance(Example2.__fields__.a, Int)
-        assert hasattr(Example2.__fields__, 'b')
-        assert isinstance(Example2.__fields__.b, Float)
-        assert hasattr(Example2.__fields__, 'c')
-        assert isinstance(Example2.__fields__.c, Float)
+        assert hasattr(Example2._fields, 'a')
+        assert isinstance(Example2._fields.a, Int)
+        assert hasattr(Example2._fields, 'b')
+        assert isinstance(Example2._fields.b, Float)
+        assert hasattr(Example2._fields, 'c')
+        assert isinstance(Example2._fields.c, Float)
 
         class Example4(Model):
             a = Int()
@@ -53,10 +53,10 @@ class TestModel:
             def __init__(self):
                 super().__init__(a=5, b=50.5)
 
-        assert hasattr(Example4.__fields__, 'a')
-        assert isinstance(Example4.__fields__.a, Int)
-        assert hasattr(Example4.__fields__, 'b')
-        assert isinstance(Example4.__fields__.b, Float)
+        assert hasattr(Example4._fields, 'a')
+        assert isinstance(Example4._fields.a, Int)
+        assert hasattr(Example4._fields, 'b')
+        assert isinstance(Example4._fields.b, Float)
 
         example = Example4()
         assert example.a == 5
@@ -69,12 +69,12 @@ class TestModel:
             def __init__(self):
                 super().__init__(a=5, b=50, c=100.5)
 
-        assert hasattr(Example5.__fields__, 'a')
-        assert isinstance(Example5.__fields__.a, Int)
-        assert hasattr(Example5.__fields__, 'b')
-        assert isinstance(Example5.__fields__.b, Int)
-        assert hasattr(Example5.__fields__, 'c')
-        assert isinstance(Example5.__fields__.c, Float)
+        assert hasattr(Example5._fields, 'a')
+        assert isinstance(Example5._fields.a, Int)
+        assert hasattr(Example5._fields, 'b')
+        assert isinstance(Example5._fields.b, Int)
+        assert hasattr(Example5._fields, 'c')
+        assert isinstance(Example5._fields.c, Float)
 
         example = Example5()
         assert example.a == 5
@@ -230,7 +230,7 @@ class TestModel:
             raise SerializationError('unable to serialize {}'.format(value))
 
         example = Example(a=[1, 2, 3, 4])
-        Example.__fields__.a.serialize = serialize
+        Example._fields.a.serialize = serialize
 
         with raises(SerializationError):
             example.to_dict()
@@ -249,6 +249,9 @@ class TestModel:
 
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': False, 'c': 'extra'})
+
+        with raises(DeserializationError):
+            Example.from_dict({'b': False})
 
         # A more complex Model with a sub Model
         class SubExample(Model):
@@ -278,7 +281,7 @@ class TestModel:
         def deserialize(value):
             raise DeserializationError('unable to deserialize {}'.format(value))
 
-        Example.__fields__.a.deserialize = deserialize
+        Example._fields.a.deserialize = deserialize
 
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': {'x': 10.5}})
@@ -287,7 +290,7 @@ class TestModel:
         def deserialize(value):
             raise Exception('unable to deserialize {}'.format(value))
 
-        Example.__fields__.a.deserialize = deserialize
+        Example._fields.a.deserialize = deserialize
 
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': {'x': 10.5}})
