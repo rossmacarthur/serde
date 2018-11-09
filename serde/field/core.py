@@ -948,3 +948,10 @@ class Tuple(InstanceField):
 
         for f, v in zip(self.fields, value):
             f.validate(v)
+
+
+# Aliases
+Boolean = Bool
+Dictionary = Dict
+Integer = Int
+String = Str

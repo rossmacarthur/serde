@@ -6,5 +6,8 @@ from .core import Bool, Dict, Field, Float, InstanceField, Int, List, ModelField
 from .ext import Choice, Domain, Email, Slug, Url, Uuid
 
 
-__all__ = ['Bool', 'Choice', 'Dict', 'Domain', 'Email', 'Field', 'Float', 'InstanceField',
-           'Int', 'List', 'ModelField', 'Slug', 'Str', 'Tuple', 'Url', 'Uuid']
+__all__ = [
+    'Bool', 'Boolean', 'Choice', 'Dict', 'Dictionary', 'Domain', 'Email',
+    'Field', 'Float', 'InstanceField', 'Int', 'Integer', 'List', 'ModelField',
+    'Slug', 'Str', 'String', 'Tuple', 'URL', 'UUID', 'Url', 'Uuid'
+]
