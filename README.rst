@@ -39,12 +39,12 @@ First describe your data
 .. code:: python
 
     class Version(Model):
-        major = Int()
-        minor = Int()
-        patch = Int(required=False, default=0)
+        major = Integer()
+        minor = Integer()
+        patch = Integer(required=False, default=0)
 
     class Package(Model):
-        name = Str(rename='packageName')
+        name = String(rename='packageName')
         version = ModelField(Version)
 
 Easily instantiate and use a model
