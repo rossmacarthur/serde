@@ -13,6 +13,10 @@ Serde
     :target: https://travis-ci.org/rossmacarthur/serde
     :alt: Build Status
 
+.. image:: https://codecov.io/gh/rossmacarthur/serde/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/rossmacarthur/serde
+    :alt: Code Coverage
+
 Serde is a general-purpose, extendable framework for serializing and
 deserializing Python objects. Objects are defined with a Model schema and can be
 converted to and from dictionaries and other data formats.
