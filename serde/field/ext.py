@@ -16,8 +16,7 @@ class Choice(Field):
     One of a given selection of values.
 
     This field checks if the input data is one of the allowed values. These
-    values do not need to be the same type. This field is easily subclassed if
-    extra serialization and deserialization is required.
+    values do not need to be the same type.
 
     ..  doctest::
 
@@ -39,7 +38,7 @@ class Choice(Field):
         Create a new Choice.
 
         Args:
-            choices: a list/range/tuple/iterable of allowed values.
+            choices: a list/range/tuple of allowed values.
             **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(**kwargs)
@@ -47,7 +46,7 @@ class Choice(Field):
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given value is one of the choices.
 
         Args:
             value: the value to validate.
@@ -79,10 +78,10 @@ class Domain(Str):
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given string is a domain.
 
         Args:
-            value: the value to validate.
+            value (str): the string to validate.
         """
         super().validate(value)
 
@@ -94,7 +93,7 @@ class Email(Str):
     """
     An email field.
 
-    This is a `Str` field that validates that the input string is a email.
+    This is a `Str` field that validates that the input string is an email.
 
     .. doctest::
 
@@ -113,10 +112,10 @@ class Email(Str):
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given string is an email.
 
         Args:
-            value: the value to validate.
+            value (str): the string to validate.
         """
         super().validate(value)
 
@@ -147,10 +146,10 @@ class Slug(Str):
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given string is a slug.
 
         Args:
-            value: the value to validate.
+            value (str): the string to validate.
         """
         super().validate(value)
 
@@ -181,10 +180,10 @@ class Url(Str):
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given string is a URL.
 
         Args:
-            value: the value to validate.
+            value (str): the string to validate.
         """
         super().validate(value)
 
@@ -225,7 +224,7 @@ class Uuid(InstanceField):
 
     def serialize(self, value):
         """
-        Serialize the given value.
+        Serialize the given UUID.
 
         Args:
             value (~uuid.UUID): the UUID to serialize.
@@ -237,10 +236,10 @@ class Uuid(InstanceField):
 
     def deserialize(self, value):
         """
-        Deserialize the given value.
+        Deserialize the given string.
 
         Args:
-            value (str): the value to deserialize.
+            value (str): the string to deserialize.
 
         Returns:
             ~uuid.UUID: the deserialized Uuid.

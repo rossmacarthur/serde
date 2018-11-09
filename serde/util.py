@@ -3,6 +3,7 @@ Utility functions for Serde.
 """
 
 import hashlib
+import inspect
 import linecache
 import re
 from itertools import zip_longest
@@ -32,9 +33,9 @@ def create_function(definition, lines):
     Dynamically create a Python function from the given code.
 
     Args:
-        definition (Text): the function definition.
-        lines (List[Text]): a list of lines of code. These lines must include
-            the indentation.
+        definition (str): the function definition.
+        lines (list): a list of lines of code. These lines must include the
+            indentation.
 
     Raises:
         ValueError: if no name could be determined from the function definition.
@@ -65,3 +66,24 @@ def create_function(definition, lines):
     linecache.cache[filename] = (len(code), None, lines, filename)
 
     return locals_[name]
+
+
+def list_class_init_parameters(cls):
+    """
+    Return the names of a class's __init__ parameters.
+
+    Args:
+        cls (class): the class to inspect.
+
+    Returns:
+        list: a list of parameter names.
+    """
+    parameters = []
+
+    for base in inspect.getmro(cls):
+        parameters.extend([
+            name for name, param in inspect.signature(base).parameters.items()
+            if param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and name not in parameters
+        ])
+
+    return parameters
