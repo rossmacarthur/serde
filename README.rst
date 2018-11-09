@@ -1,19 +1,19 @@
 Serde
 =====
 
-.. image:: https://img.shields.io/pypi/v/serde.svg?colorB=6699CC
+.. image:: https://img.shields.io/pypi/v/serde.svg?style=flat-square&colorB=4c1
     :target: https://pypi.org/project/serde/
     :alt: PyPI Version
 
-.. image:: https://readthedocs.org/projects/pip/badge/?version=stable
+.. image:: https://img.shields.io/readthedocs/serde/latest.svg?style=flat-square
     :target: https://serde.readthedocs.io/en/latest/
     :alt: Documentation Status
 
-.. image:: https://travis-ci.org/rossmacarthur/serde.svg?branch=master
+.. image:: https://img.shields.io/travis/rossmacarthur/serde.svg?style=flat-square
     :target: https://travis-ci.org/rossmacarthur/serde
     :alt: Build Status
 
-.. image:: https://codecov.io/gh/rossmacarthur/serde/branch/master/graph/badge.svg
+.. image:: https://img.shields.io/codecov/c/github/rossmacarthur/serde.svg?style=flat-square
     :target: https://codecov.io/gh/rossmacarthur/serde
     :alt: Code Coverage
 
