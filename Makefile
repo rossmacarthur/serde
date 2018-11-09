@@ -19,6 +19,7 @@ install: ## Install package.
 
 install-travis: ## Install package and linting and testing dependencies.
 	$(VIRTUAL_ENV)/bin/pip install -e ".[linting,testing]"
+	$(VIRTUAL_ENV)/bin/pip install codecov
 
 install-all: ## Install package and development dependencies.
 	$(VIRTUAL_ENV)/bin/pip install -e ".[linting,testing,documenting,packaging]"

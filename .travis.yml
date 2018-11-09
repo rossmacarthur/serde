@@ -15,3 +15,7 @@ install:
 script:
   - make lint
   - make test
+
+# command to upload coverage
+after_success:
+  - codecov
