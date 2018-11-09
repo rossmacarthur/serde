@@ -3,7 +3,7 @@ Core Field types for Serde Models.
 """
 
 from serde.error import SerdeError, ValidationError
-from serde.util import zip_equal
+from serde.util import list_class_init_parameters, zip_equal
 
 
 def resolve_to_field_instance(thing, none_allowed=True):
@@ -165,25 +165,30 @@ class Field:
         self.deserializers = deserializers or []
         self.validators = validators or []
 
-    def __attrs__(self):
+    def _attrs(self):
         """
         Return all attributes of this Field except "id" and "_name".
         """
-        return {name: value for name, value in vars(self).items()
-                if name not in ('id', '_name')}
+        return {
+            name: value for name, value in vars(self).items()
+            if name not in ('id', '_name')
+        }
 
     def __eq__(self, other):
         """
         Whether two Fields are the same.
         """
-        return isinstance(other, self.__class__) and self.__attrs__() == other.__attrs__()
+        return isinstance(other, self.__class__) and self._attrs() == other._attrs()
 
     def __repr__(self):
         """
         Return the canonical string representation of this Field.
         """
-        values = ', '.join('{}={!r}'.format(name, value)
-                           for name, value in sorted(self.__attrs__().items()))
+        parameters = [
+            name for name in list_class_init_parameters(self.__class__)
+            if hasattr(self, name)
+        ]
+        values = ', '.join('{}={!r}'.format(name, getattr(self, name)) for name in parameters)
         return '{name}({values})'.format(name=self.__class__.__name__, values=values)
 
     def __setattr__(self, name, value):
@@ -315,7 +320,7 @@ class InstanceField(Field):
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given value is an instance of the specified type.
 
         Args:
             value: the value to validate.
@@ -391,7 +396,7 @@ class ModelField(InstanceField):
 
     def serialize(self, value):
         """
-        Serialize the given `Model` as a dictionary.
+        Serialize the given `Model` instance as a dictionary.
 
         Args:
             value (Model): the model to serialize.
@@ -451,7 +456,7 @@ class Bool(InstanceField):
 
 class Dict(InstanceField):
     """
-    A dict Field with a required key and value type.
+    A dictionary Field with a required key and value type.
 
     This field represents the built-in `dict` type. Each key and value will be
     serialized, deserialized, and validated with the specified key and value
@@ -509,10 +514,13 @@ class Dict(InstanceField):
 
     def serialize(self, value):
         """
-        Serialize the given value.
+        Serialize the given dictionary.
+
+        Each key and value in the dictionary will be serialized with the
+        specified key and value Field instances.
 
         Args:
-            value (dict): the value to serialize.
+            value (dict): the dictionary to serialize.
 
         Returns:
             dict: the serialized dictionary.
@@ -522,10 +530,13 @@ class Dict(InstanceField):
 
     def deserialize(self, value):
         """
-        Deserialize the given value.
+        Deserialize the given dictionary.
+
+        Each key and value in the dictionary will be deserialized with the
+        specified key and value Field instances.
 
         Args:
-            value (dict): the value to deserialize.
+            value (dict): the dictonary to deserialize.
 
         Returns:
             dict: the deserialized dictionary.
@@ -535,13 +546,19 @@ class Dict(InstanceField):
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given dictionary.
+
+        Each key and value in the dictionary will be validated with the
+        specified key and value Field instances. The dictionary will also be
+        validated to have the specified minimum number of elements and maximum
+        number of elements.
 
         Args:
-            value: the value to validate.
+            value (dict): the dictionary to validate.
 
         Raises:
-            `~serde.error.ValidationError`: when the given value is invalid.
+            `~serde.error.ValidationError`: when the given dictionary is
+                invalid.
         """
         super().validate(value)
 
@@ -564,24 +581,23 @@ class Float(InstanceField):
     """
     A float Field.
 
-    This field represents the built-in `float` type. But there are a few extra
-    options to help constrain the Field further.
+    This field represents the built-in `float` type. The Float constructor
+    accepts all keyword arguments accepted by `InstanceField`.
 
-    Consider an example model Point, with two `Float` fields, but we constrain
-    the x and y such that the Point has to be in the second quadrant.
+    Consider an example model TestMark, with a percentage `Float` field.
 
     .. doctest::
 
-        >>> class Point(Model):
-        ...     x = Float(max=0.0)
-        ...     y = Float(min=0.0)
+        >>> class TestMark(Model):
+        ...     result = Float(min=0.0, max=100.0)
 
-        >>> point = Point(-1.5, 5.5)
+        >>> TestMark(75.1)
+        TestMark(result=75.1)
 
-        >>> Point(1.5, 5.5)
+        >>> TestMark(101.5)
         Traceback (most recent call last):
             ...
-        serde.error.ValidationError: expected at most 0.0 but got 1.5
+        serde.error.ValidationError: expected at most 100.0 but got 101.5
     """
 
     def __init__(self, min=None, max=None, **kwargs):
@@ -599,10 +615,13 @@ class Float(InstanceField):
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given float.
+
+        The given value will be validated to be an instance of `float`. And is
+        required to be between the specified minimum and maximum values.
 
         Args:
-            value: the value to validate.
+            value (float): the float to validate.
 
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
@@ -620,8 +639,8 @@ class Int(InstanceField):
     """
     An integer Field.
 
-    This field represents the built-in `int` type. But there are a few extra
-    options to help constrain the Field further.
+    This field represents the built-in `int` type. The Int constructor accepts
+    all keyword arguments accepted by `InstanceField`.
 
     Consider an example model Point, with two `Int` fields, but we constrain the
     x and y such that the Point has to be in the second quadrant.
@@ -655,10 +674,13 @@ class Int(InstanceField):
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given integer.
+
+        The given value will be validated to be an instance of `int`. And is
+        required to be between the specified minimum and maximum values.
 
         Args:
-            value: the value to validate.
+            value (int): the integer to validate.
 
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
@@ -706,53 +728,63 @@ class List(InstanceField):
         serde.error.ValidationError: expected 'str' but got 'int'
     """
 
-    def __init__(self, field=None, min_length=None, max_length=None, **kwargs):
+    def __init__(self, element=None, min_length=None, max_length=None, **kwargs):
         """
         Create a new List.
 
         Args:
-            field (Field): the Field class/instance for this List's elements.
+            element (Field): the Field class/instance for this List's elements.
             min_length (int): the minimum number of elements allowed.
             max_length (int): the maximum number of elements allowed.
             **kwargs: keyword arguments for the `InstanceField` constructor.
         """
         super().__init__(list, **kwargs)
-        self.field = resolve_to_field_instance(field)
+        self.element = resolve_to_field_instance(element)
         self.min_length = min_length
         self.max_length = max_length
 
     def serialize(self, value):
         """
-        Serialize the given value.
+        Serialize the given list.
+
+        Each element in the list will be serialized with the specified element
+        Field instance.
 
         Args:
-            value (list): the value to serialize.
+            value (list): the list to serialize.
 
         Returns:
             list: the serialized list.
         """
-        value = [self.field.serialize(v) for v in value]
+        value = [self.element.serialize(v) for v in value]
         return super().serialize(value)
 
     def deserialize(self, value):
         """
-        Deserialize the given value.
+        Deserialize the given list.
+
+        Each element in the list will be deserialized with the specified element
+        Field instance.
 
         Args:
-            value (list): the value to deserialize.
+            value (list): the list to deserialize.
 
         Returns:
             list: the deserialized list.
         """
         value = super().deserialize(value)
-        return [self.field.deserialize(v) for v in value]
+        return [self.element.deserialize(v) for v in value]
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given list.
+
+        Each element in the list will be validated with the specified element
+        Field instance. The list will also be validated to have the specified
+        minimum number of elements and maximum number of elements.
 
         Args:
-            value: the value to validate.
+            value (list): the list to validate.
 
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
@@ -770,22 +802,21 @@ class List(InstanceField):
                                   .format(self.max_length, count))
 
         for v in value:
-            self.field.validate(v)
+            self.element.validate(v)
 
 
 class Str(InstanceField):
     """
     A string Field.
 
-    This field represents the built-in `str` type. But there are a few extra
-    options to help constrain the Field further.
+    This field represents the built-in `str` type.
 
     Consider an example model User
 
     .. doctest::
 
         >>> class User(Model):
-        ...     name = Str(min_length=1, strip=True)
+        ...     name = Str(min_length=1, deserializers=[lambda s: s.strip()])
         ...     address = Str(required=False)
 
         >>> user = User.from_dict({'name': '    George Clooney  '})
@@ -798,45 +829,28 @@ class Str(InstanceField):
         serde.error.ValidationError: expected at least 1 characters but got 0 characters
     """
 
-    def __init__(self, min_length=None, max_length=None, strip=False, **kwargs):
+    def __init__(self, min_length=None, max_length=None, **kwargs):
         """
         Create a new Str.
 
         Args:
             min_length (int): the minimum number of characters allowed.
             max_length (int): the maximum number of characters allowed.
-            strip (bool): whether to call `str.strip()` on the data when
-                deserializing.
             **kwargs: keyword arguments for the `InstanceField` constructor.
         """
         super().__init__(str, **kwargs)
         self.min_length = min_length
         self.max_length = max_length
-        self.strip = strip
-
-    def deserialize(self, value):
-        """
-        Deserialize the given value.
-
-        Args:
-            value (str): the value to deserialize.
-
-        Returns:
-            str: the deserialized string.
-        """
-        value = super().deserialize(value)
-
-        if self.strip:
-            value = value.strip()
-
-        return value
 
     def validate(self, value):
         """
-        Validate the deserialized value.
+        Validate the given string.
+
+        The given value will be validated to be an instance of `str`. And is
+        required to be between the specified minimum and maximum values.
 
         Args:
-            value: the value to validate.
+            value (str): the string to validate.
 
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
@@ -862,7 +876,6 @@ class Tuple(InstanceField):
     specified element type. The given element types can be specified using Field
     classes, Field instances, Model classes, or built-in types that have a
     corresponding Field type in this library.
-
 
     Consider an example person that has a name and a birthday
 
@@ -893,58 +906,67 @@ class Tuple(InstanceField):
         serde.error.ValidationError: expected 'str' but got 'int'
     """
 
-    def __init__(self, *fields, **kwargs):
+    def __init__(self, *elements, **kwargs):
         """
         Create a new Tuple.
 
         Args:
-            *fields (Field): the Field classes/instances for elements in this
+            *elements (Field): the Field classes/instances for elements in this
                 Tuple.
             **kwargs: keyword arguments for the `InstanceField` constructor.
         """
         super().__init__(tuple, **kwargs)
-        self.fields = tuple(resolve_to_field_instance(f, none_allowed=False) for f in fields)
+        self.elements = tuple(resolve_to_field_instance(e, none_allowed=False) for e in elements)
 
     def serialize(self, value):
         """
-        Serialize the given value.
+        Serialize the given tuple.
+
+        Each element in the tuple will be serialized with the specified element
+        Field instance.
 
         Args:
-            value (tuple): the value to serialize.
+            value (tuple): the tuple to serialize.
 
         Returns:
             tuple: the serialized tuple.
         """
-        return tuple(f.serialize(v) for f, v in zip_equal(self.fields, value))
+        return tuple(e.serialize(v) for e, v in zip_equal(self.elements, value))
 
     def deserialize(self, value):
         """
-        Deserialize the given value.
+        Deserialize the given tuple.
+
+        Each element in the tuple will be deserialized with the specified
+        element Field instance.
 
         Args:
-            value (tuple): the value to deserialize.
+            value (tuple): the tuple to deserialize.
 
         Returns:
             tuple: the deserialized tuple.
         """
         value = super().deserialize(value)
-        return tuple(f.deserialize(v) for f, v in zip_equal(self.fields, value))
+        return tuple(e.deserialize(v) for e, v in zip_equal(self.elements, value))
 
     def validate(self, value):
         """
-        Validate the given value according to this Field's specification.
+        Validate the given tuple.
+
+        Each element in the tuple will be validated with the specified element
+        Field instance.
 
         Args:
-            value (tuple): the value to validate.
+            value (tuple): the tuple to validate.
 
         Raises:
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
 
-        if len(self.fields) != len(value):
+        if len(self.elements) != len(value):
             raise ValidationError('expected {} elements but got {} elements'
-                                  .format(len(self.fields), len(value)))
+                                  .format(len(self.elements), len(value)))
 
-        for f, v in zip(self.fields, value):
-            f.validate(v)
+        for e, v in zip(self.elements, value):
+            e.validate(v)

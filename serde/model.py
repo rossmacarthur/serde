@@ -4,6 +4,7 @@ Defines the core Serde Model and the ModelType metaclass.
 
 import json
 from collections import OrderedDict
+from functools import wraps
 
 from .error import DeserializationError, SerializationError, ValidationError
 from .field import Field
@@ -26,6 +27,7 @@ def handle_field_errors(error_cls):
     """
     def real_decorator(func):
 
+        @wraps(func)
         def decorated_function(model, field, *args, **kwargs):
             try:
                 return func(model, field, *args, **kwargs)
@@ -42,15 +44,15 @@ def handle_field_errors(error_cls):
 
 class Fields(OrderedDict):
     """
-    An OrderedDict with additional useful methods for use on fields.
+    An OrderedDict with that allows value access with dot notation.
     """
 
     def __getattr__(self, name):
         """
-        Return keys in the dictionary like attributes.
+        Return values in the dictionary using attribute access with keys.
 
         Args:
-            name (str): the attribute lookup.
+            name (str): the dictionary key.
 
         Returns:
             Field: the field value in the dictionary.
@@ -137,7 +139,7 @@ class ModelType(type):
         validate the field values.
 
         Args:
-            fields (OrderedDict): the Model's fields.
+            fields (Fields): the Model's fields.
 
         Returns:
             callable: the __init__ method.
@@ -159,7 +161,7 @@ class ModelType(type):
                 defaults.extend(['', '    if self.{name} is None:'.format(name=name), setter])
 
         definition = 'def __init__({parameters}):'.format(parameters=', '.join(parameters))
-        lines = setters + defaults + ['', '    self.validate()']
+        lines = setters + defaults + ['', '    self.validate_all()']
 
         return create_function(definition, lines)
 
@@ -282,12 +284,12 @@ class Model(metaclass=ModelType):
         """
         field._validate(value)
 
-    def validate(self):
+    def validate_all(self):
         """
-        Validate this Model.
+        Validate all Fields on this Model, and the Model itself.
 
         This is called by the Model constructor, so this is only needed if you
-        modify attributes directly and want to validate the Model.
+        modify attributes directly and want to revalidate the Model.
         """
         for name, field in self._fields.items():
             value = getattr(self, name)
@@ -297,6 +299,16 @@ class Model(metaclass=ModelType):
                     raise ValidationError('{!r} is required'.format(name), field=field, model=self)
             else:
                 self._validate_field(field, value)
+
+        self.validate()
+
+    def validate(self):
+        """
+        Validate this Model.
+
+        Override this method to add any additional validation to the Model.
+        """
+        pass
 
     @classmethod
     def from_dict(cls, d, strict=True):

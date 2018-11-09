@@ -97,7 +97,7 @@ def test_base_1():
         email = Str()
 
     class User(Model):
-        name = Str(rename='username', strip=True)
+        name = Str(rename='username', serializers=[lambda s: s.strip()])
         age = Int(required=False)
         addresses = List(Address, required=False)
 
