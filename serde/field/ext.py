@@ -246,8 +246,3 @@ class Uuid(InstanceField):
             ~uuid.UUID: the deserialized Uuid.
         """
         return uuid.UUID(value)
-
-
-# Aliases
-URL = Url
-UUID = Uuid
