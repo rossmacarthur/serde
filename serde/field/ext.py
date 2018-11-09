@@ -249,4 +249,5 @@ class Uuid(InstanceField):
 
 
 # Aliases
+URL = Url
 UUID = Uuid
