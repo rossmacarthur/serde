@@ -452,9 +452,9 @@ class Model(metaclass=ModelType):
         Convert this Model to a dictionary.
 
         Args:
-            dict: the class of the returned dictionary. This defaults to an
-                `OrderedDict` so that the fields will be returned in the order
-                they were defined on the Model.
+            dict (type): the class of the deserialized dictionary. This defaults
+                to an `OrderedDict` so that the fields will be returned in the
+                order they were defined on the Model.
 
         Returns:
             dict: the Model serialized as a dictionary.
@@ -495,8 +495,8 @@ class Model(metaclass=ModelType):
         Dump the Model as a JSON string.
 
         Args:
-            dict: the class of the deserialized dictionary that is passed to
-                `json.dumps`
+            dict (type): the class of the deserialized dictionary that is passed
+                to `json.dumps`.
             **kwargs: extra keyword arguments to pass directly to `json.dumps`.
 
         Returns:
@@ -510,8 +510,8 @@ class Model(metaclass=ModelType):
         Dump the Model as a TOML string.
 
         Args:
-            dict: the class of the deserialized dictionary that is passed to
-                `toml.dumps`.
+            dict (type): the class of the deserialized dictionary that is passed
+                to `toml.dumps`.
             **kwargs: extra keyword arguments to pass directly to `toml.dumps`.
 
         Returns:
@@ -525,8 +525,8 @@ class Model(metaclass=ModelType):
         Dump the Model as a YAML string.
 
         Args:
-            dict: the class of the deserialized dictionary that is passed to
-                `yaml.dump`.
+            dict (type): the class of the deserialized dictionary that is passed
+                to `yaml.dumps`.
             **kwargs: extra keyword arguments to pass directly to `yaml.dump`.
 
         Returns:
