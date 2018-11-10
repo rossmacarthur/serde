@@ -6,8 +6,7 @@ import uuid
 
 import validators
 
-from serde.error import ValidationError
-
+from ..error import ValidationError
 from .core import Field, Instance, Str
 
 
@@ -22,6 +21,7 @@ class Choice(Field):
 
         >>> class Car(Model):
         ...     color = Choice(['black', 'blue', 'red'])
+
         >>> car = Car.from_dict({'color': 'blue'})
         >>> car.color
         'blue'
@@ -65,6 +65,7 @@ class Domain(Str):
 
         >>> class Service(Model):
         ...     domain = Domain()
+
         >>> service = Service.from_dict({'domain': 'www.github.com'})
         >>> service.domain
         'www.github.com'
@@ -99,6 +100,7 @@ class Email(Str):
 
         >>> class User(Model):
         ...     email = Email()
+
         >>> user = User.from_dict({'email': 'john@smith.com'})
         >>> user.email
         'john@smith.com'
@@ -133,6 +135,7 @@ class Slug(Str):
 
         >>> class Article(Model):
         ...     slug = Slug()
+
         >>> article = Article.from_dict({'slug': 'hello-world'})
         >>> article.slug
         'hello-world'
@@ -167,6 +170,7 @@ class Url(Str):
 
         >>> class Service(Model):
         ...     url = Url()
+
         >>> service = Service.from_dict({'url': 'https://github.com/github'})
         >>> service.url
         'https://github.com/github'
@@ -202,6 +206,7 @@ class Uuid(Instance):
 
         >>> class User(Model):
         ...     key = Uuid()
+
         >>> user = User.from_dict({'key': '6af21dcd-e479-4af6-a708-0cbc8e2438c1'})
         >>> user.key
         UUID('6af21dcd-e479-4af6-a708-0cbc8e2438c1')

@@ -2,8 +2,8 @@
 Core Field types for Serde Models.
 """
 
-from serde.error import SerdeError, ValidationError
-from serde.util import list_class_init_parameters, zip_equal
+from ..error import SerdeError, ValidationError
+from ..util import list_class_init_parameters, zip_equal
 
 
 def resolve_to_field_instance(thing, none_allowed=True):

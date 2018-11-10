@@ -3,12 +3,12 @@ Serde - A framework for serializing and deserializing Python objects.
 """
 
 
-from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
-from serde.field import (
+from .error import DeserializationError, SerdeError, SerializationError, ValidationError
+from .field import (
     Bool, Boolean, Choice, Dict, Dictionary, Domain, Email, Field, Float,
     Instance, Int, Integer, List, Nested, Slug, Str, String, Tuple, Url, Uuid
 )
-from serde.model import Model
+from .model import Model
 
 
 __all__ = [
