@@ -6,7 +6,7 @@ Version 0.2.0
 
 *Unreleased*
 
-- Support serialization and deserialization between TOML and YAML (`#16`_)
+- Support conversion between TOML, YAML (`#16`_)
 - Add Field aliases (`#14`_)
 - Support arbitrary serializers and deserializers (`#6`_)
 - General internal enhancements (`#5`_)
