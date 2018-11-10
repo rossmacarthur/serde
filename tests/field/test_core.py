@@ -3,7 +3,7 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde.error import SerdeError, ValidationError
-from serde.field import Bool, Dict, Field, Float, InstanceField, Int, List, ModelField, Str, Tuple
+from serde.field import Bool, Dict, Field, Float, Instance, Int, List, Nested, Str, Tuple
 from serde.field.core import resolve_to_field_instance
 from serde.model import Model
 
@@ -80,22 +80,22 @@ class TestField:
             field.validate(value)
 
 
-class TestInstanceField:
+class TestInstance:
 
     def test___init__(self):
-        example = InstanceField(int)
+        example = Instance(int)
 
         assert example.type == int
         assert example.required is True
         assert example.validators == []
 
-        example = InstanceField(int, required=False, validators=[None])
+        example = Instance(int, required=False, validators=[None])
         assert example.type == int
         assert example.required is False
         assert example.validators == [None]
 
     def test_serialize(self):
-        example = InstanceField(int)
+        example = Instance(int)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes all values through.
@@ -103,7 +103,7 @@ class TestInstanceField:
             example.serialize(value) == value
 
     def test_deserialize(self):
-        example = InstanceField(int)
+        example = Instance(int)
 
         # Validation only happens when this Field is part of a Model. So it
         # still passes all values through.
@@ -111,7 +111,7 @@ class TestInstanceField:
             example.deserialize(value) == value
 
     def test_validate(self):
-        example = InstanceField(int)
+        example = Instance(int)
 
         # All integers should pass the validation.
         example.validate(-1000)
@@ -408,7 +408,7 @@ def test_resolve_to_field_instance():
     class Example(Model):
         pass
 
-    assert resolve_to_field_instance(Example) == ModelField(Example)
+    assert resolve_to_field_instance(Example) == Nested(Example)
 
     # All the base types should resolve correctly
     assert resolve_to_field_instance(bool) == Bool()

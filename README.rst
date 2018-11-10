@@ -45,7 +45,7 @@ First describe your data
 
     class Package(Model):
         name = String(rename='packageName')
-        version = ModelField(Version)
+        version = Nested(Version)
 
 Easily instantiate and use a model
 

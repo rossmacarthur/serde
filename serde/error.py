@@ -8,25 +8,29 @@ class SerdeError(Exception):
     A generic error that can occur in this package.
     """
 
-    def __init__(self, message, cause=None, field=None, model=None):
+    def __init__(self, message, cause=None, value=None, field=None, model=None):
         """
         Create a new SerdeError.
 
         Args:
             message (str): a message describing the error that occurred.
-            field (~serde.field.Field): the field context.
-            model (~serde.model.Model): the model context.
+            cause (Exception): the exception that caused this error.
+            value: the Field value context.
+            field (~serde.field.Field): the Field context.
+            model (~serde.model.Model): the Model context.
         """
         super().__init__(message)
         self.cause = cause
+        self.value = value
         self.field = field
         self.model = model
 
-    def add_context(self, cause=None, field=None, model=None):
+    def add_context(self, cause=None, value=None, field=None, model=None):
         """
-        Add cause/field/model context to this SerdeError.
+        Add cause/value/field/model context to this SerdeError.
         """
         self.cause = cause
+        self.value = value
         self.field = field
         self.model = model
 
@@ -34,9 +38,11 @@ class SerdeError(Exception):
         """
         Return the canonical string representation of this SerdeError.
         """
-        return '<{}.{}: {}>'.format(self.__class__.__module__,
-                                    self.__class__.__qualname__,
-                                    str(self))
+        return '<{}.{}: {}>'.format(
+            self.__class__.__module__,
+            self.__class__.__qualname__,
+            str(self)
+        )
 
     def __str__(self):
         """
