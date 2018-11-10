@@ -3,12 +3,51 @@ Defines the core Serde Model and the ModelType metaclass.
 """
 
 import json
+import sys
 from collections import OrderedDict
 from functools import wraps
 
-from .error import DeserializationError, SerializationError, ValidationError
+from .error import DeserializationError, SerdeError, SerializationError, ValidationError
 from .field import Field
 from .util import create_function
+
+
+try:
+    import toml
+except ImportError:
+    pass
+
+try:
+    from ruamel import yaml
+except ImportError:
+    pass
+
+
+def requires_optional_feature(package_name):
+    """
+    Returns a decorator that handles missing optional modules.
+
+    Args:
+        package_name (str): the package to attempt to import.
+        pypi_name (str): the name of this package on PyPI. This is just used for
+            the exception message.
+
+    Returns:
+        function: the real decorator.
+    """
+    def real_decorator(func):
+
+        @wraps(func)
+        def decorated_function(*args, **kwargs):
+            if package_name not in sys.modules:
+                raise SerdeError('this feature requires the {!r} package to be installed'
+                                 .format(package_name))
+
+            return func(*args, **kwargs)
+
+        return decorated_function
+
+    return real_decorator
 
 
 def handle_field_errors(error_cls):
@@ -383,9 +422,47 @@ class Model(metaclass=ModelType):
         """
         return cls.from_dict(json.loads(s, **kwargs), strict=strict)
 
-    def to_dict(self):
+    @classmethod
+    @requires_optional_feature('toml')
+    def from_toml(cls, s, strict=True, **kwargs):
+        """
+        Load the Model from a TOML string.
+
+        Args:
+            s (str): the TOML string.
+            strict (bool): if set to False then no exception will be raised when
+                unknown dictionary keys are present.
+            **kwargs: extra keyword arguments to pass directly to `toml.loads`.
+
+        Returns:
+            Model: an instance of this Model.
+        """
+        return cls.from_dict(toml.loads(s, **kwargs), strict=strict)
+
+    @classmethod
+    @requires_optional_feature('ruamel.yaml')
+    def from_yaml(cls, s, strict=True, **kwargs):
+        """
+        Load the Model from a YAML string.
+
+        Args:
+            s (str): the YAML string.
+            strict (bool): if set to False then no exception will be raised when
+                unknown dictionary keys are present.
+            **kwargs: extra keyword arguments to pass directly to
+                `yaml.safe_load`.
+
+        Returns:
+            Model: an instance of this Model.
+        """
+        return cls.from_dict(yaml.safe_load(s, **kwargs), strict=strict)
+
+    def to_dict(self, dict=None):
         """
         Convert this Model to a dictionary.
+
+        Args:
+            dict: the class of the returned dictionary.
 
         Returns:
             dict: the Model serialized as a dictionary.
@@ -408,7 +485,10 @@ class Model(metaclass=ModelType):
             ...     'age': 42
             ... }
         """
-        result = OrderedDict()
+        if dict is None:
+            dict = OrderedDict
+
+        result = dict()
 
         for name, field in self._fields.items():
             value = getattr(self, name)
@@ -418,14 +498,43 @@ class Model(metaclass=ModelType):
 
         return result
 
-    def to_json(self, **kwargs):
+    def to_json(self, dict=None, **kwargs):
         """
         Dump the Model as a JSON string.
 
         Args:
+            dict: the class of the deserialized dictionary.
             **kwargs: extra keyword arguments to pass directly to `json.dumps`.
 
         Returns:
             str: a JSON representation of this Model.
         """
-        return json.dumps(self.to_dict(), **kwargs)
+        return json.dumps(self.to_dict(dict=dict), **kwargs)
+
+    @requires_optional_feature('toml')
+    def to_toml(self, dict=None, **kwargs):
+        """
+        Dump the Model as a TOML string.
+
+        Args:
+            dict: the class of the deserialized dictionary.
+            **kwargs: extra keyword arguments to pass directly to `toml.dumps`.
+
+        Returns:
+            str: a TOML representation of this Model.
+        """
+        return toml.dumps(self.to_dict(dict=dict), **kwargs)
+
+    @requires_optional_feature('ruamel.yaml')
+    def to_yaml(self, dict=None, **kwargs):
+        """
+        Dump the Model as a YAML string.
+
+        Args:
+            dict: the class of the deserialized dictionary.
+            **kwargs: extra keyword arguments to pass directly to `yaml.dump`.
+
+        Returns:
+            str: a TOML representation of this Model.
+        """
+        return yaml.dump(self.to_dict(dict=dict), **kwargs)

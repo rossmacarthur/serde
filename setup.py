@@ -38,6 +38,14 @@ install_requirements = [
     'validators>=0.12.0<0.13.0'
 ]
 
+toml_requirements = [
+    'toml>=0.10.0<0.11.0'
+]
+
+yaml_requirements = [
+    'ruamel.yaml>=0.15.0<0.16.0'
+]
+
 lint_requirements = [
     'flake8',
     'flake8-docstrings',
@@ -66,10 +74,14 @@ setup(
     packages=find_packages(exclude=['docs', 'tests']),
     version=version,
     install_requires=install_requirements,
-    extras_require={'linting': lint_requirements,
-                    'testing': test_requirements,
-                    'documenting': document_requirements,
-                    'packaging': package_requirements},
+    extras_require={
+        'toml': toml_requirements,
+        'yaml': yaml_requirements,
+        'linting': lint_requirements,
+        'testing': test_requirements,
+        'documenting': document_requirements,
+        'packaging': package_requirements
+    },
     python_requires='>=3.4',
 
     author='Ross MacArthur',
