@@ -1,6 +1,8 @@
+from unittest import mock
+
 from pytest import raises
 
-from serde.error import DeserializationError, SerializationError, ValidationError
+from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
 from serde.field import Bool, Float, Int, List, ModelField, Str
 from serde.model import Model
 
@@ -295,6 +297,13 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': {'x': 10.5}})
 
+    def test_from_json(self):
+        class Example(Model):
+            a = Int()
+            b = Str()
+
+        assert Example.from_json('{"a": 50, "b": "test"}') == Example(a=50, b='test')
+
     def test_to_json(self):
         class Example(Model):
             a = Int()
@@ -303,9 +312,40 @@ class TestModel:
         example = Example(a=50, b='test')
         assert example.to_json(sort_keys=True) == '{"a": 50, "b": "test"}'
 
-    def test_from_json(self):
+    def test_from_toml(self):
         class Example(Model):
             a = Int()
             b = Str()
 
-        assert Example.from_json('{"a": 50, "b": "test"}') == Example(a=50, b='test')
+        with mock.patch('serde.model.toml', None):
+            with raises(SerdeError):
+                Example.from_toml('a = 50\nb = "test"\n')
+
+        assert Example.from_toml('a = 50\nb = "test"\n') == Example(a=50, b='test')
+
+    def test_to_toml(self):
+        class Example(Model):
+            a = Int()
+            b = Str()
+
+        example = Example(a=50, b='test')
+        assert example.to_toml() == 'a = 50\nb = "test"\n'
+
+    def test_from_yaml(self):
+        class Example(Model):
+            a = Int()
+            b = Str()
+
+        with mock.patch('serde.model.yaml', None):
+            with raises(SerdeError):
+                Example.from_yaml('a: 50\nb: test\n')
+
+        assert Example.from_yaml('a: 50\nb: test\n') == Example(a=50, b='test')
+
+    def test_to_yaml(self):
+        class Example(Model):
+            a = Int()
+            b = Str()
+
+        example = Example(a=50, b='test')
+        assert example.to_yaml(dict=dict, default_flow_style=False) == 'a: 50\nb: test\n'

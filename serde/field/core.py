@@ -381,17 +381,21 @@ class ModelField(InstanceField):
         Person(name='Beyonce', birthday=Birthday(day=4, month='September'))
     """
 
-    def __init__(self, model, strict=True, **kwargs):
+    def __init__(self, model, dict=None, strict=True, **kwargs):
         """
         Create a new ModelField.
 
         Args:
             model: the Model class that this Field wraps.
+            dict (type): the class of the deserialized dictionary. This defaults
+                to an `OrderedDict` so that the fields will be returned in the
+                order they were defined on the Model.
             strict (bool): if set to False then no exception will be raised when
                 unknown dictionary keys are present when deserializing.
             **kwargs: keyword arguments for the `InstanceField` constructor.
         """
         super().__init__(model, **kwargs)
+        self.dict = dict
         self.strict = strict
 
     def serialize(self, value):
@@ -404,7 +408,7 @@ class ModelField(InstanceField):
         Returns:
             dict: the serialized dictionary.
         """
-        value = value.to_dict()
+        value = value.to_dict(dict=self.dict)
         return super().serialize(value)
 
     def deserialize(self, value):
