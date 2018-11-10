@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 
-from serde import Bool, Dict, Field, Float, Int, List, Model, ModelField, Str, Tuple
+from serde import Bool, Dict, Field, Float, Int, List, Model, Nested, Str, Tuple
 
 
 def test_base_0():
@@ -124,7 +124,7 @@ def test_base_2():
 
     class Package(Model):
         name = Str(rename='packageName')
-        version = ModelField(Version)
+        version = Nested(Version)
 
     # Create an instance of the Model
     package = Package(name='requests', version=Version(2, 19, 1))

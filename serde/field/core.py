@@ -37,15 +37,15 @@ def resolve_to_field_instance(thing, none_allowed=True):
     except TypeError:
         pass
 
-    # If the thing is a subclass of Model then create a ModelField instance.
+    # If the thing is a subclass of Model then create a Nested instance.
     try:
         if issubclass(thing, Model):
-            return ModelField(thing)
+            return Nested(thing)
     except TypeError:
         pass
 
     # If the thing is a built-in type that we support then create an
-    # InstanceField with that type.
+    # Instance with that type.
     field_class = {
         bool: Bool,
         dict: Dict,
@@ -59,8 +59,10 @@ def resolve_to_field_instance(thing, none_allowed=True):
     if field_class is not None:
         return field_class()
 
-    raise TypeError('{!r} is not a Field, an instance of a Field, or a supported type'
-                    .format(thing))
+    raise TypeError(
+        '{!r} is not a Field, an instance of a Field, or a supported type'
+        .format(thing)
+    )
 
 
 class Field:
@@ -128,8 +130,10 @@ class Field:
     # This is so we can get the order the fields were instantiated in.
     __counter = 0
 
-    def __init__(self, rename=None, required=True, default=None,
-                 serializers=None, deserializers=None, validators=None):
+    def __init__(
+        self, rename=None, required=True, default=None,
+        serializers=None, deserializers=None, validators=None
+    ):
         """
         Create a new Field.
 
@@ -302,14 +306,14 @@ class Field:
         pass
 
 
-class InstanceField(Field):
+class Instance(Field):
     """
     A `Field` that validates a value is an instance of the given type.
     """
 
     def __init__(self, type, **kwargs):
         """
-        Create a new InstanceField.
+        Create a new Instance.
 
         Args:
             type: the type that this Field wraps.
@@ -332,11 +336,13 @@ class InstanceField(Field):
         super().validate(value)
 
         if not isinstance(value, self.type):
-            raise ValidationError('expected {!r} but got {!r}'
-                                  .format(self.type.__name__, value.__class__.__name__))
+            raise ValidationError(
+                'expected {!r} but got {!r}'
+                .format(self.type.__name__, value.__class__.__name__)
+            )
 
 
-class ModelField(InstanceField):
+class Nested(Instance):
     """
     A `Field` for `~serde.model.Model` fields.
 
@@ -353,7 +359,7 @@ class ModelField(InstanceField):
 
         >>> class Person(Model):
         ...     name = Str()
-        ...     birthday = ModelField(Birthday, required=False)
+        ...     birthday = Nested(Birthday, required=False)
 
         >>> person = Person('Beyonce', birthday=Birthday(4, 'September'))
         >>> person.name
@@ -383,7 +389,7 @@ class ModelField(InstanceField):
 
     def __init__(self, model, dict=None, strict=True, **kwargs):
         """
-        Create a new ModelField.
+        Create a new Nested.
 
         Args:
             model: the Model class that this Field wraps.
@@ -392,7 +398,7 @@ class ModelField(InstanceField):
                 order they were defined on the Model.
             strict (bool): if set to False then no exception will be raised when
                 unknown dictionary keys are present when deserializing.
-            **kwargs: keyword arguments for the `InstanceField` constructor.
+            **kwargs: keyword arguments for the `Instance` constructor.
         """
         super().__init__(model, **kwargs)
         self.dict = dict
@@ -425,12 +431,12 @@ class ModelField(InstanceField):
         return super().deserialize(value)
 
 
-class Bool(InstanceField):
+class Bool(Instance):
     """
     A boolean Field.
 
     This field represents the built-in `bool` type. The Bool constructor accepts
-    all keyword arguments accepted by `InstanceField`.
+    all keyword arguments accepted by `Instance`.
 
     Consider an example model with two `Bool` fields, one with extra options and
     one with no arguments.
@@ -453,12 +459,12 @@ class Bool(InstanceField):
         Create a new Bool.
 
         Args:
-            **kwargs: keyword arguments for the `InstanceField` constructor.
+            **kwargs: keyword arguments for the `Instance` constructor.
         """
         super().__init__(bool, **kwargs)
 
 
-class Dict(InstanceField):
+class Dict(Instance):
     """
     A dictionary Field with a required key and value type.
 
@@ -508,7 +514,7 @@ class Dict(InstanceField):
             value (Field): the Field class/instance for values in this Dict.
             min_length (int): the minimum number of elements allowed.
             max_length (int): the maximum number of elements allowed.
-            **kwargs: keyword arguments for the `InstanceField` constructor.
+            **kwargs: keyword arguments for the `Instance` constructor.
         """
         super().__init__(dict, **kwargs)
         self.key = resolve_to_field_instance(key)
@@ -569,24 +575,28 @@ class Dict(InstanceField):
         count = len(value.keys())
 
         if self.min_length is not None and count < self.min_length:
-            raise ValidationError('expected at least {} elements but got {} elements'
-                                  .format(self.min_length, count))
+            raise ValidationError(
+                'expected at least {} elements but got {} elements'
+                .format(self.min_length, count)
+            )
 
         if self.max_length is not None and count > self.max_length:
-            raise ValidationError('expected at most {} elements but got {} elements'
-                                  .format(self.max_length, count))
+            raise ValidationError(
+                'expected at most {} elements but got {} elements'
+                .format(self.max_length, count)
+            )
 
         for k, v in value.items():
             self.key.validate(k)
             self.value.validate(v)
 
 
-class Float(InstanceField):
+class Float(Instance):
     """
     A float Field.
 
     This field represents the built-in `float` type. The Float constructor
-    accepts all keyword arguments accepted by `InstanceField`.
+    accepts all keyword arguments accepted by `Instance`.
 
     Consider an example model TestMark, with a percentage `Float` field.
 
@@ -611,7 +621,7 @@ class Float(InstanceField):
         Args:
             min (float): the minimum value allowed.
             max (float): the maximum value allowed.
-            **kwargs: keyword arguments for the `InstanceField` constructor.
+            **kwargs: keyword arguments for the `Instance` constructor.
         """
         super().__init__(float, **kwargs)
         self.min = min
@@ -633,18 +643,24 @@ class Float(InstanceField):
         super().validate(value)
 
         if self.min is not None and value < self.min:
-            raise ValidationError('expected at least {} but got {}'.format(self.min, value))
+            raise ValidationError(
+                'expected at least {} but got {}'
+                .format(self.min, value)
+            )
 
         if self.max is not None and value > self.max:
-            raise ValidationError('expected at most {} but got {}'.format(self.max, value))
+            raise ValidationError(
+                'expected at most {} but got {}'
+                .format(self.max, value)
+            )
 
 
-class Int(InstanceField):
+class Int(Instance):
     """
     An integer Field.
 
     This field represents the built-in `int` type. The Int constructor accepts
-    all keyword arguments accepted by `InstanceField`.
+    all keyword arguments accepted by `Instance`.
 
     Consider an example model Point, with two `Int` fields, but we constrain the
     x and y such that the Point has to be in the second quadrant.
@@ -670,7 +686,7 @@ class Int(InstanceField):
         Args:
             min (int): the minimum value allowed.
             max (int): the maximum value allowed.
-            **kwargs: keyword arguments for the `InstanceField` constructor.
+            **kwargs: keyword arguments for the `Instance` constructor.
         """
         super().__init__(int, **kwargs)
         self.min = min
@@ -692,13 +708,19 @@ class Int(InstanceField):
         super().validate(value)
 
         if self.min is not None and value < self.min:
-            raise ValidationError('expected at least {} but got {}'.format(self.min, value))
+            raise ValidationError(
+                'expected at least {!r} but got {!r}'
+                .format(self.min, value)
+            )
 
         if self.max is not None and value > self.max:
-            raise ValidationError('expected at most {} but got {}'.format(self.max, value))
+            raise ValidationError(
+                'expected at most {!r} but got {!r}'
+                .format(self.max, value)
+            )
 
 
-class List(InstanceField):
+class List(Instance):
     """
     A list Field with a required element type.
 
@@ -740,7 +762,7 @@ class List(InstanceField):
             element (Field): the Field class/instance for this List's elements.
             min_length (int): the minimum number of elements allowed.
             max_length (int): the maximum number of elements allowed.
-            **kwargs: keyword arguments for the `InstanceField` constructor.
+            **kwargs: keyword arguments for the `Instance` constructor.
         """
         super().__init__(list, **kwargs)
         self.element = resolve_to_field_instance(element)
@@ -798,18 +820,22 @@ class List(InstanceField):
         count = len(value)
 
         if self.min_length is not None and count < self.min_length:
-            raise ValidationError('expected at least {} elements but got {} elements'
-                                  .format(self.min_length, count))
+            raise ValidationError(
+                'expected at least {!r} elements but got {!r} elements'
+                .format(self.min_length, count)
+            )
 
         if self.max_length is not None and count > self.max_length:
-            raise ValidationError('expected at most {} elements but got {} elements'
-                                  .format(self.max_length, count))
+            raise ValidationError(
+                'expected at most {!r} elements but got {!r} elements'
+                .format(self.max_length, count)
+            )
 
         for v in value:
             self.element.validate(v)
 
 
-class Str(InstanceField):
+class Str(Instance):
     """
     A string Field.
 
@@ -840,7 +866,7 @@ class Str(InstanceField):
         Args:
             min_length (int): the minimum number of characters allowed.
             max_length (int): the maximum number of characters allowed.
-            **kwargs: keyword arguments for the `InstanceField` constructor.
+            **kwargs: keyword arguments for the `Instance` constructor.
         """
         super().__init__(str, **kwargs)
         self.min_length = min_length
@@ -864,15 +890,19 @@ class Str(InstanceField):
         count = len(value)
 
         if self.min_length is not None and count < self.min_length:
-            raise ValidationError('expected at least {} characters but got {} characters'
-                                  .format(self.min_length, count))
+            raise ValidationError(
+                'expected at least {!r} characters but got {!r} characters'
+                .format(self.min_length, count)
+            )
 
         if self.max_length is not None and count > self.max_length:
-            raise ValidationError('expected at most {} characters but got {} characters'
-                                  .format(self.max_length, count))
+            raise ValidationError(
+                'expected at most {!r} characters but got {!r} characters'
+                .format(self.max_length, count)
+            )
 
 
-class Tuple(InstanceField):
+class Tuple(Instance):
     """
     A tuple Field with required element types.
 
@@ -917,7 +947,7 @@ class Tuple(InstanceField):
         Args:
             *elements (Field): the Field classes/instances for elements in this
                 Tuple.
-            **kwargs: keyword arguments for the `InstanceField` constructor.
+            **kwargs: keyword arguments for the `Instance` constructor.
         """
         super().__init__(tuple, **kwargs)
         self.elements = tuple(resolve_to_field_instance(e, none_allowed=False) for e in elements)
@@ -969,8 +999,10 @@ class Tuple(InstanceField):
         super().validate(value)
 
         if len(self.elements) != len(value):
-            raise ValidationError('expected {} elements but got {} elements'
-                                  .format(len(self.elements), len(value)))
+            raise ValidationError(
+                'expected {!r} elements but got {!r} elements'
+                .format(len(self.elements), len(value))
+            )
 
         for e, v in zip(self.elements, value):
             e.validate(v)

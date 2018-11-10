@@ -9,7 +9,7 @@ Model
 -----
 
 .. autoclass:: serde.model.Model
-    :members: from_dict, from_json, to_dict, to_json, validate
+    :members:
 
 
 Core Fields
@@ -18,10 +18,10 @@ Core Fields
 .. autoclass:: serde.field.Field
     :members: __init__, serialize, deserialize, validate
 
-.. autoclass:: serde.field.ModelField
+.. autoclass:: serde.field.Nested
     :members: __init__
 
-.. autoclass:: serde.field.InstanceField
+.. autoclass:: serde.field.Instance
     :members: __init__
 
 .. autoclass:: serde.field.Bool

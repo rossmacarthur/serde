@@ -8,7 +8,7 @@ import validators
 
 from serde.error import ValidationError
 
-from .core import Field, InstanceField, Str
+from .core import Field, Instance, Str
 
 
 class Choice(Field):
@@ -191,7 +191,7 @@ class Url(Str):
             raise ValidationError('{!r} is not a valid url'.format(value))
 
 
-class Uuid(InstanceField):
+class Uuid(Instance):
     """
     A `~uuid.UUID` field.
 
@@ -218,7 +218,7 @@ class Uuid(InstanceField):
         Create a new Uuid.
 
         Args:
-            **kwargs: keyword arguments for the `InstanceField` constructor.
+            **kwargs: keyword arguments for the `Instance` constructor.
         """
         super().__init__(uuid.UUID, **kwargs)
 

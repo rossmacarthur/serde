@@ -3,7 +3,7 @@ from unittest import mock
 from pytest import raises
 
 from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
-from serde.field import Bool, Float, Int, List, ModelField, Str
+from serde.field import Bool, Float, Int, List, Nested, Str
 from serde.model import Model
 
 
@@ -135,8 +135,8 @@ class TestModel:
         class Example(Model):
             a = Int(validators=[assert_value_between_0_and_20])
             b = Bool(required=False, default=False)
-            c = ModelField(SubExample, required=False)
-            d = ModelField(SubExample)
+            c = Nested(SubExample, required=False)
+            d = Nested(SubExample)
 
         # Just passing in required
         example = Example(a=5, d=SubExample(x=10))
@@ -182,7 +182,7 @@ class TestModel:
 
         class Example(Model):
             a = List(Int)
-            b = ModelField(SubExample)
+            b = Nested(SubExample)
 
         assert (hash(Example(a=[5], b=SubExample(x=10.5)))
                 == hash(Example(a=[5], b=SubExample(x=10.5))))
@@ -206,7 +206,7 @@ class TestModel:
 
         class Example(Model):
             a = Int(rename='d')
-            b = ModelField(SubExample)
+            b = Nested(SubExample)
             c = Bool(required=False)
 
         example = Example(a=5, b=SubExample(x=10.5))
@@ -261,7 +261,7 @@ class TestModel:
 
         class Example(Model):
             a = Int()
-            b = ModelField(SubExample)
+            b = Nested(SubExample)
             c = Bool(required=False)
 
         example = Example(a=5, b=SubExample(x=10.5))
