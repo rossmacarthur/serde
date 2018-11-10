@@ -15,12 +15,14 @@ toml = try_import('toml')
 yaml = try_import('ruamel.yaml')
 
 
-def requires_module(module):
+def requires_module(module, package=None):
     """
     Returns a decorator that handles missing optional modules.
 
     Args:
         module (str): the module to check is imported.
+        package (str): the PyPI package name. This is only used for the
+            exception message.
 
     Returns:
         function: the real decorator.
@@ -31,7 +33,7 @@ def requires_module(module):
         def decorated_function(*args, **kwargs):
             if not globals()[module]:
                 raise SerdeError('this feature requires the {!r} package to be installed'
-                                 .format(module))
+                                 .format(package or module))
 
             return func(*args, **kwargs)
 
@@ -430,7 +432,7 @@ class Model(metaclass=ModelType):
         return cls.from_dict(toml.loads(s, **kwargs), strict=strict)
 
     @classmethod
-    @requires_module('yaml')
+    @requires_module('yaml', package='ruamel.yaml')
     def from_yaml(cls, s, strict=True, **kwargs):
         """
         Load the Model from a YAML string.
@@ -519,7 +521,7 @@ class Model(metaclass=ModelType):
         """
         return toml.dumps(self.to_dict(dict=dict), **kwargs)
 
-    @requires_module('yaml')
+    @requires_module('yaml', package='ruamel.yaml')
     def to_yaml(self, dict=None, **kwargs):
         """
         Dump the Model as a YAML string.
