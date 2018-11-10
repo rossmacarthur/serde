@@ -528,7 +528,7 @@ class Model(metaclass=ModelType):
 
         Args:
             dict (type): the class of the deserialized dictionary that is passed
-                to `yaml.dumps`.
+                to `yaml.dump`.
             **kwargs: extra keyword arguments to pass directly to `yaml.dump`.
 
         Returns:
