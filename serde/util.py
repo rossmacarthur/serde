@@ -17,6 +17,9 @@ def try_import(name, package=None):
     Args:
         name (str): the name to import.
         package (str): the package this module belongs to.
+
+    Returns:
+        module: the imported module or None.
     """
     try:
         return importlib.import_module(name, package=package)
