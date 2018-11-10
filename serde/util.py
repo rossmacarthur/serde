@@ -3,10 +3,25 @@ Utility functions for Serde.
 """
 
 import hashlib
+import importlib
 import inspect
 import linecache
 import re
 from itertools import zip_longest
+
+
+def try_import(name, package=None):
+    """
+    Try import the given library, ignoring ImportErrors.
+
+    Args:
+        name (str): the name to import.
+        package (str): the package this module belongs to.
+    """
+    try:
+        return importlib.import_module(name, package=package)
+    except ImportError:
+        pass
 
 
 def zip_equal(*iterables):

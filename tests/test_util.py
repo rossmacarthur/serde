@@ -1,8 +1,17 @@
 import traceback
+import types
 
 from pytest import raises
 
-from serde.util import create_function, zip_equal
+from serde.util import create_function, try_import, zip_equal
+
+
+def test_try_import():
+    # Check that the returned value is a module.
+    assert isinstance(try_import('toml'), types.ModuleType)
+
+    # Check that the returned value is None.
+    assert try_import('not_a_real_package_i_hope') is None
 
 
 def test_zip_equal():

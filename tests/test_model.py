@@ -1,5 +1,3 @@
-import sys
-from copy import deepcopy
 from unittest import mock
 
 from pytest import raises
@@ -319,8 +317,7 @@ class TestModel:
             a = Int()
             b = Str()
 
-        with mock.patch.dict('sys.modules'):
-            del sys.modules['toml']
+        with mock.patch('serde.model.toml', None):
             with raises(SerdeError):
                 Example.from_toml('a = 50\nb = "test"\n')
 
@@ -338,6 +335,10 @@ class TestModel:
         class Example(Model):
             a = Int()
             b = Str()
+
+        with mock.patch('serde.model.yaml', None):
+            with raises(SerdeError):
+                Example.from_yaml('a: 50\nb: test\n')
 
         assert Example.from_yaml('a: 50\nb: test\n') == Example(a=50, b='test')
 
