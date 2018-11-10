@@ -18,11 +18,11 @@ install: ## Install package.
 	$(VIRTUAL_ENV)/bin/pip install -e .
 
 install-travis: ## Install package and linting and testing dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[linting,testing]"
+	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml,linting,testing]"
 	$(VIRTUAL_ENV)/bin/pip install codecov
 
 install-all: ## Install package and development dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[linting,testing,documenting,packaging]"
+	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml,linting,testing,documenting,packaging]"
 
 lint: ## Run all lints.
 	$(VIRTUAL_ENV)/bin/flake8 --max-complexity 10 .
