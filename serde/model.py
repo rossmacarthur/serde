@@ -396,8 +396,9 @@ class Model(metaclass=ModelType):
             ...     dogs_name = Str(required=False)
             ...
             ...     def validate(self):
-            ...         assert not (self.cats_name and self.dogs_name), \\
-            ...             'No one is a cat *and* a dog person!'
+            ...         msg = 'No one is a cat *and* a dog person!'
+            ...         assert not (self.cats_name and self.dogs_name), msg
+            ...
 
             >>> owner = Owner(cats_name='Luna', dogs_name='Max')
             Traceback (most recent call last):
