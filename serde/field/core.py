@@ -3,7 +3,7 @@ Core Field types for Serde Models.
 """
 
 from ..error import SerdeError, ValidationError
-from ..util import list_class_init_parameters, zip_equal
+from ..util import zip_equal
 
 
 def resolve_to_field_instance(thing, none_allowed=True):
@@ -183,17 +183,6 @@ class Field:
         Whether two Fields are the same.
         """
         return isinstance(other, self.__class__) and self._attrs() == other._attrs()
-
-    def __repr__(self):
-        """
-        Return the canonical string representation of this Field.
-        """
-        parameters = [
-            name for name in list_class_init_parameters(self.__class__)
-            if hasattr(self, name)
-        ]
-        values = ', '.join('{}={!r}'.format(name, getattr(self, name)) for name in parameters)
-        return '{name}({values})'.format(name=self.__class__.__name__, values=values)
 
     def __setattr__(self, name, value):
         """
@@ -377,14 +366,19 @@ class Nested(Instance):
         ...     }
         ... }
 
-        >>> Person.from_dict({
+        >>> person = Person.from_dict({
         ...     'name': 'Beyonce',
         ...     'birthday': {
         ...         'day': 4,
         ...         'month': 'September'
         ...     }
         ... })
-        Person(name='Beyonce', birthday=Birthday(day=4, month='September'))
+        >>> person.name
+        'Beyonce'
+        >>> person.birthday.day
+        4
+        >>> person.birthday.month
+        'September'
     """
 
     def __init__(self, model, dict=None, strict=True, **kwargs):
@@ -605,8 +599,9 @@ class Float(Instance):
         >>> class TestMark(Model):
         ...     result = Float(min=0.0, max=100.0)
 
-        >>> TestMark(75.1)
-        TestMark(result=75.1)
+        >>> mark = TestMark(75.1)
+        >>> mark.result
+        75.1
 
         >>> TestMark(101.5)
         Traceback (most recent call last):

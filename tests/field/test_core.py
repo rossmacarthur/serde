@@ -39,11 +39,6 @@ class TestField:
         assert field.default == 5
         assert field.validators == [None]
 
-    def test___repr__(self):
-        field = Field(rename='test', required=False)
-        assert repr(field) == ("Field(rename='test', required=False, default=None, "
-                               'serializers=[], deserializers=[], validators=[])')
-
     def test__setattr__(self):
         field = Field()
 

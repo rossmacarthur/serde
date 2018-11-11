@@ -307,7 +307,7 @@ class Model(metaclass=ModelType):
             '{}={!r}'.format(name, getattr(self, name))
             for name in self._fields.keys()
         )
-        return '{name}({values})'.format(name=self.__class__.__name__, values=values)
+        return '<{name}({values})>'.format(name=self.__class__.__name__, values=values)
 
     @handle_field_errors(SerializationError)
     def _serialize_field(self, field, value):
