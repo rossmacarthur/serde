@@ -306,6 +306,7 @@ class Model(metaclass=ModelType):
         values = ', '.join(
             '{}={!r}'.format(name, getattr(self, name))
             for name in self._fields.keys()
+            if getattr(self, name) is not None
         )
         return '{name}({values})'.format(name=self.__class__.__name__, values=values)
 
