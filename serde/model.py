@@ -299,16 +299,6 @@ class Model(metaclass=ModelType):
 
         return hash(tuple(values))
 
-    def __repr__(self):
-        """
-        Return the canonical string representation of this Model.
-        """
-        values = ', '.join(
-            '{}={!r}'.format(name, getattr(self, name))
-            for name in self._fields.keys()
-        )
-        return '<{name}({values})>'.format(name=self.__class__.__name__, values=values)
-
     @handle_field_errors(SerializationError)
     def _serialize_field(self, field, value):
         """
