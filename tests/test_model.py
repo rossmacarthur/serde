@@ -69,7 +69,7 @@ class TestModel:
             c = Float()
 
             def __init__(self):
-                super().__init__(a=5, b=50, c=100.5)
+                super(Example4, self).__init__(a=5, b=50, c=100.5)
 
         assert hasattr(Example5._fields, 'a')
         assert isinstance(Example5._fields.a, Int)
@@ -92,10 +92,10 @@ class TestModel:
         assert example.__dict__ == {}
 
         # Instantiating this with parameters should fail.
-        with raises(TypeError):
+        with raises(SerdeError):
             Example(None)
 
-        with raises(TypeError):
+        with raises(SerdeError):
             Example(a=None)
 
         # A simple Model with one required field and one optional

@@ -71,7 +71,7 @@ def zip_equal(*iterables):
     A zip function that validates that all the iterables have the same length.
 
     Yields:
-        Any: each zipped element.
+        each zipped element.
 
     Raises:
         ValueError: if one of the iterables is the wrong length.
@@ -83,3 +83,28 @@ def zip_equal(*iterables):
             raise ValueError('iterables have different lengths')
 
         yield element
+
+
+def zip_until_right(*iterables):
+    """
+    A zip function that validates that the right iterable is consumed.
+
+    Args:
+        *iterables: the iterables to pass to `zip`.
+
+    Yields:
+        each zipped element.
+
+    Raises:
+        ValueError: if the left iterable is consumed before the right.
+    """
+    lefts = iterables[:-1]
+    right = iter(iterables[-1])
+
+    yield from zip(*lefts, right)
+
+    try:
+        next(right)
+        raise ValueError('the rightmost iterable was not consumed')
+    except StopIteration:
+        pass

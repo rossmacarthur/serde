@@ -8,7 +8,7 @@ from functools import wraps
 
 from .error import DeserializationError, SerdeError, SerializationError, ValidationError
 from .field import Field
-from .util import create_function, try_import
+from .util import try_import, zip_until_right
 
 
 toml = try_import('toml')
@@ -155,11 +155,6 @@ class ModelType(type):
             if hasattr(base, '_fields'):
                 fields.update(base._fields)
 
-        # If we are creating an intermediate class, remove this from the attrs
-        # and update our _fields.
-        if '_fields' in attrs:
-            fields.update(attrs.pop('_fields'))
-
         # Split the attrs into Fields and non-Fields.
         for name, value in attrs.items():
             if isinstance(value, Field):
@@ -169,63 +164,10 @@ class ModelType(type):
                 final_attrs[name] = value
 
         # Order the fields by the Field identifier. This gets the order that
-        # they were defined on the Models.
-        fields = Fields(sorted(fields.items(), key=lambda x: x[1].id))
-
-        # Generate the __init__ method for the Model.
-        init = cls.create___init__(fields)
-
-        # If the user is trying to override the __init__ method, then we create
-        # an intermediate class and make that the base of the class we are
-        # creating.
-        if '__init__' in final_attrs:
-            interm_base = cls(cname + 'Intermediate', bases, {'_fields': fields})
-            bases = (interm_base,)
-
-        # Otherwise we add the __init__ method to the Model.
-        else:
-            final_attrs['__init__'] = init
-
-        # Finally the fields to the Model.
-        final_attrs['_fields'] = fields
+        # they were defined on the Models. We add these to the Model.
+        final_attrs['_fields'] = Fields(sorted(fields.items(), key=lambda x: x[1].id))
 
         return super().__new__(cls, cname, bases, final_attrs)
-
-    @staticmethod
-    def create___init__(fields):
-        """
-        Create the __init__ method for the `Model`.
-
-        The generated function will simply take the actual field values as
-        parameters and set them as attributes on the instance. It will also
-        validate the field values.
-
-        Args:
-            fields (Fields): the Model's fields.
-
-        Returns:
-            callable: the __init__ method.
-        """
-        parameters = ['self']
-        setters = []
-        defaults = []
-
-        for name, field in fields.items():
-            parameters.append('{name}=None'.format(name=name))
-            setters.append('    self.{name} = {name}'.format(name=name))
-
-            if field.default is not None:
-                setter = '        self.{name} = self._fields.{name}.default'.format(name=name)
-
-                if callable(field.default):
-                    setter += '()'
-
-                defaults.extend(['', '    if self.{name} is None:'.format(name=name), setter])
-
-        definition = 'def __init__({parameters}):'.format(parameters=', '.join(parameters))
-        lines = setters + defaults + ['', '    self.validate_all()']
-
-        return create_function(definition, lines)
 
 
 class Model(metaclass=ModelType):
@@ -270,6 +212,49 @@ class Model(metaclass=ModelType):
         >>> user.level
         10
     """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Create a new Model.
+        """
+        try:
+            named_args = list(zip_until_right(self._fields.keys(), args))
+        except ValueError:
+            raise SerdeError(
+                '__init__() takes a maximum of {!r} positional arguments but {!r} were given'
+                .format(len(self._fields) + 1, len(args) + 1)
+            )
+
+        for name, value in named_args:
+            if name in kwargs:
+                raise SerdeError(
+                    '__init__() got multiple values for keyword argument {!r}'
+                    .format(name)
+                )
+
+            kwargs[name] = value
+
+        for name, field in self._fields.items():
+            value = kwargs.pop(name, None)
+
+            if value is None and field.default is not None:
+                if callable(field.default):
+                    value = field.default()
+                else:
+                    value = field.default
+
+            setattr(self, name, value)
+
+        if kwargs:
+            raise SerdeError(
+                'invalid keyword argument{} {}'
+                .format(
+                    '' if len(kwargs.keys()) == 1 else 's',
+                    ', '.join('{!r}'.format(k) for k in kwargs.keys())
+                )
+            )
+
+        self.validate_all()
 
     def __eq__(self, other):
         """
