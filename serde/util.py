@@ -2,51 +2,8 @@
 Utility functions for Serde.
 """
 
-import hashlib
 import importlib
-import linecache
-import re
 from itertools import zip_longest
-
-
-def create_function(definition, lines):
-    """
-    Dynamically create a Python function from the given code.
-
-    Args:
-        definition (str): the function definition.
-        lines (list): a list of lines of code. These lines must include the
-            indentation.
-
-    Raises:
-        ValueError: if no name could be determined from the function definition.
-
-    Returns:
-        Callable: the resulting function.
-    """
-    # Determine the function filename.
-    match = re.match(r'def\s+(?P<name>\w+)\s*\(', definition)
-    if not match:
-        raise ValueError('unable to determine function name from definition')
-
-    name = match.groupdict()['name']
-    sha1 = hashlib.sha1()
-    sha1.update(definition.encode('utf-8'))
-    filename = '<serde {name} {sha1}>'.format(name=name, sha1=sha1.hexdigest())
-
-    # Compile the definition and lines of code to bytecode.
-    lines = [definition] + lines
-    code = '\n'.join(lines)
-    bytecode = compile(code, filename, 'exec')
-
-    # Actually run the code, this will create the function.
-    locals_ = {}
-    eval(bytecode, {}, locals_)
-
-    # Add the code to the linecache (code will show in tracebacks).
-    linecache.cache[filename] = (len(code), None, lines, filename)
-
-    return locals_[name]
 
 
 def try_import(name, package=None):
@@ -70,8 +27,11 @@ def zip_equal(*iterables):
     """
     A zip function that validates that all the iterables have the same length.
 
+    Args:
+        *iterables: the iterables to pass to `zip_longest`.
+
     Yields:
-        Any: each zipped element.
+        each zipped element.
 
     Raises:
         ValueError: if one of the iterables is the wrong length.
@@ -83,3 +43,28 @@ def zip_equal(*iterables):
             raise ValueError('iterables have different lengths')
 
         yield element
+
+
+def zip_until_right(*iterables):
+    """
+    A zip function that validates that the right iterable is consumed.
+
+    Args:
+        *iterables: the iterables to pass to `zip`.
+
+    Yields:
+        each zipped element.
+
+    Raises:
+        ValueError: if the left iterable is consumed before the right.
+    """
+    lefts = iterables[:-1]
+    right = iter(iterables[-1])
+
+    yield from zip(*lefts, right)
+
+    try:
+        next(right)
+        raise ValueError('the rightmost iterable was not consumed')
+    except StopIteration:
+        pass
