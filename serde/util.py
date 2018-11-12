@@ -27,6 +27,9 @@ def zip_equal(*iterables):
     """
     A zip function that validates that all the iterables have the same length.
 
+    Args:
+        *iterables: the iterables to pass to `zip_longest`.
+
     Yields:
         each zipped element.
 
