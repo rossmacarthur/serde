@@ -248,7 +248,7 @@ class Model(metaclass=ModelType):
         if kwargs:
             raise SerdeError(
                 'invalid keyword argument'
-                + ' ' if len(kwargs.keys()) == 1 else 's ',
+                + ' ' if len(kwargs.keys()) == 1 else 's '
                 + ', '.join('{!r}'.format(k) for k in kwargs.keys())
             )
 

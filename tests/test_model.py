@@ -103,6 +103,10 @@ class TestModel:
             a = Int(required=False)
             b = Bool()
 
+        # Passing in the same argument twice.
+        with raises(SerdeError):
+            Example(5, a=6)
+
         # Just passing in the required
         example = Example(b=True)
         assert example.__dict__ == {'b': True, 'a': None}
