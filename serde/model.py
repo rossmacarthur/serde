@@ -247,11 +247,9 @@ class Model(metaclass=ModelType):
 
         if kwargs:
             raise SerdeError(
-                'invalid keyword argument{} {}'
-                .format(
-                    '' if len(kwargs.keys()) == 1 else 's',
-                    ', '.join('{!r}'.format(k) for k in kwargs.keys())
-                )
+                'invalid keyword argument'
+                + ' ' if len(kwargs.keys()) == 1 else 's ',
+                + ', '.join('{!r}'.format(k) for k in kwargs.keys())
             )
 
         self.validate_all()
@@ -438,15 +436,19 @@ class Model(metaclass=ModelType):
                 value = d.pop(field.name)
                 kwargs[name] = cls._deserialize_field(field, value)
             elif field.required:
-                message = 'dictionary key {!r} is missing'.format(field.name)
-                raise DeserializationError(message, field=field, model=cls)
+                raise DeserializationError(
+                    'dictionary key {!r} is missing'.format(field.name),
+                    field=field,
+                    model=cls
+                )
 
         if strict and d:
-            message = 'unknown dictionary key{} {}'.format(
-                '' if len(d.keys()) == 1 else 's',
-                ', '.join('{!r}'.format(k) for k in d.keys())
+            raise DeserializationError(
+                'unknown dictionary key'
+                + ' ' if len(d.keys()) == 1 else 's '
+                + ', '.join('{!r}'.format(k) for k in d.keys()),
+                model=cls
             )
-            raise DeserializationError(message, model=cls)
 
         return cls(**kwargs)
 
