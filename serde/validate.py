@@ -78,7 +78,7 @@ def contains(value, allowed):
 
 def domain(value):
     """
-    Validate whether or not given value is a valid domain.
+    Validate whether or not the given string is a valid domain.
     """
     if not validators.domain(value):
         raise ValidationError('{!r} is not a valid domain'.format(value))
@@ -86,7 +86,7 @@ def domain(value):
 
 def email(value):
     """
-    Validate whether or not given value is a valid email.
+    Validate whether or not the given string is a valid email.
     """
     if not validators.email(value):
         raise ValidationError('{!r} is not a valid email'.format(value))
@@ -94,7 +94,7 @@ def email(value):
 
 def slug(value):
     """
-    Validate whether or not given value is a valid slug.
+    Validate whether or not the given string is a valid slug.
     """
     if not validators.slug(value):
         raise ValidationError('{!r} is not a valid slug'.format(value))
@@ -102,7 +102,7 @@ def slug(value):
 
 def url(value):
     """
-    Validate whether or not given value is a valid url.
+    Validate whether or not the given string is a valid url.
     """
     if not validators.url(value):
         raise ValidationError('{!r} is not a valid url'.format(value))
