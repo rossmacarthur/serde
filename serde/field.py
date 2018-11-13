@@ -1112,7 +1112,7 @@ Dictionary = Dict
 Integer = Int
 String = Str
 
-# Dynamic Str types
+# Str types with extra validation.
 Domain = create('Domain', Str, validators=[validate.domain])
 Email = create('Email', Str, validators=[validate.email])
 Slug = create('Slug', Str, validators=[validate.slug])
