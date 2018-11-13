@@ -1,11 +1,11 @@
-.PHONY: help clean venv install install-all lint sort-imports test docs docs-clean docs-open docs-test dist release
+.PHONY: help clean venv install install-travis install-all lint sort-imports test docs docs-clean docs-open docs-test dist release
 
 PYTHON := python3
 VIRTUAL_ENV := $(or $(VIRTUAL_ENV), $(VIRTUAL_ENV), venv)
 
 help: ## Show this message and exit.
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} \
-	/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 clean: docs-clean ## Remove all build artifacts.
 	rm -rf build dist wheels venv *.egg-info
@@ -31,7 +31,7 @@ sort-imports: ## Sort import statements according to isort configuration.
 	$(VIRTUAL_ENV)/bin/isort --recursive .
 
 test: ## Run all tests.
-	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing --cov-fail-under 100 --doctest-modules
+	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing --cov-fail-under 100 --doctest-modules --doctest-import "*<serde"
 
 docs: ## Compile docs.
 	$(MAKE) -C docs html

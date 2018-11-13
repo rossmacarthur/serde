@@ -58,7 +58,8 @@ lint_requirements = [
 
 test_requirements = [
     'pytest',
-    'pytest-cov'
+    'pytest-cov',
+    'pytest-doctest-import'
 ]
 
 document_requirements = [
