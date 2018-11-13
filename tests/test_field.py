@@ -515,7 +515,7 @@ def test_resolve_to_field_instance():
 
 
 def test_create():
-    # Create a Field with a new serialize method.
+    # Create a Field with a new serialize and deserialize method.
     Reversed = create(   # noqa: N806
         'Example',
         Str,
@@ -529,3 +529,15 @@ def test_create():
     example = Example.from_dict({'a': 'test'})
     assert example.a == 'tset'
     assert example.to_dict() == {'a': 'test'}
+
+    # Create a Field with a new validate method.
+    def validate_is_not_derp(value):
+        assert value != 'derp'
+
+    class Example(Model):
+        a = create('NotDerp', Str, validators=[validate_is_not_derp])()
+
+    assert Example('notderp').a == 'notderp'
+
+    with raises(ValidationError):
+        Example('derp')
