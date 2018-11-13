@@ -2,9 +2,10 @@ from unittest import mock
 
 from pytest import raises
 
-from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
-from serde.field import Bool, Float, Int, List, Nested, Str
-from serde.model import Model
+from serde import (
+    Bool, DeserializationError, Float, Int, List, Model, Nested,
+    SerdeError, SerializationError, Str, ValidationError
+)
 
 
 class TestModel:

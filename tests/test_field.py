@@ -1,11 +1,13 @@
+import uuid
 from collections import OrderedDict
 
 from pytest import raises
 
-from serde.error import SerdeError, ValidationError
-from serde.field import Bool, Dict, Field, Float, Instance, Int, List, Nested, Str, Tuple
-from serde.field.core import resolve_to_field_instance
-from serde.model import Model
+from serde import (
+    Bool, Choice, Dict, Domain, Email, Field, Float, Instance, Int, List,
+    Model, Nested, SerdeError, Slug, Str, Tuple, Url, Uuid, ValidationError
+)
+from serde.field import create, resolve_to_field_instance
 
 
 class Stringify(Field):
@@ -392,6 +394,95 @@ class TestTuple:
             example.validate((None, 'test', None))
 
 
+class TestChoice:
+
+    def test___init__(self):
+        field = Choice(range(5), required=False, validators=[])
+        assert field.choices == range(5)
+
+    def test_validate(self):
+        field = Choice(range(5))
+
+        field.validate(0)
+        field.validate(4)
+
+        with raises(ValidationError):
+            field.validate('test')
+
+
+class TestDomain:
+
+    def test_validate(self):
+        field = Domain()
+
+        field.validate('www.google.com')
+
+        with raises(ValidationError):
+            field.validate('hello')
+
+
+class TestEmail:
+
+    def test_validate(self):
+        field = Email()
+
+        field.validate('someone@website.com')
+
+        with raises(ValidationError):
+            field.validate('derp')
+
+
+class TestSlug:
+
+    def test_validate(self):
+        field = Slug()
+
+        field.validate('a_b-10')
+
+        with raises(ValidationError):
+            field.validate('a!')
+
+
+class TestUrl:
+
+    def test_validate(self):
+        field = Url()
+
+        field.validate('http://www.google.com/search?q=test')
+
+        with raises(ValidationError):
+            field.validate('derp')
+
+
+class TestUuid:
+
+    def test___init__(self):
+        field = Uuid(required=False, default=uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'))
+
+        assert field.required is False
+        assert field.default == uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e')
+
+    def test_serialize(self):
+        field = Uuid()
+
+        assert field.serialize(uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e')) == \
+            '2d7026c8-cc58-11e8-bd7a-784f4386978e'
+
+    def test_deserialize(self):
+        field = Uuid()
+
+        assert field.deserialize('2d7026c8-cc58-11e8-bd7a-784f4386978e') == \
+            uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e')
+
+    def test_validate(self):
+        field = Uuid()
+
+        field.validate(uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'))
+
+        with raises(ValidationError):
+            field.validate('2d7026c8-cc58-11e8-bd7a-784f4386978e')
+
+
 def test_resolve_to_field_instance():
     # An instance of a field should work
     assert resolve_to_field_instance(Field()) == Field()
@@ -420,3 +511,32 @@ def test_resolve_to_field_instance():
 
     with raises(TypeError):
         resolve_to_field_instance(Example())
+
+
+def test_create():
+    # Create a Field with a new serialize and deserialize method.
+    Reversed = create(   # noqa: N806
+        'Example',
+        Str,
+        serializers=[lambda s: s[::-1]],
+        deserializers=[lambda s: s[::-1]]
+    )
+
+    class Example(Model):
+        a = Reversed()
+
+    example = Example.from_dict({'a': 'test'})
+    assert example.a == 'tset'
+    assert example.to_dict() == {'a': 'test'}
+
+    # Create a Field with a new validate method.
+    def validate_is_not_derp(value):
+        assert value != 'derp'
+
+    class Example(Model):
+        a = create('NotDerp', Str, validators=[validate_is_not_derp])()
+
+    assert Example('notderp').a == 'notderp'
+
+    with raises(ValidationError):
+        Example('derp')

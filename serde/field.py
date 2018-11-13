@@ -1,9 +1,18 @@
 """
-Core Field types for Serde Models.
+Field types for Serde Models.
 """
 
-from ..error import SerdeError, ValidationError
-from ..util import zip_equal
+import uuid
+
+from . import validate
+from .error import SerdeError
+from .util import zip_equal
+
+
+__all__ = [
+    'Bool', 'Boolean', 'Choice', 'Dict', 'Dictionary', 'Domain', 'Email', 'Field', 'Float',
+    'Instance', 'Int', 'Integer', 'List', 'Nested', 'Slug', 'Str', 'String', 'Tuple', 'Url', 'Uuid'
+]
 
 
 def resolve_to_field_instance(thing, none_allowed=True):
@@ -63,6 +72,69 @@ def resolve_to_field_instance(thing, none_allowed=True):
         '{!r} is not a Field, an instance of a Field, or a supported type'
         .format(thing)
     )
+
+
+def create(name, base, serializers=None, deserializers=None, validators=None):
+    """
+    Create a new Field class.
+
+    This is a convenience method for creating new Field classes from arbitrary
+    serializer, deserializer, and/or validator functions.
+
+    Args:
+        name (str): the name of the class.
+        base (Field): the Field class that is to be the base of this class.
+        serializers (list): a list of serializer functions taking the value to
+            serialize as an argument. The functions need to raise an `Exception`
+            if they fail. These serializer functions will be applied before the
+            primary serializer on this Field.
+        deserializers (list): a list of deserializer functions taking the value
+            to deserialize as an argument. The functions need to raise an
+            `Exception` if they fail. These deserializer functions will be
+            applied after the primary deserializer on this Field.
+        validators (list): a list of validator functions taking the value to
+            validate as an argument. The functions need to raise an `Exception`
+            if they fail.
+
+    Returns:
+        class: a new Field class.
+    """
+    attrs = {}
+
+    # This is a hack so that we can use super() without arguments in the
+    # functions below.
+    __class__ = base  # noqa: F841
+
+    if serializers:
+        def serialize(self, value):
+            for serializer in serializers:
+                value = serializer(value)
+            value = super().serialize(value)
+            return value
+
+        serialize.__doc__ = serializers[0].__doc__
+        attrs['serialize'] = serialize
+
+    if deserializers:
+        def deserialize(self, value):
+            value = super().deserialize(value)
+            for deserializer in deserializers:
+                value = deserializer(value)
+            return value
+
+        deserialize.__doc__ = deserializers[0].__doc__
+        attrs['deserialize'] = deserialize
+
+    if validators:
+        def validate(self, value):
+            super().validate(value)
+            for validator in validators:
+                validator(value)
+
+        validate.__doc__ = validators[0].__doc__
+        attrs['validate'] = validate
+
+    return type(name, (base,), attrs)
 
 
 class Field:
@@ -323,12 +395,7 @@ class Instance(Field):
                 instance of the specified type.
         """
         super().validate(value)
-
-        if not isinstance(value, self.type):
-            raise ValidationError(
-                'expected {!r} but got {!r}'
-                .format(self.type.__name__, value.__class__.__name__)
-            )
+        validate.instance(value, self.type)
 
 
 class Nested(Instance):
@@ -565,20 +632,7 @@ class Dict(Instance):
                 invalid.
         """
         super().validate(value)
-
-        count = len(value.keys())
-
-        if self.min_length is not None and count < self.min_length:
-            raise ValidationError(
-                'expected at least {} elements but got {} elements'
-                .format(self.min_length, count)
-            )
-
-        if self.max_length is not None and count > self.max_length:
-            raise ValidationError(
-                'expected at most {} elements but got {} elements'
-                .format(self.max_length, count)
-            )
+        validate.between(len(value.keys()), self.min_length, self.max_length, units='keys')
 
         for k, v in value.items():
             self.key.validate(k)
@@ -636,18 +690,7 @@ class Float(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-
-        if self.min is not None and value < self.min:
-            raise ValidationError(
-                'expected at least {} but got {}'
-                .format(self.min, value)
-            )
-
-        if self.max is not None and value > self.max:
-            raise ValidationError(
-                'expected at most {} but got {}'
-                .format(self.max, value)
-            )
+        validate.between(value, self.min, self.max)
 
 
 class Int(Instance):
@@ -701,18 +744,7 @@ class Int(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-
-        if self.min is not None and value < self.min:
-            raise ValidationError(
-                'expected at least {!r} but got {!r}'
-                .format(self.min, value)
-            )
-
-        if self.max is not None and value > self.max:
-            raise ValidationError(
-                'expected at most {!r} but got {!r}'
-                .format(self.max, value)
-            )
+        validate.between(value, self.min, self.max)
 
 
 class List(Instance):
@@ -811,20 +843,7 @@ class List(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-
-        count = len(value)
-
-        if self.min_length is not None and count < self.min_length:
-            raise ValidationError(
-                'expected at least {!r} elements but got {!r} elements'
-                .format(self.min_length, count)
-            )
-
-        if self.max_length is not None and count > self.max_length:
-            raise ValidationError(
-                'expected at most {!r} elements but got {!r} elements'
-                .format(self.max_length, count)
-            )
+        validate.between(len(value), self.min_length, self.max_length, units='elements')
 
         for v in value:
             self.element.validate(v)
@@ -881,20 +900,7 @@ class Str(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-
-        count = len(value)
-
-        if self.min_length is not None and count < self.min_length:
-            raise ValidationError(
-                'expected at least {!r} characters but got {!r} characters'
-                .format(self.min_length, count)
-            )
-
-        if self.max_length is not None and count > self.max_length:
-            raise ValidationError(
-                'expected at most {!r} characters but got {!r} characters'
-                .format(self.max_length, count)
-            )
+        validate.between(len(value), self.min_length, self.max_length, units='characters')
 
 
 class Tuple(Instance):
@@ -946,6 +952,7 @@ class Tuple(Instance):
         """
         super().__init__(tuple, **kwargs)
         self.elements = tuple(resolve_to_field_instance(e, none_allowed=False) for e in elements)
+        self.length = len(self.elements)
 
     def serialize(self, value):
         """
@@ -992,12 +999,121 @@ class Tuple(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-
-        if len(self.elements) != len(value):
-            raise ValidationError(
-                'expected {!r} elements but got {!r} elements'
-                .format(len(self.elements), len(value))
-            )
+        validate.between(len(value), self.length, self.length, units='elements')
 
         for e, v in zip(self.elements, value):
             e.validate(v)
+
+
+class Choice(Field):
+    """
+    One of a given selection of values.
+
+    This field checks if the input data is one of the allowed values. These
+    values do not need to be the same type.
+
+    ..  doctest::
+
+        >>> class Car(Model):
+        ...     color = Choice(['black', 'blue', 'red'])
+
+        >>> car = Car.from_dict({'color': 'blue'})
+        >>> car.color
+        'blue'
+        >>> car.to_dict()
+        OrderedDict([('color', 'blue')])
+        >>> Car('yellow')
+        Traceback (most recent call last):
+        ...
+        serde.error.ValidationError: 'yellow' is not a valid choice
+    """
+
+    def __init__(self, choices, **kwargs):
+        """
+        Create a new Choice.
+
+        Args:
+            choices: a list/range/tuple of allowed values.
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super().__init__(**kwargs)
+        self.choices = choices
+
+    def validate(self, value):
+        """
+        Validate the given value is one of the choices.
+
+        Args:
+            value: the value to validate.
+        """
+        validate.contains(value, self.choices)
+
+
+class Uuid(Instance):
+    """
+    A `~uuid.UUID` field.
+
+    This field validates that the input data is an instance of `~uuid.UUID`. It
+    serializes the UUID as a string, and deserializes strings as UUIDs.
+
+    .. doctest::
+
+        >>> class User(Model):
+        ...     key = Uuid()
+
+        >>> user = User.from_dict({'key': '6af21dcd-e479-4af6-a708-0cbc8e2438c1'})
+        >>> user.key
+        UUID('6af21dcd-e479-4af6-a708-0cbc8e2438c1')
+        >>> user.to_dict()
+        OrderedDict([('key', '6af21dcd-e479-4af6-a708-0cbc8e2438c1')])
+        >>> User('not a uuid')
+        Traceback (most recent call last):
+        ...
+        serde.error.ValidationError: expected 'UUID' but got 'str'
+    """
+
+    def __init__(self, **kwargs):
+        """
+        Create a new Uuid.
+
+        Args:
+            **kwargs: keyword arguments for the `Instance` constructor.
+        """
+        super().__init__(uuid.UUID, **kwargs)
+
+    def serialize(self, value):
+        """
+        Serialize the given UUID.
+
+        Args:
+            value (~uuid.UUID): the UUID to serialize.
+
+        Returns:
+            str: a string representation of the Uuid.
+        """
+        return str(value)
+
+    def deserialize(self, value):
+        """
+        Deserialize the given string.
+
+        Args:
+            value (str): the string to deserialize.
+
+        Returns:
+            ~uuid.UUID: the deserialized Uuid.
+        """
+        return uuid.UUID(value)
+
+
+# Aliases
+Boolean = Bool
+Dictionary = Dict
+Integer = Int
+String = Str
+
+# Str types with extra validation.
+Domain = create('Domain', Str, validators=[validate.domain])
+Email = create('Email', Str, validators=[validate.email])
+Slug = create('Slug', Str, validators=[validate.slug])
+Url = create('Url', Str, validators=[validate.url])
