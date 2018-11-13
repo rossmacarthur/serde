@@ -4,8 +4,8 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde import (
-    Bool, Choice, Dict, Domain, Email, Field, Float, Instance, Int, List, Model, Nested,
-    SerdeError, Slug, Str, Tuple, Url, Uuid, ValidationError
+    Bool, Choice, Dict, Domain, Email, Field, Float, Instance, Int, List,
+    Model, Nested, SerdeError, Slug, Str, Tuple, Url, Uuid, ValidationError
 )
 from serde.field import create, resolve_to_field_instance
 
