@@ -127,12 +127,9 @@ class ModelType(type):
     A metaclass for Models.
 
     This metaclass pulls `~serde.field.Field` attributes off the defined class
-    and uses them to construct the unique __init__ method on the `Model`. A
-    custom __init__ method is constructor in order that you can instantiate a
-    Model without named arguments if you so wish.
-
-    If the Model is subclassed and the __init__ method overridden then an
-    intermediate class will be created that has this __init__ method.
+    and adds them as a `_fields` attribute to the resulting object. Model
+    methods use the `_fields` attribute to construct, validate, and convert
+    Models between data formats.
     """
 
     def __new__(cls, cname, bases, attrs):
@@ -216,6 +213,12 @@ class Model(metaclass=ModelType):
     def __init__(self, *args, **kwargs):
         """
         Create a new Model.
+
+        Args:
+            *args: positional arguments values for each Fields on the Model. If
+                these are given they will be interpreted as corresponding to the
+                Fields in the order the Fields are defined on the Model.
+            **kwargs: keyboard argument values for each Field on the Model.
         """
         try:
             named_args = list(zip_until_right(self._fields.keys(), args))
