@@ -84,17 +84,17 @@ def create(name, base, serializers=None, deserializers=None, validators=None):
     Args:
         name (str): the name of the class.
         base (Field): the Field class that is to be the base of this class.
-        serializers (list): a list of serializer functions taking the value
-            to serialize as an argument. The functions need to raise an
-            `Exception` if they fail. These serializer functions will be
-            applied before the primary serializer on this Field.
-        deserializers (list): a list of deserializer functions taking the
-            value to deserialize as an argument. The functions need to raise
-            an `Exception` if they fail. These deserializer functions will
-            be applied after the primary deserializer on this Field.
-        validators (list): a list of validator functions taking the value
-            to validate as an argument. The functions need to raise an
-            `Exception` if they fail.
+        serializers (list): a list of serializer functions taking the value to
+            serialize as an argument. The functions need to raise an `Exception`
+            if they fail. These serializer functions will be applied before the
+            primary serializer on this Field.
+        deserializers (list): a list of deserializer functions taking the value
+            to deserialize as an argument. The functions need to raise an
+            `Exception` if they fail. These deserializer functions will be
+            applied after the primary deserializer on this Field.
+        validators (list): a list of validator functions taking the value to
+            validate as an argument. The functions need to raise an `Exception`
+            if they fail.
 
     Returns:
         class: a new Field class.
