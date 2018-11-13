@@ -3,12 +3,11 @@ from collections import OrderedDict
 
 from pytest import raises
 
-from serde.error import SerdeError, ValidationError
-from serde.field import (
-    Bool, Choice, Dict, Domain, Email, Field, Float, Instance, Int, List,
-    Nested, Slug, Str, Tuple, Url, Uuid, create, resolve_to_field_instance
+from serde import (
+    Bool, Choice, Dict, Domain, Email, Field, Float, Instance, Int, List, Model, Nested,
+    SerdeError, Slug, Str, Tuple, Url, Uuid, ValidationError
 )
-from serde.model import Model
+from serde.field import create, resolve_to_field_instance
 
 
 class Stringify(Field):
