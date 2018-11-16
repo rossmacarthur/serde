@@ -4,7 +4,7 @@ Changelog
 Version 0.2.0
 -------------
 
-*Unreleased*
+*Released on November 16th, 2018*
 
 - Add validate module with validate functions for use with Fields. (`#22`_)
 - Support Field creation from functions. (`#22`_)

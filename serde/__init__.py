@@ -68,4 +68,4 @@ __all__ = [
 ]
 __author__ = 'Ross MacArthur'
 __email__ = 'macarthur.ross@gmail.com'
-__version__ = '0.1.2'
+__version__ = '0.2.0'
