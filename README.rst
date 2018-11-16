@@ -6,7 +6,7 @@ Serde
     :alt: PyPI Version
 
 .. image:: https://img.shields.io/readthedocs/serde/latest.svg?style=flat-square
-    :target: https://serde.readthedocs.io/en/latest/
+    :target: https://serde.readthedocs.io
     :alt: Documentation Status
 
 .. image:: https://img.shields.io/travis/rossmacarthur/serde.svg?style=flat-square
@@ -31,7 +31,7 @@ Install this package with
 
 
 View the latest usage and API documentation
-`here <https://serde.readthedocs.io/en/latest/api.html>`_.
+`here <https://serde.readthedocs.io/en/stable/api.html>`_.
 
 License
 -------
