@@ -60,8 +60,9 @@ def zip_until_right(*iterables):
     """
     lefts = iterables[:-1]
     right = iter(iterables[-1])
+    iterables = lefts + (right,)
 
-    yield from zip(*lefts, right)
+    yield from zip(*iterables)
 
     try:
         next(right)
