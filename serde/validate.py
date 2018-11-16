@@ -1,5 +1,5 @@
 """
-Validator functions for use with Fields.
+Validator functions for use with `Fields <serde.field.Field>`.
 """
 
 import validators
@@ -7,73 +7,106 @@ import validators
 from .error import ValidationError
 
 
-def instance(value, type):
+def instance(type):
     """
     Validate that the given value is an instance of a type.
 
     Args:
-        value: the value to validate.
         type (type): the type to check for.
 
-    Raises:
-        ValidationError: when the value is not an instance of the type.
+    Returns:
+        function: the validator function.
     """
-    if not isinstance(value, type):
-        raise ValidationError(
-            'expected {!r} but got {!r}'
-            .format(type.__name__, value.__class__.__name__)
-        )
+    def instance_(value):
+        """
+        Validate that the given value is an instance of a type.
+
+        Args:
+            value: the value to validate.
+
+        Raises:
+            ValidationError: when the value is not an instance of the type.
+        """
+        if not isinstance(value, type):
+            raise ValidationError(
+                'expected {!r} but got {!r}'
+                .format(type.__name__, value.__class__.__name__)
+            )
+
+    return instance_
 
 
-def between(value, min=None, max=None, units=''):
+def between(min=None, max=None, units=''):
     """
     Validate that the given number is between a minimum and/or maximum.
 
     Args:
-        value: the value to validate.
         min: the minimum value allowed.
         max: the maximum value allowed.
+        units: the unit measurements to use in the error message.
 
-    Raises:
-        ValidationError: when the value is not between the minimum and/or
-            maximum.
+    Returns:
+        function: the validator function.
     """
-    if units:
-        units = ' ' + units
+    def between_(value):
+        """
+        Validate that the given number is between a minimum and/or maximum.
 
-    if min is not None and min == max:
-        if value != min:
-            raise ValidationError(
-                'expected {0!r}{2} but got {1!r}{2}'
-                .format(min, value, units)
-            )
-    else:
-        if min is not None and value < min:
-            raise ValidationError(
-                'expected at least {0!r}{2} but got {1!r}{2}'
-                .format(min, value, units)
-            )
+        Args:
+            value: the value to validate.
 
-        if max is not None and value > max:
-            raise ValidationError(
-                'expected at most {0!r}{2} but got {1!r}{2}'
-                .format(max, value, units)
-            )
+        Raises:
+            ValidationError: when the value is not between the minimum and/or
+                maximum.
+        """
+        nonlocal units
+
+        if units:
+            units = ' ' + units
+
+        if min is not None and min == max:
+            if value != min:
+                raise ValidationError(
+                    'expected {0!r}{2} but got {1!r}{2}'
+                    .format(min, value, units)
+                )
+        else:
+            if min is not None and value < min:
+                raise ValidationError(
+                    'expected at least {0!r}{2} but got {1!r}{2}'
+                    .format(min, value, units)
+                )
+
+            if max is not None and value > max:
+                raise ValidationError(
+                    'expected at most {0!r}{2} but got {1!r}{2}'
+                    .format(max, value, units)
+                )
+
+    return between_
 
 
-def contains(value, allowed):
+def contains(allowed):
     """
     Validate that the given list/range/tuple contains the given value.
 
     Args:
-        value: the value to validate.
         allowed (list/range/tuple): the allowed values.
 
-    Raises:
-        ValidationError: when the value is not one of the allowed values.
+    Returns:
+        function: the validator function.
     """
-    if value not in allowed:
-        raise ValidationError('{!r} is not a valid choice'.format(value))
+    def contains_(value):
+        """
+        Validate that the given list/range/tuple contains the given value.
+
+        Raises:
+            ValidationError: when the value is not one of the allowed values.
+        """
+        if value not in allowed:
+            raise ValidationError('{!r} is not a valid choice'.format(value))
+
+    return contains_
 
 
 def domain(value):

@@ -1,77 +1,15 @@
-API Reference
-=============
+API
+===
 
-This part of the documentation lists the full API reference of all public
-classes and functions.
+.. automodule:: serde
 
+.. raw:: html
 
-Model
------
+   <h2>Modules</h2>
 
-.. autoclass:: serde.model.Model
-    :members:
+.. toctree::
 
-
-Core Fields
------------
-
-.. autoclass:: serde.field.Field
-    :members: __init__, serialize, deserialize, validate
-
-.. autoclass:: serde.field.Nested
-    :members: __init__
-
-.. autoclass:: serde.field.Instance
-    :members: __init__
-
-.. autoclass:: serde.field.Bool
-    :members: __init__
-
-.. autoclass:: serde.field.Dict
-    :members: __init__
-
-.. autoclass:: serde.field.Float
-    :members: __init__
-
-.. autoclass:: serde.field.Int
-    :members: __init__
-
-.. autoclass:: serde.field.List
-    :members: __init__
-
-.. autoclass:: serde.field.Str
-    :members: __init__
-
-.. autoclass:: serde.field.Tuple
-    :members: __init__
-
-
-Extended Fields
----------------
-
-.. autoclass:: serde.field.Choice
-    :members: __init__
-
-.. autoclass:: serde.field.Domain
-
-.. autoclass:: serde.field.Email
-
-.. autoclass:: serde.field.Slug
-
-.. autoclass:: serde.field.Url
-
-.. autoclass:: serde.field.Uuid
-    :members: __init__
-
-
-Exceptions
-----------
-
-.. autoclass:: serde.error.SerdeError
-    :members: __init__
-
-.. autoclass:: serde.error.SerializationError
-
-.. autoclass:: serde.error.DeserializationError
-
-.. autoclass:: serde.error.ValidationError
+    model
+    field
+    error
+    validate

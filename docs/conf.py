@@ -26,6 +26,7 @@ extensions = [
 ]
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 master_doc = 'index'
+autodoc_member_order = 'bysource'
 napoleon_include_init_with_doc = True
 
 # HTML configuration
