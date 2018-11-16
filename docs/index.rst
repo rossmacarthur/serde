@@ -1,7 +1,7 @@
 .. include:: ../README.rst
 
-Index
------
+Documentation
+-------------
 
 .. toctree::
 

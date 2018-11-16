@@ -1,5 +1,5 @@
 """
-Utility functions for Serde.
+Utility functions.
 """
 
 import importlib

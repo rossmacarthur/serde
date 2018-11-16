@@ -1,5 +1,80 @@
 """
-Field types for Serde Models.
+Field types for `Models <serde.model.Model>`.
+
+Fields handle serializing, deserializing, and validation of input values for
+Model objects. They should be instantiated when assigned to the Model. Fields
+support extra serialization, deserialization, and validation without having to
+subclass `Field`.
+
+Note: Extra serializers are called prior to the default field serialization,
+while extra deserializers and validators are called after the default
+operations.
+
+::
+
+    >>> def assert_is_odd(value):
+    ...     assert value % 2 != 0, 'value is not odd!'
+
+    >>> class Person(Model):
+    ...     name = Str(deserializers=[lambda s: s.strip()])
+    ...     fave_number = Int(required=False, validators=[assert_is_odd])
+    ...     fave_color = Choice(['black', 'blue', 'pink'], required=False, default='pink')
+
+    >>> person = Person('William Shakespeare', fave_number=455)
+    >>> person.name
+    'William Shakespeare'
+    >>> person.fave_number
+    455
+    >>> person.fave_color
+    'pink'
+
+    >>> Person.from_dict({'name': 'Beyonce', 'fave_number': 4})
+    Traceback (most recent call last):
+    ...
+    serde.error.ValidationError: value is not odd!
+
+The `create()` method can be used to generate a new Field class from arbitrary
+function without having to manually subclass a Field. For example if we wanted a
+`Percent` field we would do the following.
+
+::
+
+    >>> from serde import field, validate
+
+    >>> Percent = field.create(
+    ...     'Percent',
+    ...     field.Float,
+    ...     validators=[validate.between(min=0.0, max=100.0)]
+    ... )
+
+    >>> issubclass(Percent, Float)
+    True
+
+Here is an example where we subclass a field and override the serialize,
+deserialize, and validate methods.
+
+::
+
+    >>> class Reversed(Field):
+    ...
+    ...     def serialize(self, value):
+    ...         return value[::-1]
+    ...
+    ...     def deserialize(self, value):
+    ...         return value[::-1]
+    ...
+    ...     def validate(self, value):
+    ...         assert isinstance(value, str)
+
+    >>> class Example(Model):
+    ...     silly = Reversed(rename='sILLy')
+
+    >>> example = Example('test')
+    >>> example.silly
+    'test'
+
+    >>> example.to_dict()
+    OrderedDict([('sILLy', 'tset')])
 """
 
 import uuid
@@ -11,7 +86,8 @@ from .util import zip_equal
 
 __all__ = [
     'Bool', 'Boolean', 'Choice', 'Dict', 'Dictionary', 'Domain', 'Email', 'Field', 'Float',
-    'Instance', 'Int', 'Integer', 'List', 'Nested', 'Slug', 'Str', 'String', 'Tuple', 'Url', 'Uuid'
+    'Instance', 'Int', 'Integer', 'List', 'Nested', 'Slug', 'Str', 'String', 'Tuple', 'Url', 'Uuid',
+    'create'
 ]
 
 
@@ -74,129 +150,12 @@ def resolve_to_field_instance(thing, none_allowed=True):
     )
 
 
-def create(name, base, serializers=None, deserializers=None, validators=None):
-    """
-    Create a new Field class.
-
-    This is a convenience method for creating new Field classes from arbitrary
-    serializer, deserializer, and/or validator functions.
-
-    Args:
-        name (str): the name of the class.
-        base (Field): the Field class that is to be the base of this class.
-        serializers (list): a list of serializer functions taking the value to
-            serialize as an argument. The functions need to raise an `Exception`
-            if they fail. These serializer functions will be applied before the
-            primary serializer on this Field.
-        deserializers (list): a list of deserializer functions taking the value
-            to deserialize as an argument. The functions need to raise an
-            `Exception` if they fail. These deserializer functions will be
-            applied after the primary deserializer on this Field.
-        validators (list): a list of validator functions taking the value to
-            validate as an argument. The functions need to raise an `Exception`
-            if they fail.
-
-    Returns:
-        class: a new Field class.
-    """
-    attrs = {}
-
-    # This is a hack so that we can use super() without arguments in the
-    # functions below.
-    __class__ = base  # noqa: F841
-
-    if serializers:
-        def serialize(self, value):
-            for serializer in serializers:
-                value = serializer(value)
-            value = super().serialize(value)
-            return value
-
-        serialize.__doc__ = serializers[0].__doc__
-        attrs['serialize'] = serialize
-
-    if deserializers:
-        def deserialize(self, value):
-            value = super().deserialize(value)
-            for deserializer in deserializers:
-                value = deserializer(value)
-            return value
-
-        deserialize.__doc__ = deserializers[0].__doc__
-        attrs['deserialize'] = deserialize
-
-    if validators:
-        def validate(self, value):
-            super().validate(value)
-            for validator in validators:
-                validator(value)
-
-        validate.__doc__ = validators[0].__doc__
-        attrs['validate'] = validate
-
-    return type(name, (base,), attrs)
-
-
 class Field:
     """
     A field on a `~serde.model.Model`.
 
     Fields handle serializing, deserializing, and validation of input values for
     Model objects.
-
-    Here is a simple example of how Fields can be used on a Model. In this
-    example we use the base class Field which does not have any of its own
-    validation, and simply passes values through when serializing and
-    deserializing. Typically, more constrained Field classes would be used.
-
-    .. doctest::
-
-        >>> def assert_is_odd(value):
-        ...     assert value % 2 != 0, 'value is not odd!'
-
-        >>> class Person(Model):
-        ...     name = Field()
-        ...     fave_number = Field(required=False, validators=[assert_is_odd])
-        ...     fave_color = Field(required=False, default='pink')
-
-        >>> person = Person('William Shakespeare', fave_number=455)
-        >>> person.name
-        'William Shakespeare'
-        >>> person.fave_number
-        455
-        >>> person.fave_color
-        'pink'
-
-        >>> Person.from_dict({'name': 'Beyonce', 'fave_number': 4})
-        Traceback (most recent call last):
-        ...
-        serde.error.ValidationError: value is not odd!
-
-    Here is a more advanced example where we subclass a field and override the
-    serialize, deserialize, and validate methods.
-
-    .. doctest::
-
-        >>> class Reversed(Field):
-        ...
-        ...     def serialize(self, value):
-        ...         return value[::-1]
-        ...
-        ...     def deserialize(self, value):
-        ...         return value[::-1]
-        ...
-        ...     def validate(self, value):
-        ...         assert isinstance(value, str)
-
-        >>> class Example(Model):
-        ...     silly = Reversed(rename='sILLy')
-
-        >>> example = Example('test')
-        >>> example.silly
-        'test'
-
-        >>> example.to_dict()
-        OrderedDict([('sILLy', 'tset')])
     """
 
     # This is so we can get the order the fields were instantiated in.
@@ -367,6 +326,69 @@ class Field:
         pass
 
 
+def create(name, base, serializers=None, deserializers=None, validators=None):
+    """
+    Create a new Field class.
+
+    This is a convenience method for creating new Field classes from arbitrary
+    serializer, deserializer, and/or validator functions.
+
+    Args:
+        name (str): the name of the class.
+        base (Field): the Field class that is to be the base of this class.
+        serializers (list): a list of serializer functions taking the value to
+            serialize as an argument. The functions need to raise an `Exception`
+            if they fail. These serializer functions will be applied before the
+            primary serializer on this Field.
+        deserializers (list): a list of deserializer functions taking the value
+            to deserialize as an argument. The functions need to raise an
+            `Exception` if they fail. These deserializer functions will be
+            applied after the primary deserializer on this Field.
+        validators (list): a list of validator functions taking the value to
+            validate as an argument. The functions need to raise an `Exception`
+            if they fail.
+
+    Returns:
+        class: a new Field class.
+    """
+    attrs = {}
+
+    # This is a hack so that we can use super() without arguments in the
+    # functions below.
+    __class__ = base  # noqa: F841
+
+    if serializers:
+        def serialize(self, value):
+            for serializer in serializers:
+                value = serializer(value)
+            value = super().serialize(value)
+            return value
+
+        serialize.__doc__ = serializers[0].__doc__
+        attrs['serialize'] = serialize
+
+    if deserializers:
+        def deserialize(self, value):
+            value = super().deserialize(value)
+            for deserializer in deserializers:
+                value = deserializer(value)
+            return value
+
+        deserialize.__doc__ = deserializers[0].__doc__
+        attrs['deserialize'] = deserialize
+
+    if validators:
+        def validate(self, value):
+            super().validate(value)
+            for validator in validators:
+                validator(value)
+
+        validate.__doc__ = validators[0].__doc__
+        attrs['validate'] = validate
+
+    return type(name, (base,), attrs)
+
+
 class Instance(Field):
     """
     A `Field` that validates a value is an instance of the given type.
@@ -395,7 +417,7 @@ class Instance(Field):
                 instance of the specified type.
         """
         super().validate(value)
-        validate.instance(value, self.type)
+        validate.instance(self.type)(value)
 
 
 class Nested(Instance):
@@ -455,11 +477,11 @@ class Nested(Instance):
         Args:
             model: the Model class that this Field wraps.
             dict (type): the class of the deserialized dictionary. This defaults
-                to an `OrderedDict` so that the fields will be returned in the
-                order they were defined on the Model.
+                to an `~collections.OrderedDict` so that the fields will be
+                returned in the order they were defined on the Model.
             strict (bool): if set to False then no exception will be raised when
                 unknown dictionary keys are present when deserializing.
-            **kwargs: keyword arguments for the `Instance` constructor.
+            **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(model, **kwargs)
         self.dict = dict
@@ -520,7 +542,7 @@ class Bool(Instance):
         Create a new Bool.
 
         Args:
-            **kwargs: keyword arguments for the `Instance` constructor.
+            **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(bool, **kwargs)
 
@@ -575,7 +597,7 @@ class Dict(Instance):
             value (Field): the Field class/instance for values in this Dict.
             min_length (int): the minimum number of elements allowed.
             max_length (int): the maximum number of elements allowed.
-            **kwargs: keyword arguments for the `Instance` constructor.
+            **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(dict, **kwargs)
         self.key = resolve_to_field_instance(key)
@@ -632,7 +654,7 @@ class Dict(Instance):
                 invalid.
         """
         super().validate(value)
-        validate.between(len(value.keys()), self.min_length, self.max_length, units='keys')
+        validate.between(self.min_length, self.max_length, units='keys')(len(value.keys()))
 
         for k, v in value.items():
             self.key.validate(k)
@@ -670,7 +692,7 @@ class Float(Instance):
         Args:
             min (float): the minimum value allowed.
             max (float): the maximum value allowed.
-            **kwargs: keyword arguments for the `Instance` constructor.
+            **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(float, **kwargs)
         self.min = min
@@ -690,7 +712,7 @@ class Float(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-        validate.between(value, self.min, self.max)
+        validate.between(self.min, self.max)(value)
 
 
 class Int(Instance):
@@ -724,7 +746,7 @@ class Int(Instance):
         Args:
             min (int): the minimum value allowed.
             max (int): the maximum value allowed.
-            **kwargs: keyword arguments for the `Instance` constructor.
+            **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(int, **kwargs)
         self.min = min
@@ -744,7 +766,7 @@ class Int(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-        validate.between(value, self.min, self.max)
+        validate.between(self.min, self.max)(value)
 
 
 class List(Instance):
@@ -789,7 +811,7 @@ class List(Instance):
             element (Field): the Field class/instance for this List's elements.
             min_length (int): the minimum number of elements allowed.
             max_length (int): the maximum number of elements allowed.
-            **kwargs: keyword arguments for the `Instance` constructor.
+            **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(list, **kwargs)
         self.element = resolve_to_field_instance(element)
@@ -843,7 +865,7 @@ class List(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-        validate.between(len(value), self.min_length, self.max_length, units='elements')
+        validate.between(self.min_length, self.max_length, units='elements')(len(value))
 
         for v in value:
             self.element.validate(v)
@@ -880,7 +902,7 @@ class Str(Instance):
         Args:
             min_length (int): the minimum number of characters allowed.
             max_length (int): the maximum number of characters allowed.
-            **kwargs: keyword arguments for the `Instance` constructor.
+            **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(str, **kwargs)
         self.min_length = min_length
@@ -900,7 +922,7 @@ class Str(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-        validate.between(len(value), self.min_length, self.max_length, units='characters')
+        validate.between(self.min_length, self.max_length, units='characters')(len(value))
 
 
 class Tuple(Instance):
@@ -948,7 +970,7 @@ class Tuple(Instance):
         Args:
             *elements (Field): the Field classes/instances for elements in this
                 Tuple.
-            **kwargs: keyword arguments for the `Instance` constructor.
+            **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(tuple, **kwargs)
         self.elements = tuple(resolve_to_field_instance(e, none_allowed=False) for e in elements)
@@ -999,7 +1021,7 @@ class Tuple(Instance):
             `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-        validate.between(len(value), self.length, self.length, units='elements')
+        validate.between(self.length, self.length, units='elements')(len(value))
 
         for e, v in zip(self.elements, value):
             e.validate(v)
@@ -1046,7 +1068,7 @@ class Choice(Field):
         Args:
             value: the value to validate.
         """
-        validate.contains(value, self.choices)
+        validate.contains(self.choices)(value)
 
 
 class Uuid(Instance):
@@ -1077,7 +1099,7 @@ class Uuid(Instance):
         Create a new Uuid.
 
         Args:
-            **kwargs: keyword arguments for the `Instance` constructor.
+            **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(uuid.UUID, **kwargs)
 

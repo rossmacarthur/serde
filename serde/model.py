@@ -1,5 +1,73 @@
 """
-Defines the core Serde Model and the ModelType metaclass.
+This module defines the core Model class.
+
+`Models <Model>` are containers for `Fields <serde.field>`. Models can be
+serialized to and from dictionaries with `~Model.to_dict`, `~Model.from_dict`
+and to and from data formats such as JSON with `~Model.to_json` and
+`~Model.from_json`.
+
+When Models are subclassed, all `Fields <serde.field.Field>` attributes are
+pulled off and used to uniquely determine the operation of instantiation,
+serialization, deserialization, and validation methods for the Model.
+
+Consider a simple example of a `Pet`, with a `name` attribute.
+
+::
+
+    >>> from serde import Model, field
+
+    >>> class Pet(Model):
+    ...     name = field.Str()
+
+This can be subclassed and the subclassed Model will have all the fields of the
+parent.
+
+::
+
+    >>> class Dog(Pet):
+    ...     hates_cats = field.Bool(default=True)
+
+    >>> max = Dog('Max', hates_cats=False)
+    >>> max.name
+    'Max'
+    >>> max.hates_cats
+    False
+    >>> max._fields.name
+    <serde.field.Str object at ...>
+
+Models can be nested using the `~serde.field.Nested` Field. By default the
+`~Model.to_dict()` and `~Model.from_dict()` methods will used for serialization
+and deserialization.
+
+::
+
+    >>> class Owner(Model):
+    ...     name = field.Str()
+    ...     pet = field.Nested(Pet, required=False)
+
+    >>> jeffery = Owner('Jeffery', pet=Dog('Brutus'))
+    >>> jeffery.name
+    'Jeffery'
+    >>> jeffery.pet
+    Dog(name='Brutus', hates_cats=True)
+
+
+Model serialization and deserialization is done using the relevant methods. For
+example to serialize an `Owner` to JSON we would call the `Model.to_json()`
+method.
+
+::
+
+    >>> jeffery.to_json()
+    '{"name": "Jeffery", "pet": {"name": "Brutus", "hates_cats": true}}'
+
+To deserialize from JSON we use the `Model.from_json()` method.
+
+::
+
+    >>> Owner.from_json('{"name": "George"}')
+    Owner(name='George')
+
 """
 
 import json
@@ -13,6 +81,9 @@ from .util import try_import, zip_until_right
 
 toml = try_import('toml')
 yaml = try_import('ruamel.yaml')
+
+
+__all__ = ['Model']
 
 
 def requires_module(module, package=None):
@@ -170,44 +241,6 @@ class ModelType(type):
 class Model(metaclass=ModelType):
     """
     The base Model to be subclassed.
-
-    Models are containers for `~serde.field.Field` elements. Models can be
-    serialized to and from dictionaries with `~Model.to_dict` and
-    `~Model.from_dict` and to and from data formats such as JSON with
-    `~Model.to_json` and `~Model.from_json`.
-
-    Fields are serialized, deserialized, and validated according to their
-    specification, and you can easily create your own Field by subclassing
-    `~serde.field.Field`. Models also validate input data using the validators
-    specified on the Field classes.
-
-    The `Model.__init__` method will be auto-generated from the Field
-    attributes.
-
-    Consider a simple example user model and how it can be easily subclassed.
-
-    .. doctest::
-
-        >>> class User(Model):
-        ...     name = Str()
-        ...     age = Int(required=False)
-
-        >>> user = User('Benedict Cumberbatch', age=42)
-        >>> user.name
-        'Benedict Cumberbatch'
-        >>> user.age
-        42
-
-        >>> class SuperUser(User):
-        ...     level = Int(default=10)
-
-        >>> user = SuperUser('Benedict Cumberbatch', age=42)
-        >>> user.name
-        'Benedict Cumberbatch'
-        >>> user.age
-        42
-        >>> user.level
-        10
     """
 
     def __init__(self, *args, **kwargs):
@@ -345,19 +378,6 @@ class Model(metaclass=ModelType):
 
         This is called by the Model constructor, so this is only needed if you
         modify attributes directly and want to revalidate the Model.
-
-        .. doctest::
-
-            >>> class BlogPost(Model):
-            ...     title = Str()
-            ...     content = Str()
-
-            >>> post = BlogPost('First post!', 'Hey guys, this is my first post!')
-            >>> post.content = 1234  # set the attribute to an invalid value!
-            >>> post.validate_all()
-            Traceback (most recent call last):
-                ...
-            serde.error.ValidationError: expected 'str' but got 'int'
         """
         for name, field in self._fields.items():
             value = getattr(self, name)
@@ -413,24 +433,6 @@ class Model(metaclass=ModelType):
             `~serde.error.DeserializationError`: when a Field value can not be
                 deserialized or there are unknown dictionary keys.
             `~serde.error.ValidationError`: when a Field value is invalid.
-
-        A simple user model deserialized from a dictionary
-
-        .. doctest:;
-
-            >>> class User(Model):
-            ...     name = Str()
-            ...     age = Int(required=False)
-
-            >>> user = User.from_dict({
-            ...     'name': 'Benedict Cumberbatch',
-            ...     'age': 42
-            ... })
-
-            >>> user.name
-            'Benedict Cumberbatch'
-            >>> user.age
-            42
         """
         kwargs = OrderedDict()
 
@@ -521,20 +523,6 @@ class Model(metaclass=ModelType):
         Raises:
             `~serde.error.SerializationError`: when a Field value cannot be
                 serialized.
-
-        A simple user model serialized as a dictionary
-
-        .. doctest::
-
-            >>> class User(Model):
-            ...     name = Str()
-            ...     age = Int(required=False)
-
-            >>> user = User('Benedict Cumberbatch', age=42)
-            >>> assert user.to_dict() == {
-            ...     'name': 'Benedict Cumberbatch',
-            ...     'age': 42
-            ... }
         """
         if dict is None:
             dict = OrderedDict

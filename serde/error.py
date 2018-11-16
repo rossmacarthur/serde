@@ -25,14 +25,34 @@ class SerdeError(Exception):
         self.field = field
         self.model = model
 
+    @property
+    def message(self):
+        """
+        A message describing the error that occurred.
+        """
+        return self.args[0]
+
     def add_context(self, cause=None, value=None, field=None, model=None):
         """
-        Add cause/value/field/model context to this SerdeError.
+        Add cause/value/field/model context.
+
+        Args:
+            cause (Exception): the exception that caused this error.
+            value: the Field value context.
+            field (~serde.field.Field): the Field context.
+            model (~serde.model.Model): the Model context.
         """
-        self.cause = cause
-        self.value = value
-        self.field = field
-        self.model = model
+        if cause is not None:
+            self.cause = cause
+
+        if value is not None:
+            self.value = value
+
+        if field is not None:
+            self.field = field
+
+        if model is not None:
+            self.model = model
 
     def __repr__(self):
         """
@@ -41,14 +61,14 @@ class SerdeError(Exception):
         return '<{}.{}: {}>'.format(
             self.__class__.__module__,
             self.__class__.__qualname__,
-            str(self)
+            self.message
         )
 
     def __str__(self):
         """
         Return a string representation of this SerdeError.
         """
-        return self.args[0]
+        return self.message
 
 
 class SerializationError(SerdeError):
