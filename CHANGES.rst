@@ -11,13 +11,13 @@ Version 0.2.0
 - General API improvements. (`#17`_)
 - Support conversion between TOML, YAML. (`#7`_, `#8`_, `#16`_)
 - Add Boolean, Dictionary, Integer, and String Field aliases. (`#11`_, `#14`_)
-- Add `serializers` and `deserializers` Field options for arbitrary serializer
-  and deserializer functions. (`#6`_)
-- Nested Fields now take the same options as `to_dict()` and `from_dict()` on
-  Model objects. (`#5`_)
+- Add ``serializers`` and ``deserializers`` Field options for arbitrary
+  serializer and deserializer functions. (`#6`_)
+- Nested Fields now take the same options as ``to_dict()`` and ``from_dict()``
+  on Model objects. (`#5`_)
 
 .. _#22: https://github.com/rossmacarthur/serde/pull/22
-.. _#16: https://github.com/rossmacarthur/serde/pull/17
+.. _#17: https://github.com/rossmacarthur/serde/pull/17
 .. _#16: https://github.com/rossmacarthur/serde/pull/16
 .. _#14: https://github.com/rossmacarthur/serde/pull/14
 .. _#6: https://github.com/rossmacarthur/serde/pull/6
