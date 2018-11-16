@@ -429,7 +429,7 @@ class Nested(Instance):
     `~serde.model.Model.from_dict()`  methods on the Model class. This allows
     complex nested Models.
 
-    .. doctest::
+    ::
 
         >>> class Birthday(Model):
         ...     day = Int(min=1, max=31)
@@ -524,7 +524,7 @@ class Bool(Instance):
     Consider an example model with two `Bool` fields, one with extra options and
     one with no arguments.
 
-    .. doctest::
+    ::
 
         >>> class Example(Model):
         ...     enabled = Bool()
@@ -560,7 +560,7 @@ class Dict(Instance):
     Consider an example model with a constants attribute which is map of strings
     to floats.
 
-    .. doctest::
+    ::
 
         >>> class Example(Model):
         ...     constants = Dict(str, float)
@@ -670,7 +670,7 @@ class Float(Instance):
 
     Consider an example model TestMark, with a percentage `Float` field.
 
-    .. doctest::
+    ::
 
         >>> class TestMark(Model):
         ...     result = Float(min=0.0, max=100.0)
@@ -725,7 +725,7 @@ class Int(Instance):
     Consider an example model Point, with two `Int` fields, but we constrain the
     x and y such that the Point has to be in the second quadrant.
 
-    .. doctest::
+    ::
 
         >>> class Point(Model):
         ...     x = Int(max=0)
@@ -781,7 +781,7 @@ class List(Instance):
 
     Consider a user model that can have multiple emails
 
-    .. doctest::
+    ::
 
         >>> class User(Model):
         ...     emails = List(str, min_length=1, default=[])
@@ -879,7 +879,7 @@ class Str(Instance):
 
     Consider an example model User
 
-    .. doctest::
+    ::
 
         >>> class User(Model):
         ...     name = Str(min_length=1, deserializers=[lambda s: s.strip()])
@@ -936,7 +936,7 @@ class Tuple(Instance):
 
     Consider an example person that has a name and a birthday
 
-    .. doctest::
+    ::
 
         >>> class Person(Model):
         ...     name = Str()
@@ -1034,7 +1034,7 @@ class Choice(Field):
     This field checks if the input data is one of the allowed values. These
     values do not need to be the same type.
 
-    ..  doctest::
+    ::
 
         >>> class Car(Model):
         ...     color = Choice(['black', 'blue', 'red'])
@@ -1078,7 +1078,7 @@ class Uuid(Instance):
     This field validates that the input data is an instance of `~uuid.UUID`. It
     serializes the UUID as a string, and deserializes strings as UUIDs.
 
-    .. doctest::
+    ::
 
         >>> class User(Model):
         ...     key = Uuid()

@@ -396,7 +396,7 @@ class Model(metaclass=ModelType):
 
         Override this method to add any additional validation to the Model.
 
-        .. doctest::
+        ::
 
             >>> class Owner(Model):
             ...     cats_name = Str(required=False)
