@@ -15,6 +15,8 @@ metadata = {
     for key in ('title', 'version', 'url', 'author', 'author_email', 'license', 'description')
 }
 
+metadata['name'] = metadata.pop('title')
+
 with io.open(os.path.join(here, 'README.rst'), encoding='utf8') as f:
     metadata['long_description'] = f.read()
 
