@@ -66,6 +66,10 @@ __all__ = [
     'Field', 'Float', 'Instance', 'Int', 'Integer', 'List', 'Model', 'Nested', 'SerdeError',
     'SerializationError', 'Slug', 'Str', 'String', 'Tuple', 'Url', 'Uuid', 'ValidationError'
 ]
-__author__ = 'Ross MacArthur'
-__email__ = 'macarthur.ross@gmail.com'
+__title__ = 'serde'
 __version__ = '0.2.0'
+__url__ = 'https://github.com/rossmacarthur/serde'
+__author__ = 'Ross MacArthur'
+__author_email__ = 'macarthur.ross@gmail.com'
+__license__ = 'MIT'
+__description__ = 'Define, serialize, deserialize, and validate Python data structures.'
