@@ -5,34 +5,20 @@ import re
 from setuptools import find_packages, setup
 
 
-def read(*path):
-    """
-    Cross-platform Python 2/3 file reading.
-    """
-    filename = os.path.join(os.path.dirname(__file__), *path)
+here = os.path.abspath(os.path.dirname(__file__))
 
-    with io.open(filename, encoding='utf8') as f:
-        return f.read()
+with io.open(os.path.join(here, 'src', 'serde', '__init__.py'), encoding='utf8') as f:
+    about_text = f.read()
 
+metadata = {
+    key: re.search(r'__' + key + r'__ = ["\'](.*?)["\']', about_text).group(1)
+    for key in ('title', 'version', 'url', 'author', 'author_email', 'license', 'description')
+}
 
-def find_version():
-    """
-    Regex search __init__.py so that we do not have to import.
-    """
-    text = read('serde', '__init__.py')
-    match = re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', text, re.M)
+metadata['name'] = metadata.pop('title')
 
-    if match:
-        return match.group(1)
-
-    raise RuntimeError('Unable to find version string.')
-
-
-version = find_version()
-
-url = 'https://github.com/rossmacarthur/serde'
-
-long_description = read('README.rst')
+with io.open(os.path.join(here, 'README.rst'), encoding='utf8') as f:
+    metadata['long_description'] = f.read()
 
 install_requires = [
     'validators>=0.12.0<0.13.0'
@@ -70,9 +56,7 @@ package_requires = [
 ]
 
 setup(
-    name='serde',
-    packages=find_packages(exclude=['docs', 'tests']),
-    version=version,
+    # Options
     install_requires=install_requires,
     extras_require={
         'toml': toml_requires,
@@ -83,18 +67,17 @@ setup(
         'packaging': package_requires
     },
     python_requires='>=3.4',
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
+    py_modules=['serde'],
 
-    author='Ross MacArthur',
-    author_email='macarthur.ross@gmail.com',
-    maintainer='Ross MacArthur',
-    maintainer_email='macarthur.ross@gmail.com',
-    description=('A lightweight, general-purpose, ORM framework for defining, serializing, '
-                 'deserializing, and validating data structures.'),
-    long_description=long_description,
-    license='MIT',
-    keywords='serde serialization deserialization schema json',
-    url=url,
-    download_url='{url}/archive/{version}.tar.gz'.format(url=url, version=version),
+    # Metadata
+    download_url='{url}/archive/{version}.tar.gz'.format(**metadata),
+    project_urls={
+        'Documentation': 'https://serde.readthedocs.io',
+        'Source': metadata['url'],
+        'Issue Tracker': '{url}/issues'.format(**metadata)
+    },
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
@@ -107,5 +90,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
-    ]
+    ],
+    keywords='serde serialization deserialization schema json',
+    **metadata
 )
