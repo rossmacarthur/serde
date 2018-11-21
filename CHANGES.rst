@@ -6,10 +6,14 @@ Version 0.2.1
 
 *Unreleased*
 
+- Add IpAddress, Ipv4Address, Ipv6Address, and MacAddress Fields. (`#3`_,
+  `#30`_)
 - Add DateTime, Date, and Time Fields. (`#2`_, `#29`_)
 
+.. _#30: https://github.com/rossmacarthur/serde/pull/30
 .. _#29: https://github.com/rossmacarthur/serde/pull/29
 
+.. _#3: https://github.com/rossmacarthur/serde/issues/3
 .. _#2: https://github.com/rossmacarthur/serde/issues/2
 
 Version 0.2.0

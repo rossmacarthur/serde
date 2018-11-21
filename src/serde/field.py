@@ -89,8 +89,9 @@ from .util import zip_equal
 
 __all__ = [
     'Bool', 'Boolean', 'Choice', 'Date', 'DateTime', 'Dict', 'Dictionary', 'Domain', 'Email',
-    'Field', 'Float', 'Instance', 'Int', 'Integer', 'List', 'Nested', 'Slug', 'Str', 'String',
-    'Time', 'Tuple', 'Url', 'Uuid', 'create'
+    'Field', 'Float', 'Instance', 'Int', 'Integer', 'IpAddress', 'Ipv4Address', 'Ipv6Address',
+    'List', 'MacAddress', 'Nested', 'Slug', 'Str', 'String', 'Time', 'Tuple', 'Url', 'Uuid',
+    'create'
 ]
 
 
@@ -1255,5 +1256,9 @@ String = Str
 # Str types with extra validation.
 Domain = create('Domain', Str, validators=[validate.domain])
 Email = create('Email', Str, validators=[validate.email])
+IpAddress = create('IpAddress', Str, validators=[validate.ip_address])
+Ipv4Address = create('Ipv4Address', Str, validators=[validate.ipv4_address])
+Ipv6Address = create('Ipv6Address', Str, validators=[validate.ipv6_address])
+MacAddress = create('MacAddress', Str, validators=[validate.mac_address])
 Slug = create('Slug', Str, validators=[validate.slug])
 Url = create('Url', Str, validators=[validate.url])
