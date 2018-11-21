@@ -1,12 +1,11 @@
 import datetime
-
 from unittest import mock
 
 from pytest import raises
 
 from serde import (
-    Bool, DateTime, DeserializationError, Float, Int, List, Model, Nested,
-    SerdeError, SerializationError, Str, ValidationError
+    Bool, DateTime, DeserializationError, Float, Int, List, Model,
+    Nested, SerdeError, SerializationError, Str, ValidationError
 )
 
 
