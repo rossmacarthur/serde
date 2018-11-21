@@ -55,7 +55,7 @@ found in `~serde.field`.
 
 from .error import DeserializationError, SerdeError, SerializationError, ValidationError
 from .field import (
-    Bool, Boolean, Choice, DateTime, Date, Dict, Dictionary, Domain, Email, Field, Float,
+    Bool, Boolean, Choice, Date, DateTime, Dict, Dictionary, Domain, Email, Field, Float,
     Instance, Int, Integer, List, Nested, Slug, Str, String, Time, Tuple, Url, Uuid
 )
 from .model import Model
