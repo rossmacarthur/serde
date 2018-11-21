@@ -4,12 +4,14 @@ Changelog
 Version 0.2.1
 -------------
 
-*Unreleased*
+*Released on November 21th, 2018*
 
+- Fix SerdeErrors having incorrect context. (`#32`_)
 - Add IpAddress, Ipv4Address, Ipv6Address, and MacAddress Fields. (`#3`_,
   `#30`_)
 - Add DateTime, Date, and Time Fields. (`#2`_, `#29`_)
 
+.. _#32: https://github.com/rossmacarthur/serde/pull/30
 .. _#30: https://github.com/rossmacarthur/serde/pull/30
 .. _#29: https://github.com/rossmacarthur/serde/pull/29
 
