@@ -1,4 +1,5 @@
-.PHONY: help clean venv install install-travis install-all lint sort-imports test docs docs-clean docs-open docs-test dist release
+.PHONY: help clean venv install install-travis install-all lint sort-imports \
+		test docs docs-clean docs-open docs-test dist release
 
 PYTHON := python3
 VIRTUAL_ENV := $(or $(VIRTUAL_ENV), $(VIRTUAL_ENV), venv)
@@ -31,7 +32,8 @@ sort-imports: ## Sort import statements according to isort configuration.
 	$(VIRTUAL_ENV)/bin/isort --recursive .
 
 test: ## Run all tests.
-	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing --cov-fail-under 100 --doctest-modules --doctest-import "*<serde"
+	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing --cov-fail-under 100 \
+								  --doctest-modules --doctest-import "*<serde"
 
 docs: ## Compile docs.
 	$(MAKE) -C docs html
