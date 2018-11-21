@@ -1,6 +1,17 @@
 Changelog
 =========
 
+Version 0.2.1
+-------------
+
+*Unreleased*
+
+- Add DateTime, Date, and Time Fields. (`#2`_, `#29`_)
+
+.. _#29: https://github.com/rossmacarthur/serde/pull/29
+
+.. _#2: https://github.com/rossmacarthur/serde/issues/2
+
 Version 0.2.0
 -------------
 
