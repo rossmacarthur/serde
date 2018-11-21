@@ -108,7 +108,7 @@ def resolve_to_field_instance(thing, none_allowed=True):
         Field: a field instance.
     """
     # We import Model here to avoid circular dependency problems.
-    from serde.model import Model
+    from .model import Model
 
     # If the thing is None then create a generic Field.
     if none_allowed and thing is None:
