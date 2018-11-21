@@ -55,16 +55,17 @@ found in `~serde.field`.
 
 from .error import DeserializationError, SerdeError, SerializationError, ValidationError
 from .field import (
-    Bool, Boolean, Choice, Dict, Dictionary, Domain, Email, Field, Float,
-    Instance, Int, Integer, List, Nested, Slug, Str, String, Tuple, Url, Uuid
+    Bool, Boolean, Choice, DateTime, Date, Dict, Dictionary, Domain, Email, Field, Float,
+    Instance, Int, Integer, List, Nested, Slug, Str, String, Time, Tuple, Url, Uuid
 )
 from .model import Model
 
 
 __all__ = [
-    'Bool', 'Boolean', 'Choice', 'DeserializationError', 'Dict', 'Dictionary', 'Domain', 'Email',
-    'Field', 'Float', 'Instance', 'Int', 'Integer', 'List', 'Model', 'Nested', 'SerdeError',
-    'SerializationError', 'Slug', 'Str', 'String', 'Tuple', 'Url', 'Uuid', 'ValidationError'
+    'Bool', 'Boolean', 'Choice', 'DeserializationError', 'DateTime', 'Date', 'Dict', 'Dictionary',
+    'Domain', 'Email', 'Field', 'Float', 'Instance', 'Int', 'Integer', 'List', 'Model', 'Nested',
+    'SerdeError', 'SerializationError', 'Slug', 'Str', 'String', 'Time', 'Tuple', 'Url', 'Uuid',
+    'ValidationError'
 ]
 __title__ = 'serde'
 __version__ = '0.2.0'

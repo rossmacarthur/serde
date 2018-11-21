@@ -1,10 +1,11 @@
+import datetime
 import uuid
 from collections import OrderedDict
 
 from pytest import raises
 
 from serde import (
-    Bool, Choice, Dict, Domain, Email, Field, Float, Instance, Int, List,
+    Bool, Choice, DateTime, Date, Time, Dict, Domain, Email, Field, Float, Instance, Int, List,
     Model, Nested, SerdeError, Slug, Str, Tuple, Url, Uuid, ValidationError
 )
 from serde.field import create, resolve_to_field_instance
@@ -408,6 +409,62 @@ class TestChoice:
 
         with raises(ValidationError):
             field.validate('test')
+
+
+class TestDateTime:
+
+    def test___init__(self):
+        field = DateTime(format='%Y%m%d %H:%M:%S', required=False)
+        assert field.required is False
+        assert field.format == '%Y%m%d %H:%M:%S'
+
+    def test_serialize(self):
+        field = DateTime()
+        assert field.serialize(datetime.datetime(2001, 9, 11, 12, 5, 48)) == '2001-09-11T12:05:48'
+
+        field = DateTime(format='%Y%m%d %H:%M:%S')
+        assert field.serialize(datetime.datetime(2001, 9, 11, 12, 5, 48)) == '20010911 12:05:48'
+
+    def test_deserialize(self):
+        field = DateTime()
+        assert field.deserialize('2001-09-11T12:05:48') == datetime.datetime(2001, 9, 11, 12, 5, 48)
+
+        field = DateTime(format='%Y%m%d %H:%M:%S')
+        assert field.deserialize('20010911 12:05:48') == datetime.datetime(2001, 9, 11, 12, 5, 48)
+
+
+class TestDate:
+
+    def test_serialize(self):
+        field = Date()
+        assert field.serialize(datetime.date(2001, 9, 11)) == '2001-09-11'
+
+        field = Date(format='%Y%m%d')
+        assert field.serialize(datetime.date(2001, 9, 11)) == '20010911'
+
+    def test_deserialize(self):
+        field = Date()
+        assert field.deserialize('2001-09-11') == datetime.date(2001, 9, 11)
+
+        field = Date(format='%Y%m%d')
+        assert field.deserialize('20010911') == datetime.date(2001, 9, 11)
+
+
+class TestTime:
+
+    def test_serialize(self):
+        field = Time()
+        assert field.serialize(datetime.time(12, 5, 48)) == '12:05:48'
+
+        field = Time(format='%H%M%S')
+        assert field.serialize(datetime.time(12, 5, 48)) == '120548'
+
+    def test_deserialize(self):
+        field = Time()
+        assert field.deserialize('12:05:48') == datetime.time(12, 5, 48)
+
+        field = Time(format='%H%M%S')
+        assert field.deserialize('120548') == datetime.time(12, 5, 48)
 
 
 class TestDomain:
