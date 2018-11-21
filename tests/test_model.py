@@ -1,10 +1,11 @@
+import datetime
 from unittest import mock
 
 from pytest import raises
 
 from serde import (
-    Bool, DeserializationError, Float, Int, List, Model, Nested,
-    SerdeError, SerializationError, Str, ValidationError
+    Bool, DateTime, DeserializationError, Float, Int, List, Model,
+    Nested, SerdeError, SerializationError, Str, ValidationError
 )
 
 
@@ -354,3 +355,38 @@ class TestModel:
 
         example = Example(a=50, b='test')
         assert example.to_yaml(dict=dict, default_flow_style=False) == 'a: 50\nb: test\n'
+
+    def test_serialization_error_context(self):
+        class Example(Model):
+            a = DateTime()
+
+        try:
+            example = Example(a=datetime.datetime.utcnow())
+            example.a = 'not a datetime'
+
+        except SerializationError as e:
+            assert e.model is Example
+            assert e.field is Example._fields.a
+            assert e.value == 'not a datetime'
+
+    def test_deserialization_error_context(self):
+        class Example(Model):
+            a = DateTime()
+
+        try:
+            Example.from_dict({'a': 'not a datetime'})
+        except DeserializationError as e:
+            assert e.model is Example
+            assert e.field is Example._fields.a
+            assert e.value == 'not a datetime'
+
+    def test_validation_error_context(self):
+        class Example(Model):
+            a = Int()
+
+        try:
+            Example('not an int')
+        except ValidationError as e:
+            assert e.model is Example
+            assert e.field is Example._fields.a
+            assert e.value == 'not an int'

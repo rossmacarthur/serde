@@ -20,10 +20,11 @@ class SerdeError(Exception):
             model (~serde.model.Model): the Model context.
         """
         super().__init__(message)
-        self.cause = cause
-        self.value = value
-        self.field = field
-        self.model = model
+        self.cause = None
+        self.value = None
+        self.field = None
+        self.model = None
+        self.add_context(cause=cause, value=value, field=field, model=model)
 
     @property
     def message(self):
@@ -42,6 +43,8 @@ class SerdeError(Exception):
             field (~serde.field.Field): the Field context.
             model (~serde.model.Model): the Model context.
         """
+        from .model import Model
+
         if cause is not None:
             self.cause = cause
 
@@ -52,7 +55,10 @@ class SerdeError(Exception):
             self.field = field
 
         if model is not None:
-            self.model = model
+            if isinstance(model, Model):
+                self.model = model.__class__
+            else:
+                self.model = model
 
     def __repr__(self):
         """
