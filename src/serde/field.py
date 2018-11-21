@@ -1082,7 +1082,7 @@ class DateTime(Instance):
     deserializes string representations of datetimes as `~datetime.datetime`
     objects.
 
-    The date format must be specified otherwise it will default to ISO 8601.
+    The date format can be specified. It will default to ISO 8601.
 
     ::
 
