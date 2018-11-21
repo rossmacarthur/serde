@@ -9,7 +9,7 @@ Serde
     :target: https://serde.readthedocs.io
     :alt: Documentation Status
 
-.. image:: https://img.shields.io/travis/rossmacarthur/serde.svg?style=flat-square
+.. image:: https://img.shields.io/travis/rossmacarthur/serde/master.svg?style=flat-square
     :target: https://travis-ci.org/rossmacarthur/serde
     :alt: Build Status
 
