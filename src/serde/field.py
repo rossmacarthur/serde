@@ -89,8 +89,9 @@ from .util import zip_equal
 
 __all__ = [
     'Bool', 'Boolean', 'Choice', 'Date', 'DateTime', 'Dict', 'Dictionary', 'Domain', 'Email',
-    'Field', 'Float', 'Instance', 'Int', 'Integer', 'List', 'Nested', 'Slug', 'Str', 'String',
-    'Time', 'Tuple', 'Url', 'Uuid', 'create'
+    'Field', 'Float', 'Instance', 'Int', 'Integer', 'IpAddress', 'Ipv4Address', 'Ipv6Address',
+    'List', 'MacAddress', 'Nested', 'Slug', 'Str', 'String', 'Time', 'Tuple', 'Url', 'Uuid',
+    'create'
 ]
 
 

@@ -5,8 +5,9 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde import (
-    Bool, Choice, Date, DateTime, Dict, Domain, Email, Field, Float, Instance, Int,
-    List, Model, Nested, SerdeError, Slug, Str, Time, Tuple, Url, Uuid, ValidationError
+    Bool, Choice, Date, DateTime, Dict, Domain, Email, Field, Float, Instance,
+    Int, IpAddress, Ipv4Address, Ipv6Address, List, MacAddress, Model, Nested,
+    SerdeError, Slug, Str, Time, Tuple, Url, Uuid, ValidationError
 )
 from serde.field import create, resolve_to_field_instance
 
@@ -487,6 +488,51 @@ class TestEmail:
 
         with raises(ValidationError):
             field.validate('derp')
+
+
+class TestIpAddress:
+
+    def test_validate(self):
+        field = IpAddress()
+
+        field.validate('10.0.0.1')
+        field.validate('2001:db8:85a3:0:0:8a2e:370:7334')
+
+        with raises(ValidationError):
+            field.validate('10.0.0.256')
+
+
+class TestIpv4Address:
+
+    def test_validate(self):
+        field = Ipv4Address()
+
+        field.validate('10.0.0.1')
+
+        with raises(ValidationError):
+            field.validate('10.0.0.256')
+
+
+class TestIpv6Address:
+
+    def test_validate(self):
+        field = Ipv6Address()
+
+        field.validate('2001:db8:85a3:0:0:8a2e:370:7334')
+
+        with raises(ValidationError):
+            field.validate('2001:db8:85a3:0:0:8a2e:370:73345')
+
+
+class TestMacAddress:
+
+    def test_validate(self):
+        field = MacAddress()
+
+        field.validate('3a:00:40:82:ad:00')
+
+        with raises(ValidationError):
+            field.validate('3a:00:40:82:a:00')
 
 
 class TestSlug:
