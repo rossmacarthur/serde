@@ -148,7 +148,7 @@ def ip_address(value):
         ValidationError: when the value is not a valid IP address.
     """
     if not validators.ipv4(value) and not validators.ipv6(value):
-        raise ValidationError('{!r} is not a valid IP address')
+        raise ValidationError('{!r} is not a valid IP address'.format(value))
 
 
 def ipv4_address(value):
@@ -162,7 +162,7 @@ def ipv4_address(value):
         ValidationError: when the value is not a valid IP version 4 address.
     """
     if not validators.ipv4(value):
-        raise ValidationError('{!r} is not a valid IPv4 address')
+        raise ValidationError('{!r} is not a valid IPv4 address'.format(value))
 
 
 def ipv6_address(value):
@@ -176,7 +176,7 @@ def ipv6_address(value):
         ValidationError: when the value is not a valid IP version 6 address.
     """
     if not validators.ipv6(value):
-        raise ValidationError('{!r} is not a valid IPv6 address')
+        raise ValidationError('{!r} is not a valid IPv6 address'.format(value))
 
 
 def mac_address(value):
@@ -190,7 +190,7 @@ def mac_address(value):
         ValidationError: when the value is not a valid MAC address.
     """
     if not validators.mac_address(value):
-        raise ValidationError('{!r} is not a valid MAC address')
+        raise ValidationError('{!r} is not a valid MAC address'.format(value))
 
 
 def slug(value):
