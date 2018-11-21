@@ -62,7 +62,7 @@ from .model import Model
 
 
 __all__ = [
-    'Bool', 'Boolean', 'Choice', 'DeserializationError', 'DateTime', 'Date', 'Dict', 'Dictionary',
+    'Bool', 'Boolean', 'Choice', 'Date', 'DateTime', 'DeserializationError', 'Dict','Dictionary',
     'Domain', 'Email', 'Field', 'Float', 'Instance', 'Int', 'Integer', 'List', 'Model', 'Nested',
     'SerdeError', 'SerializationError', 'Slug', 'Str', 'String', 'Time', 'Tuple', 'Url', 'Uuid',
     'ValidationError'
