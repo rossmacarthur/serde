@@ -77,7 +77,10 @@ deserialize, and validate methods.
     OrderedDict([('sILLy', 'tset')])
 """
 
+import datetime
 import uuid
+
+import isodate
 
 from . import validate
 from .error import SerdeError
@@ -85,9 +88,9 @@ from .util import zip_equal
 
 
 __all__ = [
-    'Bool', 'Boolean', 'Choice', 'Dict', 'Dictionary', 'Domain', 'Email', 'Field', 'Float',
-    'Instance', 'Int', 'Integer', 'List', 'Nested', 'Slug', 'Str', 'String', 'Tuple', 'Url', 'Uuid',
-    'create'
+    'Bool', 'Boolean', 'Choice', 'Date', 'DateTime', 'Dict', 'Dictionary', 'Domain', 'Email',
+    'Field', 'Float', 'Instance', 'Int', 'Integer', 'List', 'Nested', 'Slug', 'Str', 'String',
+    'Time', 'Tuple', 'Url', 'Uuid', 'create'
 ]
 
 
@@ -1069,6 +1072,121 @@ class Choice(Field):
             value: the value to validate.
         """
         validate.contains(self.choices)(value)
+
+
+class DateTime(Instance):
+    """
+    A `~datetime.datetime` field.
+
+    This field serializes `~datetime.datetime` objects as strings and
+    deserializes string representations of datetimes as `~datetime.datetime`
+    objects.
+
+    The date format can be specified. It will default to ISO 8601.
+
+    ::
+
+        >>> class Entry(Model):
+        ...     timestamp = DateTime(format='%Y-%m-%d %H:%M:%S')
+
+        >>> entry = Entry(datetime.datetime(2001, 9, 11, 12, 5, 48))
+        >>> entry.to_dict()
+        OrderedDict([('timestamp', '2001-09-11 12:05:48')])
+    """
+
+    type = datetime.datetime
+
+    def __init__(self, format='iso8601', **kwargs):
+        """
+        Create a new DateTime.
+
+        Args:
+            format (str): the datetime format to use. "iso8601" may be used for
+                ISO 8601 datetimes.
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super().__init__(self.__class__.type, **kwargs)
+        self.format = format
+
+    def serialize(self, value):
+        """
+        Serialize the given `~datetime.datetime` as a string.
+
+        Args:
+            value (~datetime.datetime): the datetime object to serialize.
+
+        Returns:
+            str: a string representation of the datetime.
+        """
+        if self.format == 'iso8601':
+            return value.isoformat()
+        else:
+            return value.strftime(self.format)
+
+    def deserialize(self, value):
+        """
+        Deserialize the given string as a `~datetime.datetime`.
+
+        Args:
+            value (str): the string to deserialize.
+
+        Returns:
+            ~datetime.datetime: the deserialized datetime.
+        """
+        if self.format == 'iso8601':
+            return isodate.parse_datetime(value)
+        else:
+            return datetime.datetime.strptime(value, self.format)
+
+
+class Date(DateTime):
+    """
+    A `~datetime.date` field.
+
+    This field behaves in a similar fashion to the `DateTime` field.
+    """
+
+    type = datetime.date
+
+    def deserialize(self, value):
+        """
+        Deserialize the given string as a `~datetime.date`.
+
+        Args:
+            value (str): the string to deserialize.
+
+        Returns:
+            ~datetime.date: the deserialized date.
+        """
+        if self.format == 'iso8601':
+            return isodate.parse_date(value)
+        else:
+            return datetime.datetime.strptime(value, self.format).date()
+
+
+class Time(DateTime):
+    """
+    A `~datetime.time` field.
+
+    This field behaves in a similar fashion to the `DateTime` field.
+    """
+
+    type = datetime.time
+
+    def deserialize(self, value):
+        """
+        Deserialize the given string as a `~datetime.time`.
+
+        Args:
+            value (str): the string to deserialize.
+
+        Returns:
+            ~datetime.time: the deserialized date.
+        """
+        if self.format == 'iso8601':
+            return isodate.parse_time(value)
+        else:
+            return datetime.datetime.strptime(value, self.format).time()
 
 
 class Uuid(Instance):

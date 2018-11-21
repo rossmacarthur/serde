@@ -21,6 +21,7 @@ with io.open(os.path.join(here, 'README.rst'), encoding='utf8') as f:
     metadata['long_description'] = f.read()
 
 install_requires = [
+    'isodate>=0.6.0<0.7.0',
     'validators>=0.12.0<0.13.0'
 ]
 
