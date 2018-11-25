@@ -399,8 +399,8 @@ class Model(metaclass=ModelType):
         ::
 
             >>> class Owner(Model):
-            ...     cats_name = Str(required=False)
-            ...     dogs_name = Str(required=False)
+            ...     cats_name = field.Str(required=False)
+            ...     dogs_name = field.Str(required=False)
             ...
             ...     def validate(self):
             ...         msg = 'No one is a cat *and* a dog person!'

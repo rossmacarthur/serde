@@ -53,21 +53,10 @@ See `~serde.model` for more examples. Documentation for supported fields can be
 found in `~serde.field`.
 """
 
-from .error import DeserializationError, SerdeError, SerializationError, ValidationError
-from .field import (
-    Bool, Boolean, Choice, Date, DateTime, Dict, Dictionary, Domain, Email,
-    Field, Float, Instance, Int, Integer, IpAddress, Ipv4Address, Ipv6Address,
-    List, MacAddress, Nested, Slug, Str, String, Time, Tuple, Url, Uuid
-)
 from .model import Model
 
 
-__all__ = [
-    'Bool', 'Boolean', 'Choice', 'Date', 'DateTime', 'DeserializationError', 'Dict', 'Dictionary',
-    'Domain', 'Email', 'Field', 'Float', 'Instance', 'Int', 'Integer', 'IpAddress', 'Ipv4Address',
-    'Ipv6Address', 'List', 'MacAddress', 'Model', 'Nested', 'SerdeError', 'SerializationError',
-    'Slug', 'Str', 'String', 'Time', 'Tuple', 'Url', 'Uuid', 'ValidationError'
-]
+__all__ = ['Model', 'error', 'field', 'validate']
 __title__ = 'serde'
 __version__ = '0.2.1'
 __url__ = 'https://github.com/rossmacarthur/serde'

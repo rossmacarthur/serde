@@ -3,18 +3,16 @@ from unittest import mock
 
 from pytest import raises
 
-from serde import (
-    Bool, DateTime, DeserializationError, Float, Int, List, Model,
-    Nested, SerdeError, SerializationError, Str, ValidationError
-)
+from serde import Model, field
+from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
 
 
 class TestModel:
 
     def test___new__(self):
         class Example(Model):
-            a = Int()
-            b = Bool()
+            a = field.Int()
+            b = field.Bool()
 
         # The field attributes should not be present on the final class.
         assert not hasattr(Example, 'a')
@@ -30,55 +28,55 @@ class TestModel:
         # When extending a model the parent field attributes should also be
         # present, but subclass fields of the same name should override them.
         class Example2(Example):
-            b = Float()
-            c = Float()
+            b = field.Float()
+            c = field.Float()
 
         assert hasattr(Example2._fields, 'a')
-        assert isinstance(Example2._fields.a, Int)
+        assert isinstance(Example2._fields.a, field.Int)
         assert hasattr(Example2._fields, 'b')
-        assert isinstance(Example2._fields.b, Float)
+        assert isinstance(Example2._fields.b, field.Float)
         assert hasattr(Example2._fields, 'c')
-        assert isinstance(Example2._fields.c, Float)
+        assert isinstance(Example2._fields.c, field.Float)
 
         class Example3(Example2):
             pass
 
         assert hasattr(Example2._fields, 'a')
-        assert isinstance(Example2._fields.a, Int)
+        assert isinstance(Example2._fields.a, field.Int)
         assert hasattr(Example2._fields, 'b')
-        assert isinstance(Example2._fields.b, Float)
+        assert isinstance(Example2._fields.b, field.Float)
         assert hasattr(Example2._fields, 'c')
-        assert isinstance(Example2._fields.c, Float)
+        assert isinstance(Example2._fields.c, field.Float)
 
         class Example4(Model):
-            a = Int()
-            b = Float()
+            a = field.Int()
+            b = field.Float()
 
             def __init__(self):
                 super().__init__(a=5, b=50.5)
 
         assert hasattr(Example4._fields, 'a')
-        assert isinstance(Example4._fields.a, Int)
+        assert isinstance(Example4._fields.a, field.Int)
         assert hasattr(Example4._fields, 'b')
-        assert isinstance(Example4._fields.b, Float)
+        assert isinstance(Example4._fields.b, field.Float)
 
         example = Example4()
         assert example.a == 5
         assert example.b == 50.5
 
         class Example5(Example4):
-            b = Int()
-            c = Float()
+            b = field.Int()
+            c = field.Float()
 
             def __init__(self):
                 super(Example4, self).__init__(a=5, b=50, c=100.5)
 
         assert hasattr(Example5._fields, 'a')
-        assert isinstance(Example5._fields.a, Int)
+        assert isinstance(Example5._fields.a, field.Int)
         assert hasattr(Example5._fields, 'b')
-        assert isinstance(Example5._fields.b, Int)
+        assert isinstance(Example5._fields.b, field.Int)
         assert hasattr(Example5._fields, 'c')
-        assert isinstance(Example5._fields.c, Float)
+        assert isinstance(Example5._fields.c, field.Float)
 
         example = Example5()
         assert example.a == 5
@@ -102,8 +100,8 @@ class TestModel:
 
         # A simple Model with one required field and one optional
         class Example(Model):
-            a = Int(required=False)
-            b = Bool()
+            a = field.Int(required=False)
+            b = field.Bool()
 
         # Passing in the same argument twice.
         with raises(SerdeError):
@@ -133,16 +131,16 @@ class TestModel:
 
         # A more complex Model
         class SubExample(Model):
-            x = Int()
+            x = field.Int()
 
         def assert_value_between_0_and_20(value):
             assert 0 <= value < 20
 
         class Example(Model):
-            a = Int(validators=[assert_value_between_0_and_20])
-            b = Bool(required=False, default=False)
-            c = Nested(SubExample, required=False)
-            d = Nested(SubExample)
+            a = field.Int(validators=[assert_value_between_0_and_20])
+            b = field.Bool(required=False, default=False)
+            c = field.Nested(SubExample, required=False)
+            d = field.Nested(SubExample)
 
         # Just passing in required
         example = Example(a=5, d=SubExample(x=10))
@@ -174,8 +172,8 @@ class TestModel:
 
     def test___eq__(self):
         class Example(Model):
-            a = Int()
-            b = Bool(required=False)
+            a = field.Int()
+            b = field.Bool(required=False)
 
         assert Example(a=5) != Example(a=6)
         assert Example(a=5) != Example(a=6, b=True)
@@ -184,11 +182,11 @@ class TestModel:
     def test___hash__(self):
         # A more complex Model with a sub Model
         class SubExample(Model):
-            x = Float()
+            x = field.Float()
 
         class Example(Model):
-            a = List(Int)
-            b = Nested(SubExample)
+            a = field.List(field.Int)
+            b = field.Nested(SubExample)
 
         assert (hash(Example(a=[5], b=SubExample(x=10.5)))
                 == hash(Example(a=[5], b=SubExample(x=10.5))))
@@ -197,8 +195,8 @@ class TestModel:
 
     def test_to_dict(self):
         class Example(Model):
-            a = Int()
-            b = Bool(required=False)
+            a = field.Int()
+            b = field.Bool(required=False)
 
         example = Example(a=5)
         assert example.to_dict() == {'a': 5}
@@ -208,12 +206,12 @@ class TestModel:
 
         # A more complex Model with a sub Model
         class SubExample(Model):
-            x = Float(serializers=[lambda x: x])
+            x = field.Float(serializers=[lambda x: x])
 
         class Example(Model):
-            a = Int(rename='d')
-            b = Nested(SubExample)
-            c = Bool(required=False)
+            a = field.Int(rename='d')
+            b = field.Nested(SubExample)
+            c = field.Bool(required=False)
 
         example = Example(a=5, b=SubExample(x=10.5))
         assert example.a == 5
@@ -223,7 +221,7 @@ class TestModel:
         assert example.to_dict() == {'d': 5, 'b': {'x': 10.5}, 'c': True}
 
         class Example(Model):
-            a = List(Int)
+            a = field.List(field.Int)
 
         example = Example(a=[1, 2, 3, 4])
 
@@ -246,8 +244,8 @@ class TestModel:
     def test_from_dict(self):
         # A simple Model.
         class Example(Model):
-            a = Int()
-            b = Bool(required=False)
+            a = field.Int()
+            b = field.Bool(required=False)
 
         example = Example(a=5)
         assert Example.from_dict({'a': 5}) == example
@@ -263,12 +261,12 @@ class TestModel:
 
         # A more complex Model with a sub Model
         class SubExample(Model):
-            x = Float(deserializers=[lambda x: x])
+            x = field.Float(deserializers=[lambda x: x])
 
         class Example(Model):
-            a = Int()
-            b = Nested(SubExample)
-            c = Bool(required=False)
+            a = field.Int()
+            b = field.Nested(SubExample)
+            c = field.Bool(required=False)
 
         example = Example(a=5, b=SubExample(x=10.5))
         assert Example.from_dict({'a': 5, 'b': {'x': 10.5}}) == example
@@ -305,23 +303,23 @@ class TestModel:
 
     def test_from_json(self):
         class Example(Model):
-            a = Int()
-            b = Str()
+            a = field.Int()
+            b = field.Str()
 
         assert Example.from_json('{"a": 50, "b": "test"}') == Example(a=50, b='test')
 
     def test_to_json(self):
         class Example(Model):
-            a = Int()
-            b = Str()
+            a = field.Int()
+            b = field.Str()
 
         example = Example(a=50, b='test')
         assert example.to_json(sort_keys=True) == '{"a": 50, "b": "test"}'
 
     def test_from_toml(self):
         class Example(Model):
-            a = Int()
-            b = Str()
+            a = field.Int()
+            b = field.Str()
 
         with mock.patch('serde.model.toml', None):
             with raises(SerdeError):
@@ -331,16 +329,16 @@ class TestModel:
 
     def test_to_toml(self):
         class Example(Model):
-            a = Int()
-            b = Str()
+            a = field.Int()
+            b = field.Str()
 
         example = Example(a=50, b='test')
         assert example.to_toml() == 'a = 50\nb = "test"\n'
 
     def test_from_yaml(self):
         class Example(Model):
-            a = Int()
-            b = Str()
+            a = field.Int()
+            b = field.Str()
 
         with mock.patch('serde.model.yaml', None):
             with raises(SerdeError):
@@ -350,15 +348,15 @@ class TestModel:
 
     def test_to_yaml(self):
         class Example(Model):
-            a = Int()
-            b = Str()
+            a = field.Int()
+            b = field.Str()
 
         example = Example(a=50, b='test')
         assert example.to_yaml(dict=dict, default_flow_style=False) == 'a: 50\nb: test\n'
 
     def test_serialization_error_context(self):
         class Example(Model):
-            a = DateTime()
+            a = field.DateTime()
 
         try:
             example = Example(a=datetime.datetime.utcnow())
@@ -371,7 +369,7 @@ class TestModel:
 
     def test_deserialization_error_context(self):
         class Example(Model):
-            a = DateTime()
+            a = field.DateTime()
 
         try:
             Example.from_dict({'a': 'not a datetime'})
@@ -382,11 +380,11 @@ class TestModel:
 
     def test_validation_error_context(self):
         class Example(Model):
-            a = Int()
+            a = field.Int()
 
         try:
-            Example('not an int')
+            Example('not an field.Int')
         except ValidationError as e:
             assert e.model is Example
             assert e.field is Example._fields.a
-            assert e.value == 'not an int'
+            assert e.value == 'not an field.Int'

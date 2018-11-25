@@ -4,12 +4,13 @@ from collections import OrderedDict
 
 from pytest import raises
 
-from serde import (
+from serde import Model
+from serde.error import SerdeError, ValidationError
+from serde.field import (
     Bool, Choice, Date, DateTime, Dict, Domain, Email, Field, Float, Instance,
-    Int, IpAddress, Ipv4Address, Ipv6Address, List, MacAddress, Model, Nested,
-    SerdeError, Slug, Str, Time, Tuple, Url, Uuid, ValidationError
+    Int, IpAddress, Ipv4Address, Ipv6Address, List, MacAddress, Nested, Slug,
+    Str, Time, Tuple, Url, Uuid, _resolve_to_field_instance, create
 )
-from serde.field import create, resolve_to_field_instance
 
 
 class Stringify(Field):
@@ -123,29 +124,6 @@ class TestInstance:
                 example.validate(value)
 
 
-class TestBool:
-
-    def test___init__(self):
-        field = Bool(rename='test', required=False, default=False)
-        assert field.rename is 'test'
-        assert field.required is False
-        assert field.default is False
-        assert field.validators == []
-
-    def test_deserialize(self):
-        field = Bool()
-        assert field.deserialize(False) is False
-        assert field.deserialize(True) is True
-
-    def test_validate(self):
-        field = Bool()
-        field.validate(False)
-        field.validate(True)
-
-        with raises(ValidationError):
-            field.validate('True')
-
-
 class TestDict:
 
     def test_serialize(self):
@@ -188,7 +166,7 @@ class TestDict:
 
     def test_validate(self):
         # A field that is a key value pair of Strs and Stringifys.
-        field = Dict(Str, Stringify, min_length=3, max_length=5)
+        field = Dict(Str, Stringify)
 
         # A list of Stringifyiable serializable types will pass validation.
         field.validate({'a': False, 'b': ['s'], 'c': {'a': 5}})
@@ -201,68 +179,6 @@ class TestDict:
         # A dictionary of with keys that aren't Strs should fail validation.
         with raises(ValidationError):
             field.validate({5: 'hello'})
-
-        # Less than the required amount
-        with raises(ValidationError):
-            field.validate({'a': 0, 'b': 1})
-
-        # More than the allowed amount
-        with raises(ValidationError):
-            field.validate({'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5})
-
-
-class TestFloat:
-
-    def test___init__(self):
-        field = Float(rename='test', required=False, default=False)
-        assert field.min is None
-        assert field.max is None
-        assert field.rename is 'test'
-        assert field.required is False
-        assert field.default is False
-        assert field.validators == []
-
-    def test_deserialize(self):
-        field = Float()
-        assert field.deserialize(0.5) == 0.5
-        assert field.deserialize(-1000.0) == -1000.0
-
-    def test_validate(self):
-        field = Float(min=-100.0, max=500.0)
-        field.validate(-100.0)
-        field.validate(0.0)
-        field.validate(500.0)
-
-        for value in (0, -1000.0, -100.1, 500.1, 1000.0):
-            with raises(ValidationError):
-                field.validate(value)
-
-
-class TestInt:
-
-    def test___init__(self):
-        field = Int(rename='test', required=False, default=False)
-        assert field.min is None
-        assert field.max is None
-        assert field.rename is 'test'
-        assert field.required is False
-        assert field.default is False
-        assert field.validators == []
-
-    def test_deserialize(self):
-        field = Int()
-        assert field.deserialize(0.5) == 0.5
-        assert field.deserialize(-1000.0) == -1000.0
-
-    def test_validate(self):
-        field = Int(min=-100, max=500)
-        field.validate(-100)
-        field.validate(0)
-        field.validate(500)
-
-        for value in (0.0, -1000, -101, 501, 1000):
-            with raises(ValidationError):
-                field.validate(value)
 
 
 class TestList:
@@ -303,41 +219,15 @@ class TestList:
 
     def test_validate(self):
         # A field that must be a list of Stringifys.
-        example = List(Stringify, min_length=2, max_length=3)
+        example = List(Stringify)
 
         # A list of Stryfiable types will pass validation.
         example.validate([False, ['s'], {'a': 5}])
 
         # Any value that is not an Iterable will raise a ValidationError
-        for value in (None, 20.0, object, type, [0], [0, 1, 2, 4]):
+        for value in (None, 20.0, object, type):
             with raises(ValidationError):
                 example.validate(value)
-
-
-class TestStr:
-
-    def test___init__(self):
-        field = Str(rename='test', required=False, default=False)
-        assert field.min_length is None
-        assert field.max_length is None
-        assert field.rename is 'test'
-        assert field.required is False
-        assert field.default is False
-        assert field.validators == []
-
-    def test_deserialize(self):
-        field = Str()
-        assert field.deserialize('a') == 'a'
-        assert field.deserialize(' ') == ' '
-
-    def test_validate(self):
-        field = Str(min_length=1, max_length=5)
-        field.validate('hello')
-        field.validate('a')
-
-        for value in (None, 'hello2', ''):
-            with raises(ValidationError):
-                field.validate(value)
 
 
 class TestTuple:
@@ -394,6 +284,103 @@ class TestTuple:
         # ValidationError
         with raises(ValidationError):
             example.validate((None, 'test', None))
+
+
+class TestBool:
+
+    def test___init__(self):
+        field = Bool(rename='test', required=False, default=False)
+        assert field.rename is 'test'
+        assert field.required is False
+        assert field.default is False
+        assert field.validators == []
+
+    def test_deserialize(self):
+        field = Bool()
+        assert field.deserialize(False) is False
+        assert field.deserialize(True) is True
+
+    def test_validate(self):
+        field = Bool()
+        field.validate(False)
+        field.validate(True)
+
+        with raises(ValidationError):
+            field.validate('True')
+
+
+class TestFloat:
+
+    def test___init__(self):
+        field = Float(rename='test', required=False, default=False)
+        assert field.rename is 'test'
+        assert field.required is False
+        assert field.default is False
+        assert field.validators == []
+
+    def test_deserialize(self):
+        field = Float()
+        assert field.deserialize(0.5) == 0.5
+        assert field.deserialize(-1000.0) == -1000.0
+
+    def test_validate(self):
+        field = Float()
+        field.validate(-100.0)
+        field.validate(0.0)
+        field.validate(500.0)
+
+        for value in (0, '-1000.0'):
+            with raises(ValidationError):
+                field.validate(value)
+
+
+class TestInt:
+
+    def test___init__(self):
+        field = Int(rename='test', required=False, default=False)
+        assert field.rename is 'test'
+        assert field.required is False
+        assert field.default is False
+        assert field.validators == []
+
+    def test_deserialize(self):
+        field = Int()
+        assert field.deserialize(0.5) == 0.5
+        assert field.deserialize(-1000.0) == -1000.0
+
+    def test_validate(self):
+        field = Int()
+        field.validate(-100)
+        field.validate(0)
+        field.validate(500)
+
+        for value in (0.0, '500'):
+            with raises(ValidationError):
+                field.validate(value)
+
+
+class TestStr:
+
+    def test___init__(self):
+        field = Str(rename='test', required=False, default=False)
+        assert field.rename is 'test'
+        assert field.required is False
+        assert field.default is False
+        assert field.validators == []
+
+    def test_deserialize(self):
+        field = Str()
+        assert field.deserialize('a') == 'a'
+        assert field.deserialize(' ') == ' '
+
+    def test_validate(self):
+        field = Str()
+        field.validate('hello')
+        field.validate('a')
+
+        for value in (None, 5):
+            with raises(ValidationError):
+                field.validate(value)
 
 
 class TestChoice:
@@ -586,41 +573,41 @@ class TestUuid:
             field.validate('2d7026c8-cc58-11e8-bd7a-784f4386978e')
 
 
-def test_resolve_to_field_instance():
+def test__resolve_to_field_instance():
     # An instance of a field should work
-    assert resolve_to_field_instance(Field()) == Field()
+    assert _resolve_to_field_instance(Field()) == Field()
 
     # A Field class should work
-    assert resolve_to_field_instance(Field) == Field()
+    assert _resolve_to_field_instance(Field) == Field()
 
     # A Model class should work
     class Example(Model):
         pass
 
-    assert resolve_to_field_instance(Example) == Nested(Example)
+    assert _resolve_to_field_instance(Example) == Nested(Example)
 
     # All the base types should resolve correctly
-    assert resolve_to_field_instance(bool) == Bool()
-    assert resolve_to_field_instance(dict) == Dict()
-    assert resolve_to_field_instance(float) == Float()
-    assert resolve_to_field_instance(int) == Int()
-    assert resolve_to_field_instance(list) == List()
-    assert resolve_to_field_instance(str) == Str()
-    assert resolve_to_field_instance(tuple) == Tuple()
+    assert _resolve_to_field_instance(bool) == Bool()
+    assert _resolve_to_field_instance(dict) == Dict()
+    assert _resolve_to_field_instance(float) == Float()
+    assert _resolve_to_field_instance(int) == Int()
+    assert _resolve_to_field_instance(list) == List()
+    assert _resolve_to_field_instance(str) == Str()
+    assert _resolve_to_field_instance(tuple) == Tuple()
 
     # A Model instance should not work
     with raises(TypeError):
-        resolve_to_field_instance(Example())
+        _resolve_to_field_instance(Example())
 
     with raises(TypeError):
-        resolve_to_field_instance(Example())
+        _resolve_to_field_instance(Example())
 
 
 def test_create():
     # Create a Field with a new serialize and deserialize method.
     Reversed = create(   # noqa: N806
         'Example',
-        Str,
+        base=Str,
         serializers=[lambda s: s[::-1]],
         deserializers=[lambda s: s[::-1]]
     )
@@ -643,3 +630,5 @@ def test_create():
 
     with raises(ValidationError):
         Example('derp')
+
+    assert issubclass(create('Example'), Field)

@@ -36,52 +36,106 @@ def instance(type):
     return instance_
 
 
-def between(min=None, max=None, units=''):
+def min(endpoint, inclusive=True):
     """
-    Validate that the given number is between a minimum and/or maximum.
+    Validate that a value is greater than and/or equal to the given endpoint.
 
     Args:
-        min: the minimum value allowed.
-        max: the maximum value allowed.
-        units: the unit measurements to use in the error message.
+        endpoint: the minimum value allowed.
+        inclusive (bool): whether the minimum value is allowed.
+
+    Returns:
+        function: the validator function.
+    """
+    def min_(value):
+        """
+        Validate that the given value is greater than and/or equal to a minimum.
+
+        Args:
+            value: the value to validate.
+
+        ValidationError: when the value is greater than and/or equal to the
+                maximum.
+        """
+        if inclusive:
+            if value < endpoint:
+                raise ValidationError(
+                    'expected at least {!r} but got {!r}'
+                    .format(endpoint, value)
+                )
+        else:
+            if value <= endpoint:
+                raise ValidationError(
+                    'expected more than {!r} but got {!r}'
+                    .format(endpoint, value)
+                )
+
+    return min_
+
+
+def max(endpoint, inclusive=True):
+    """
+    Validate that a value is less than and/or equal to the given endpoint.
+
+    Args:
+        endpoint: the maximum value allowed.
+        inclusive (bool): whether the maximum value is allowed.
+
+    Returns:
+        function: the validator function.
+    """
+    def max_(value):
+        """
+        Validate that the given value is less than and/or equal to the maximum.
+
+        Args:
+            value: the value to validate.
+
+        Raises:
+            ValidationError: when the value is not less than and/or equal to the
+                maximum.
+        """
+        if inclusive:
+            if value > endpoint:
+                raise ValidationError(
+                    'expected at most {!r} but got {!r}'
+                    .format(endpoint, value)
+                )
+        else:
+            if value >= endpoint:
+                raise ValidationError(
+                    'expected less than {!r} but got {!r}'
+                    .format(endpoint, value)
+                )
+
+    return max_
+
+
+def between(min_endpoint, max_endpoint, inclusive=True):
+    """
+    Validate that the given number is between a minimum and maximum.
+
+    Args:
+        min_endpoint: the minimum value allowed.
+        max_endpoint: the maximum value allowed.
+        inclusive (bool): whether the endpoint values are allowed.
 
     Returns:
         function: the validator function.
     """
     def between_(value):
         """
-        Validate that the given number is between a minimum and/or maximum.
+        Validate that the given number is between a minimum and maximum.
 
         Args:
             value: the value to validate.
 
         Raises:
-            ValidationError: when the value is not between the minimum and/or
+            ValidationError: when the value is not between the minimum and
                 maximum.
         """
-        nonlocal units
-
-        if units:
-            units = ' ' + units
-
-        if min is not None and min == max:
-            if value != min:
-                raise ValidationError(
-                    'expected {0!r}{2} but got {1!r}{2}'
-                    .format(min, value, units)
-                )
-        else:
-            if min is not None and value < min:
-                raise ValidationError(
-                    'expected at least {0!r}{2} but got {1!r}{2}'
-                    .format(min, value, units)
-                )
-
-            if max is not None and value > max:
-                raise ValidationError(
-                    'expected at most {0!r}{2} but got {1!r}{2}'
-                    .format(max, value, units)
-                )
+        min(min_endpoint, inclusive=inclusive)(value)
+        max(max_endpoint, inclusive=inclusive)(value)
 
     return between_
 
