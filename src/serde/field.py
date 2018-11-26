@@ -39,11 +39,9 @@ a `Percent` field we would do the following.
 
 ::
 
-    >>> from serde import field, validate
-
     >>> Percent = field.create(
     ...     'Percent',
-    ...     field.Float,
+    ...     Float,
     ...     validators=[validate.between(0.0, 100.0)]
     ... )
 
@@ -85,6 +83,40 @@ import isodate
 from . import validate
 from .error import SerdeError
 from .util import zip_equal
+
+
+__all__ = [
+    'Bool',
+    'Boolean',
+    'Bytes',
+    'Choice',
+    'Complex',
+    'Date',
+    'DateTime',
+    'Dict',
+    'Dictionary',
+    'Domain',
+    'Email',
+    'Field',
+    'Float',
+    'Instance',
+    'Int',
+    'Integer',
+    'IpAddress',
+    'Ipv4Address',
+    'Ipv6Address',
+    'List',
+    'MacAddress',
+    'Nested',
+    'Slug',
+    'Str',
+    'String',
+    'Time',
+    'Tuple',
+    'Url',
+    'Uuid',
+    'create'
+]
 
 
 def _resolve_to_field_instance(thing, none_allowed=True):
@@ -230,6 +262,8 @@ class Field:
         """
         Serialize the given value according to this Field's specification.
 
+        This method is called by the Model.
+
         Args:
             value: the value to serialize.
 
@@ -246,6 +280,8 @@ class Field:
     def _deserialize(self, value):
         """
         Deserialize the given value according to this Field's specification.
+
+        This method is called by the Model.
 
         Args:
             value: the value to deserialize.
@@ -280,7 +316,7 @@ class Field:
         The name of this Field.
 
         This is the rename value, given when the Field is instantiated,
-        otherwise the attribute name of this Field on the Model.
+        otherwise it is the attribute name of this Field on the Model.
         """
         if not hasattr(self, '_name'):
             raise SerdeError('field is not on a Model')
@@ -377,7 +413,7 @@ def create(name, base=None, args=None, serializers=None, deserializers=None, val
 
     Args:
         name (str): the name of the class.
-        base (Field): the base Field class.
+        base (Field): the base Field class to subclass.
         args (tuple): positional arguments for the base class __init__ method.
         serializers (list): a list of serializer functions taking the value to
             serialize as an argument. The functions need to raise an `Exception`
@@ -424,7 +460,7 @@ def create(name, base=None, args=None, serializers=None, deserializers=None, val
 
 class Instance(Field):
     """
-    A `Field` that validates a value is an instance of the given type.
+    A `Field` that is an instance of the given type.
     """
 
     def __init__(self, type, **kwargs):
@@ -444,10 +480,6 @@ class Instance(Field):
 
         Args:
             value: the value to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is not an
-                instance of the specified type.
         """
         super().validate(value)
         validate.instance(self.type)(value)
@@ -638,16 +670,10 @@ class Dict(Instance):
         Validate the given dictionary.
 
         Each key and value in the dictionary will be validated with the
-        specified key and value Field instances. The dictionary will also be
-        validated to have the specified minimum number of elements and maximum
-        number of elements.
+        specified key and value Field instances.
 
         Args:
             value (dict): the dictionary to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given dictionary is
-                invalid.
         """
         super().validate(value)
 
@@ -695,7 +721,7 @@ class List(Instance):
         Create a new List.
 
         Args:
-            element (Field): the Field class/instance for this List's elements.
+            element (Field): the Field class/instance for elements in the List.
             **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(list, **kwargs)
@@ -742,9 +768,6 @@ class List(Instance):
 
         Args:
             value (list): the list to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
 
@@ -842,9 +865,6 @@ class Tuple(Instance):
 
         Args:
             value (tuple): the tuple to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
 
@@ -852,12 +872,22 @@ class Tuple(Instance):
             e.validate(v)
 
 
-# Simple built-in type Fields.
+#: This field represents the built-in `bool` type.
 Bool = create('Bool', base=Instance, args=(bool,))
+
+#: This field represents the built-in `bytes` type.
 Bytes = create('Bytes', base=Instance, args=(bytes,))
+
+#: This field represents the built-in `complex` type.
 Complex = create('Complex', base=Instance, args=(complex,))
+
+#: This field represents the built-in `float` type.
 Float = create('Float', base=Instance, args=(float,))
+
+#: This field represents the built-in `int` type.
 Int = create('Int', base=Instance, args=(int,))
+
+#: This field represents the built-in `str` type.
 Str = create('Str', base=Instance, args=(str,))
 
 # Str types with extra validation.
@@ -913,7 +943,7 @@ class Choice(Field):
 
     def validate(self, value):
         """
-        Validate the given value is one of the choices.
+        Validate that the given value is one of the choices.
 
         Args:
             value: the value to validate.

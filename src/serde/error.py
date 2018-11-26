@@ -3,6 +3,14 @@ Exception types used in Serde.
 """
 
 
+__all__ = [
+    'DeserializationError',
+    'SerdeError',
+    'SerializationError',
+    'ValidationError'
+]
+
+
 class SerdeError(Exception):
     """
     A generic error that can occur in this package.
