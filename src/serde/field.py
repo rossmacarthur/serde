@@ -34,17 +34,15 @@ operations.
     serde.error.ValidationError: value is not odd!
 
 The `create()` method can be used to generate a new Field class from arbitrary
-function without having to manually subclass a Field. For example if we wanted a
-`Percent` field we would do the following.
+functions without having to manually subclass a Field. For example if we wanted
+a `Percent` field we would do the following.
 
 ::
 
-    >>> from serde import field, validate
-
     >>> Percent = field.create(
     ...     'Percent',
-    ...     field.Float,
-    ...     validators=[validate.between(min=0.0, max=100.0)]
+    ...     Float,
+    ...     validators=[validate.between(0.0, 100.0)]
     ... )
 
     >>> issubclass(Percent, Float)
@@ -88,14 +86,40 @@ from .util import zip_equal
 
 
 __all__ = [
-    'Bool', 'Boolean', 'Choice', 'Date', 'DateTime', 'Dict', 'Dictionary', 'Domain', 'Email',
-    'Field', 'Float', 'Instance', 'Int', 'Integer', 'IpAddress', 'Ipv4Address', 'Ipv6Address',
-    'List', 'MacAddress', 'Nested', 'Slug', 'Str', 'String', 'Time', 'Tuple', 'Url', 'Uuid',
+    'Bool',
+    'Boolean',
+    'Bytes',
+    'Choice',
+    'Complex',
+    'Date',
+    'DateTime',
+    'Dict',
+    'Dictionary',
+    'Domain',
+    'Email',
+    'Field',
+    'Float',
+    'Instance',
+    'Int',
+    'Integer',
+    'IpAddress',
+    'Ipv4Address',
+    'Ipv6Address',
+    'List',
+    'MacAddress',
+    'Nested',
+    'Slug',
+    'Str',
+    'String',
+    'Time',
+    'Tuple',
+    'Url',
+    'Uuid',
     'create'
 ]
 
 
-def resolve_to_field_instance(thing, none_allowed=True):
+def _resolve_to_field_instance(thing, none_allowed=True):
     """
     Resolve an arbitrary object to a `Field` instance.
 
@@ -110,11 +134,11 @@ def resolve_to_field_instance(thing, none_allowed=True):
     # We import Model here to avoid circular dependency problems.
     from .model import Model
 
-    # If the thing is None then create a generic Field.
+    # If the thing is None then return a generic Field instance.
     if none_allowed and thing is None:
         return Field()
 
-    # If the thing is a Field then thats great.
+    # If the thing is a Field instance then thats great.
     elif isinstance(thing, Field):
         return thing
 
@@ -133,10 +157,12 @@ def resolve_to_field_instance(thing, none_allowed=True):
     except TypeError:
         pass
 
-    # If the thing is a built-in type that we support then create an
-    # Instance with that type.
+    # If the thing is a built-in type that we support then create an Instance
+    # with that type.
     field_class = {
         bool: Bool,
+        bytes: Bytes,
+        complex: Complex,
         dict: Dict,
         float: Float,
         int: Int,
@@ -149,7 +175,7 @@ def resolve_to_field_instance(thing, none_allowed=True):
         return field_class()
 
     raise TypeError(
-        '{!r} is not a Field, an instance of a Field, or a supported type'
+        '{!r} is not a Field, a Model class, an instance of a Field, or a supported type'
         .format(thing)
     )
 
@@ -236,6 +262,8 @@ class Field:
         """
         Serialize the given value according to this Field's specification.
 
+        This method is called by the Model.
+
         Args:
             value: the value to serialize.
 
@@ -252,6 +280,8 @@ class Field:
     def _deserialize(self, value):
         """
         Deserialize the given value according to this Field's specification.
+
+        This method is called by the Model.
 
         Args:
             value: the value to deserialize.
@@ -286,7 +316,7 @@ class Field:
         The name of this Field.
 
         This is the rename value, given when the Field is instantiated,
-        otherwise the attribute name of this Field on the Model.
+        otherwise it is the attribute name of this Field on the Model.
         """
         if not hasattr(self, '_name'):
             raise SerdeError('field is not on a Model')
@@ -330,7 +360,51 @@ class Field:
         pass
 
 
-def create(name, base, serializers=None, deserializers=None, validators=None):
+def _create_serialize(cls, serializers):
+    """
+    Create a new serialize method with extra serializer functions.
+    """
+    def serialize(self, value):
+        for serializer in serializers:
+            value = serializer(value)
+        value = super(cls, self).serialize(value)
+        return value
+
+    serialize.__doc__ = serializers[0].__doc__
+
+    return serialize
+
+
+def _create_deserialize(cls, deserializers):
+    """
+    Create a new deserialize method with extra deserializer functions.
+    """
+    def deserialize(self, value):
+        value = super(cls, self).deserialize(value)
+        for deserializer in deserializers:
+            value = deserializer(value)
+        return value
+
+    deserialize.__doc__ = deserializers[0].__doc__
+
+    return deserialize
+
+
+def _create_validate(cls, validators):
+    """
+    Create a new validate method with extra validator functions.
+    """
+    def validate(self, value):
+        super(cls, self).validate(value)
+        for validator in validators:
+            validator(value)
+
+    validate.__doc__ = validators[0].__doc__
+
+    return validate
+
+
+def create(name, base=None, args=None, serializers=None, deserializers=None, validators=None):
     """
     Create a new Field class.
 
@@ -339,7 +413,8 @@ def create(name, base, serializers=None, deserializers=None, validators=None):
 
     Args:
         name (str): the name of the class.
-        base (Field): the Field class that is to be the base of this class.
+        base (Field): the base Field class to subclass.
+        args (tuple): positional arguments for the base class __init__ method.
         serializers (list): a list of serializer functions taking the value to
             serialize as an argument. The functions need to raise an `Exception`
             if they fail. These serializer functions will be applied before the
@@ -355,47 +430,37 @@ def create(name, base, serializers=None, deserializers=None, validators=None):
     Returns:
         class: a new Field class.
     """
-    attrs = {}
+    if not base:
+        base = Field
 
-    # This is a hack so that we can use super() without arguments in the
-    # functions below.
-    __class__ = base  # noqa: F841
+    cls = type(name, (base,), {})
+
+    if args:
+        def __init__(self, **kwargs):  # noqa: N807
+            super(cls, self).__init__(*args, **kwargs)
+
+        __init__.__doc__ = (
+            'Create a new {}.\n\n'
+            'Args:\n'
+            '    **kwargs: keyword arguments for the `{}` constructor.'
+        ).format(name, base.__name__)
+        setattr(cls, '__init__', __init__)
 
     if serializers:
-        def serialize(self, value):
-            for serializer in serializers:
-                value = serializer(value)
-            value = super().serialize(value)
-            return value
-
-        serialize.__doc__ = serializers[0].__doc__
-        attrs['serialize'] = serialize
+        setattr(cls, 'serialize', _create_serialize(cls, serializers))
 
     if deserializers:
-        def deserialize(self, value):
-            value = super().deserialize(value)
-            for deserializer in deserializers:
-                value = deserializer(value)
-            return value
-
-        deserialize.__doc__ = deserializers[0].__doc__
-        attrs['deserialize'] = deserialize
+        setattr(cls, 'deserialize', _create_deserialize(cls, deserializers))
 
     if validators:
-        def validate(self, value):
-            super().validate(value)
-            for validator in validators:
-                validator(value)
+        setattr(cls, 'validate', _create_validate(cls, validators))
 
-        validate.__doc__ = validators[0].__doc__
-        attrs['validate'] = validate
-
-    return type(name, (base,), attrs)
+    return cls
 
 
 class Instance(Field):
     """
-    A `Field` that validates a value is an instance of the given type.
+    A `Field` that is an instance of the given type.
     """
 
     def __init__(self, type, **kwargs):
@@ -415,10 +480,6 @@ class Instance(Field):
 
         Args:
             value: the value to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is not an
-                instance of the specified type.
         """
         super().validate(value)
         validate.instance(self.type)(value)
@@ -436,7 +497,7 @@ class Nested(Instance):
     ::
 
         >>> class Birthday(Model):
-        ...     day = Int(min=1, max=31)
+        ...     day = Int(validators=[validate.between(1, 31)])
         ...     month = Str()
 
         >>> class Person(Model):
@@ -518,39 +579,6 @@ class Nested(Instance):
         return super().deserialize(value)
 
 
-class Bool(Instance):
-    """
-    A boolean Field.
-
-    This field represents the built-in `bool` type. The Bool constructor accepts
-    all keyword arguments accepted by `Instance`.
-
-    Consider an example model with two `Bool` fields, one with extra options and
-    one with no arguments.
-
-    ::
-
-        >>> class Example(Model):
-        ...     enabled = Bool()
-        ...     something = Bool(required=False, default=True)
-
-        >>> example = Example.from_dict({'enabled': False})
-        >>> example.enabled
-        False
-        >>> example.something
-        True
-    """
-
-    def __init__(self, **kwargs):
-        """
-        Create a new Bool.
-
-        Args:
-            **kwargs: keyword arguments for the `Field` constructor.
-        """
-        super().__init__(bool, **kwargs)
-
-
 class Dict(Instance):
     """
     A dictionary Field with a required key and value type.
@@ -592,22 +620,18 @@ class Dict(Instance):
         serde.error.ValidationError: expected 'str' but got 'int'
     """
 
-    def __init__(self, key=None, value=None, min_length=None, max_length=None, **kwargs):
+    def __init__(self, key=None, value=None, **kwargs):
         """
         Create a new Dict.
 
         Args:
             key (Field): the Field class/instance for keys in this Dict.
             value (Field): the Field class/instance for values in this Dict.
-            min_length (int): the minimum number of elements allowed.
-            max_length (int): the maximum number of elements allowed.
             **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(dict, **kwargs)
-        self.key = resolve_to_field_instance(key)
-        self.value = resolve_to_field_instance(value)
-        self.min_length = min_length
-        self.max_length = max_length
+        self.key = _resolve_to_field_instance(key)
+        self.value = _resolve_to_field_instance(value)
 
     def serialize(self, value):
         """
@@ -646,131 +670,16 @@ class Dict(Instance):
         Validate the given dictionary.
 
         Each key and value in the dictionary will be validated with the
-        specified key and value Field instances. The dictionary will also be
-        validated to have the specified minimum number of elements and maximum
-        number of elements.
+        specified key and value Field instances.
 
         Args:
             value (dict): the dictionary to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given dictionary is
-                invalid.
         """
         super().validate(value)
-        validate.between(self.min_length, self.max_length, units='keys')(len(value.keys()))
 
         for k, v in value.items():
             self.key.validate(k)
             self.value.validate(v)
-
-
-class Float(Instance):
-    """
-    A float Field.
-
-    This field represents the built-in `float` type. The Float constructor
-    accepts all keyword arguments accepted by `Instance`.
-
-    Consider an example model TestMark, with a percentage `Float` field.
-
-    ::
-
-        >>> class TestMark(Model):
-        ...     result = Float(min=0.0, max=100.0)
-
-        >>> mark = TestMark(75.1)
-        >>> mark.result
-        75.1
-
-        >>> TestMark(101.5)
-        Traceback (most recent call last):
-            ...
-        serde.error.ValidationError: expected at most 100.0 but got 101.5
-    """
-
-    def __init__(self, min=None, max=None, **kwargs):
-        """
-        Create a new Float.
-
-        Args:
-            min (float): the minimum value allowed.
-            max (float): the maximum value allowed.
-            **kwargs: keyword arguments for the `Field` constructor.
-        """
-        super().__init__(float, **kwargs)
-        self.min = min
-        self.max = max
-
-    def validate(self, value):
-        """
-        Validate the given float.
-
-        The given value will be validated to be an instance of `float`. And is
-        required to be between the specified minimum and maximum values.
-
-        Args:
-            value (float): the float to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is invalid.
-        """
-        super().validate(value)
-        validate.between(self.min, self.max)(value)
-
-
-class Int(Instance):
-    """
-    An integer Field.
-
-    This field represents the built-in `int` type. The Int constructor accepts
-    all keyword arguments accepted by `Instance`.
-
-    Consider an example model Point, with two `Int` fields, but we constrain the
-    x and y such that the Point has to be in the second quadrant.
-
-    ::
-
-        >>> class Point(Model):
-        ...     x = Int(max=0)
-        ...     y = Int(min=0)
-
-        >>> point = Point(-1, 5)
-
-        >>> Point(1, 5)
-        Traceback (most recent call last):
-        ...
-        serde.error.ValidationError: expected at most 0 but got 1
-    """
-
-    def __init__(self, min=None, max=None, **kwargs):
-        """
-        Create a new Int.
-
-        Args:
-            min (int): the minimum value allowed.
-            max (int): the maximum value allowed.
-            **kwargs: keyword arguments for the `Field` constructor.
-        """
-        super().__init__(int, **kwargs)
-        self.min = min
-        self.max = max
-
-    def validate(self, value):
-        """
-        Validate the given integer.
-
-        The given value will be validated to be an instance of `int`. And is
-        required to be between the specified minimum and maximum values.
-
-        Args:
-            value (int): the integer to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is invalid.
-        """
-        super().validate(value)
-        validate.between(self.min, self.max)(value)
 
 
 class List(Instance):
@@ -788,7 +697,7 @@ class List(Instance):
     ::
 
         >>> class User(Model):
-        ...     emails = List(str, min_length=1, default=[])
+        ...     emails = List(str, default=[])
 
         >>> user = User(['john@smith.com', 'john.smith@email.com'])
         >>> user.emails[0]
@@ -807,20 +716,16 @@ class List(Instance):
         serde.error.ValidationError: expected 'str' but got 'int'
     """
 
-    def __init__(self, element=None, min_length=None, max_length=None, **kwargs):
+    def __init__(self, element=None, **kwargs):
         """
         Create a new List.
 
         Args:
-            element (Field): the Field class/instance for this List's elements.
-            min_length (int): the minimum number of elements allowed.
-            max_length (int): the maximum number of elements allowed.
+            element (Field): the Field class/instance for elements in the List.
             **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(list, **kwargs)
-        self.element = resolve_to_field_instance(element)
-        self.min_length = min_length
-        self.max_length = max_length
+        self.element = _resolve_to_field_instance(element)
 
     def serialize(self, value):
         """
@@ -859,74 +764,15 @@ class List(Instance):
         Validate the given list.
 
         Each element in the list will be validated with the specified element
-        Field instance. The list will also be validated to have the specified
-        minimum number of elements and maximum number of elements.
+        Field instance.
 
         Args:
             value (list): the list to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-        validate.between(self.min_length, self.max_length, units='elements')(len(value))
 
         for v in value:
             self.element.validate(v)
-
-
-class Str(Instance):
-    """
-    A string Field.
-
-    This field represents the built-in `str` type.
-
-    Consider an example model User
-
-    ::
-
-        >>> class User(Model):
-        ...     name = Str(min_length=1, deserializers=[lambda s: s.strip()])
-        ...     address = Str(required=False)
-
-        >>> user = User.from_dict({'name': '    George Clooney  '})
-        >>> user.name
-        'George Clooney'
-
-        >>> User('')
-        Traceback (most recent call last):
-            ...
-        serde.error.ValidationError: expected at least 1 characters but got 0 characters
-    """
-
-    def __init__(self, min_length=None, max_length=None, **kwargs):
-        """
-        Create a new Str.
-
-        Args:
-            min_length (int): the minimum number of characters allowed.
-            max_length (int): the maximum number of characters allowed.
-            **kwargs: keyword arguments for the `Field` constructor.
-        """
-        super().__init__(str, **kwargs)
-        self.min_length = min_length
-        self.max_length = max_length
-
-    def validate(self, value):
-        """
-        Validate the given string.
-
-        The given value will be validated to be an instance of `str`. And is
-        required to be between the specified minimum and maximum values.
-
-        Args:
-            value (str): the string to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is invalid.
-        """
-        super().validate(value)
-        validate.between(self.min_length, self.max_length, units='characters')(len(value))
 
 
 class Tuple(Instance):
@@ -959,7 +805,7 @@ class Tuple(Instance):
         >>> Person('Beyonce', birthday=(4, 'September'))
         Traceback (most recent call last):
             ...
-        serde.error.ValidationError: expected 3 elements but got 2 elements
+        serde.error.ValidationError: iterables have different lengths
 
         >>> Person.from_dict({'name': 'Beyonce', 'birthday': (4, 9, 1994)})
         Traceback (most recent call last):
@@ -977,8 +823,7 @@ class Tuple(Instance):
             **kwargs: keyword arguments for the `Field` constructor.
         """
         super().__init__(tuple, **kwargs)
-        self.elements = tuple(resolve_to_field_instance(e, none_allowed=False) for e in elements)
-        self.length = len(self.elements)
+        self.elements = tuple(_resolve_to_field_instance(e, none_allowed=False) for e in elements)
 
     def serialize(self, value):
         """
@@ -1020,15 +865,46 @@ class Tuple(Instance):
 
         Args:
             value (tuple): the tuple to validate.
-
-        Raises:
-            `~serde.error.ValidationError`: when the given value is invalid.
         """
         super().validate(value)
-        validate.between(self.length, self.length, units='elements')(len(value))
 
-        for e, v in zip(self.elements, value):
+        for e, v in zip_equal(self.elements, value):
             e.validate(v)
+
+
+#: This field represents the built-in `bool` type.
+Bool = create('Bool', base=Instance, args=(bool,))
+
+#: This field represents the built-in `bytes` type.
+Bytes = create('Bytes', base=Instance, args=(bytes,))
+
+#: This field represents the built-in `complex` type.
+Complex = create('Complex', base=Instance, args=(complex,))
+
+#: This field represents the built-in `float` type.
+Float = create('Float', base=Instance, args=(float,))
+
+#: This field represents the built-in `int` type.
+Int = create('Int', base=Instance, args=(int,))
+
+#: This field represents the built-in `str` type.
+Str = create('Str', base=Instance, args=(str,))
+
+# Str types with extra validation.
+Domain = create('Domain', base=Str, validators=[validate.domain])
+Email = create('Email', base=Str, validators=[validate.email])
+IpAddress = create('IpAddress', base=Str, validators=[validate.ip_address])
+Ipv4Address = create('Ipv4Address', base=Str, validators=[validate.ipv4_address])
+Ipv6Address = create('Ipv6Address', base=Str, validators=[validate.ipv6_address])
+MacAddress = create('MacAddress', base=Str, validators=[validate.mac_address])
+Slug = create('Slug', base=Str, validators=[validate.slug])
+Url = create('Url', base=Str, validators=[validate.url])
+
+# Aliases
+Boolean = Bool
+Dictionary = Dict
+Integer = Int
+String = Str
 
 
 class Choice(Field):
@@ -1067,7 +943,7 @@ class Choice(Field):
 
     def validate(self, value):
         """
-        Validate the given value is one of the choices.
+        Validate that the given value is one of the choices.
 
         Args:
             value: the value to validate.
@@ -1245,20 +1121,3 @@ class Uuid(Instance):
             ~uuid.UUID: the deserialized Uuid.
         """
         return uuid.UUID(value)
-
-
-# Aliases
-Boolean = Bool
-Dictionary = Dict
-Integer = Int
-String = Str
-
-# Str types with extra validation.
-Domain = create('Domain', Str, validators=[validate.domain])
-Email = create('Email', Str, validators=[validate.email])
-IpAddress = create('IpAddress', Str, validators=[validate.ip_address])
-Ipv4Address = create('Ipv4Address', Str, validators=[validate.ipv4_address])
-Ipv6Address = create('Ipv6Address', Str, validators=[validate.ipv6_address])
-MacAddress = create('MacAddress', Str, validators=[validate.mac_address])
-Slug = create('Slug', Str, validators=[validate.slug])
-Url = create('Url', Str, validators=[validate.url])

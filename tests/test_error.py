@@ -1,4 +1,4 @@
-from serde import SerdeError
+from serde.error import SerdeError
 
 
 def test_error():

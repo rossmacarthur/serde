@@ -1,11 +1,11 @@
 from uuid import UUID, uuid4
 
-from serde import Bool, Dict, Field, Float, Int, List, Model, Nested, Str, Tuple
+from serde import Model, field
 
 
 def test_base_0():
 
-    class MyUuid(Field):
+    class MyUuid(field.Field):
 
         def serialize(self, value):
             return str(value)
@@ -18,14 +18,14 @@ def test_base_0():
 
     class Player(Model):
         key = MyUuid(required=False, default=uuid4)
-        name = Tuple(Str, Str)
-        age = Int()
-        rating = Float()
+        name = field.Tuple(str, str)
+        age = field.Int()
+        rating = field.Float()
 
     class Game(Model):
-        finished = Bool()
-        players = List(Player)
-        board = Dict(Str, Int)
+        finished = field.Bool()
+        players = field.List(Player)
+        board = field.Dict(str, int)
 
     # Create a player manually
     player = Player(name=('James', 'Williams'), age=23, rating=52.3)
@@ -94,12 +94,12 @@ def test_base_0():
 
 def test_base_1():
     class Address(Model):
-        email = Str()
+        email = field.Str()
 
     class User(Model):
-        name = Str(rename='username', serializers=[lambda s: s.strip()])
-        age = Int(required=False)
-        addresses = List(Address, required=False)
+        name = field.Str(rename='username', serializers=[lambda s: s.strip()])
+        age = field.Int(required=False)
+        addresses = field.List(Address, required=False)
 
     # Serialization
     user = User(name='John Smith', age=53, addresses=[Address(email='john@smith.com')])
@@ -118,13 +118,13 @@ def test_base_1():
 
 def test_base_2():
     class Version(Model):
-        major = Int()
-        minor = Int()
-        patch = Int(required=False, default=0)
+        major = field.Int()
+        minor = field.Int()
+        patch = field.Int(required=False, default=0)
 
     class Package(Model):
-        name = Str(rename='packageName')
-        version = Nested(Version)
+        name = field.Str(rename='packageName')
+        version = field.Nested(Version)
 
     # Create an instance of the Model
     package = Package(name='requests', version=Version(2, 19, 1))
