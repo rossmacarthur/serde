@@ -1,10 +1,11 @@
 import datetime
-from unittest import mock
 
+import mock
 from pytest import raises
 
 from serde import Model, field
 from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
+from tests import handle_six_strings
 
 
 class TestModel:
@@ -53,7 +54,7 @@ class TestModel:
             b = field.Float()
 
             def __init__(self):
-                super().__init__(a=5, b=50.5)
+                super(Example4, self).__init__(a=5, b=50.5)
 
         assert hasattr(Example4._fields, 'a')
         assert isinstance(Example4._fields.a, field.Int)
@@ -301,6 +302,7 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': {'x': 10.5}})
 
+    @handle_six_strings
     def test_from_json(self):
         class Example(Model):
             a = field.Int()
@@ -316,6 +318,7 @@ class TestModel:
         example = Example(a=50, b='test')
         assert example.to_json(sort_keys=True) == '{"a": 50, "b": "test"}'
 
+    @handle_six_strings
     def test_from_toml(self):
         class Example(Model):
             a = field.Int()

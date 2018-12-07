@@ -53,7 +53,7 @@ See `~serde.model` for more examples. Documentation for supported fields can be
 found in `~serde.field`.
 """
 
-from .model import Model
+from serde.model import Model
 
 
 __all__ = ['Model', 'error', 'field', 'validate']

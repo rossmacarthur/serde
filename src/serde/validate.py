@@ -4,7 +4,7 @@ Validator functions for use with `Fields <serde.field.Field>`.
 
 import validators
 
-from .error import ValidationError
+from serde.error import ValidationError
 
 
 __all__ = [

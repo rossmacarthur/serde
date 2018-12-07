@@ -74,9 +74,11 @@ import json
 from collections import OrderedDict
 from functools import wraps
 
-from .error import DeserializationError, SerdeError, SerializationError, ValidationError
-from .field import Field
-from .util import try_import, zip_until_right
+from six import with_metaclass
+
+from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
+from serde.field import Field
+from serde.util import try_import, zip_until_right
 
 
 toml = try_import('toml')
@@ -190,7 +192,7 @@ class Fields(OrderedDict):
         try:
             return self[name]
         except KeyError:
-            return super().__getattribute__(name)
+            return super(Fields, self).__getattribute__(name)
 
 
 class ModelType(type):
@@ -235,10 +237,10 @@ class ModelType(type):
         # they were defined on the Models. We add these to the Model.
         final_attrs['_fields'] = Fields(sorted(fields.items(), key=lambda x: x[1].id))
 
-        return super().__new__(cls, cname, bases, final_attrs)
+        return super(ModelType, cls).__new__(cls, cname, bases, final_attrs)
 
 
-class Model(metaclass=ModelType):
+class Model(with_metaclass(ModelType, object)):
     """
     The base Model to be subclassed.
     """
