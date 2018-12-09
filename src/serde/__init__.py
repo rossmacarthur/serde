@@ -58,7 +58,7 @@ from serde.model import Model
 
 __all__ = ['Model', 'error', 'field', 'validate']
 __title__ = 'serde'
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 __url__ = 'https://github.com/rossmacarthur/serde'
 __author__ = 'Ross MacArthur'
 __author_email__ = 'ross@macarthur.io'

@@ -4,7 +4,7 @@ Changelog
 Version 0.3.0
 -------------
 
-*Unreleased*
+*Released on December 9th, 2018*
 
 - Support Python 2.7. (`#35`_)
 - Add BaseString and Unicode Fields. (`#35`_)
