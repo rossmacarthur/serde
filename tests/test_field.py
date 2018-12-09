@@ -290,7 +290,7 @@ class TestBool:
 
     def test___init__(self):
         field = Bool(rename='test', required=False, default=False)
-        assert field.rename is 'test'
+        assert field.rename == 'test'
         assert field.required is False
         assert field.default is False
         assert field.validators == []
@@ -313,7 +313,7 @@ class TestFloat:
 
     def test___init__(self):
         field = Float(rename='test', required=False, default=False)
-        assert field.rename is 'test'
+        assert field.rename == 'test'
         assert field.required is False
         assert field.default is False
         assert field.validators == []
@@ -338,7 +338,7 @@ class TestInt:
 
     def test___init__(self):
         field = Int(rename='test', required=False, default=False)
-        assert field.rename is 'test'
+        assert field.rename == 'test'
         assert field.required is False
         assert field.default is False
         assert field.validators == []
@@ -363,7 +363,7 @@ class TestStr:
 
     def test___init__(self):
         field = Str(rename='test', required=False, default=False)
-        assert field.rename is 'test'
+        assert field.rename == 'test'
         assert field.required is False
         assert field.default is False
         assert field.validators == []
