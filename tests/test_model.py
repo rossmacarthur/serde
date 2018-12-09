@@ -5,7 +5,7 @@ from pytest import raises
 
 from serde import Model, field
 from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
-from tests import handle_six_strings
+from tests import py2_patch_str_with_basestring
 
 
 class TestModel:
@@ -302,7 +302,7 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': {'x': 10.5}})
 
-    @handle_six_strings
+    @py2_patch_str_with_basestring
     def test_from_json(self):
         class Example(Model):
             a = field.Int()
@@ -318,7 +318,7 @@ class TestModel:
         example = Example(a=50, b='test')
         assert example.to_json(sort_keys=True) == '{"a": 50, "b": "test"}'
 
-    @handle_six_strings
+    @py2_patch_str_with_basestring
     def test_from_toml(self):
         class Example(Model):
             a = field.Int()

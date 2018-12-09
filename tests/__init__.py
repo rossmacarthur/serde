@@ -4,7 +4,7 @@ import six
 from serde import field
 
 
-def handle_six_strings(f):
+def py2_patch_str_with_basestring(f):
     def decorated_function(*args, **kwargs):
         if six.PY2:
             with mock.patch('serde.field.Str', field.BaseString):

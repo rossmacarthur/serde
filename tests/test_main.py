@@ -1,10 +1,10 @@
 from uuid import UUID, uuid4
 
 from serde import Model, field
-from tests import handle_six_strings
+from tests import py2_patch_str_with_basestring
 
 
-@handle_six_strings
+@py2_patch_str_with_basestring
 def test_base_0():
     def strip_whitespace(s):
         return ''.join(s.split())
