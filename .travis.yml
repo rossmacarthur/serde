@@ -1,6 +1,7 @@
 language: python
 matrix:
   include:
+    - python: 2.7
     - python: 3.4
     - python: 3.5
     - python: 3.6
@@ -15,9 +16,9 @@ install:
 
 # command to run tests
 script:
-  - make lint
-  - make test
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then make lint; fi
+  - if [[ $TRAVIS_PYTHON_VERSION != 2.7 ]]; then make test; else make test-plain; fi
 
 # command to upload coverage
 after_success:
-  - codecov
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then codecov; fi

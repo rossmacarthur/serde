@@ -80,9 +80,9 @@ import uuid
 
 import isodate
 
-from . import validate
-from .error import SerdeError
-from .util import zip_equal
+from serde import validate
+from serde.error import SerdeError
+from serde.util import zip_equal
 
 
 __all__ = [
@@ -132,7 +132,7 @@ def _resolve_to_field_instance(thing, none_allowed=True):
         Field: a field instance.
     """
     # We import Model here to avoid circular dependency problems.
-    from .model import Model
+    from serde.model import Model
 
     # If the thing is None then return a generic Field instance.
     if none_allowed and thing is None:
@@ -180,7 +180,7 @@ def _resolve_to_field_instance(thing, none_allowed=True):
     )
 
 
-class Field:
+class Field(object):
     """
     A field on a `~serde.model.Model`.
 
@@ -218,7 +218,7 @@ class Field:
                 to validate as an argument. The functions need to raise an
                 `Exception` if they fail.
         """
-        super().__init__()
+        super(Field, self).__init__()
 
         self.id = Field.__counter
         Field.__counter += 1
@@ -256,7 +256,7 @@ class Field:
         if name == '_name' and hasattr(self, '_name'):
             raise SerdeError('field instance used multiple times')
 
-        super().__setattr__(name, value)
+        super(Field, self).__setattr__(name, value)
 
     def _serialize(self, value):
         """
@@ -471,7 +471,7 @@ class Instance(Field):
             type: the type that this Field wraps.
             **kwargs: keyword arguments for the `Field` constructor.
         """
-        super().__init__(**kwargs)
+        super(Instance, self).__init__(**kwargs)
         self.type = type
 
     def validate(self, value):
@@ -481,7 +481,7 @@ class Instance(Field):
         Args:
             value: the value to validate.
         """
-        super().validate(value)
+        super(Instance, self).validate(value)
         validate.instance(self.type)(value)
 
 
@@ -548,7 +548,7 @@ class Nested(Instance):
                 unknown dictionary keys are present when deserializing.
             **kwargs: keyword arguments for the `Field` constructor.
         """
-        super().__init__(model, **kwargs)
+        super(Nested, self).__init__(model, **kwargs)
         self.dict = dict
         self.strict = strict
 
@@ -563,7 +563,7 @@ class Nested(Instance):
             dict: the serialized dictionary.
         """
         value = value.to_dict(dict=self.dict)
-        return super().serialize(value)
+        return super(Nested, self).serialize(value)
 
     def deserialize(self, value):
         """
@@ -576,7 +576,7 @@ class Nested(Instance):
             Model: the deserialized model.
         """
         value = self.type.from_dict(value, strict=self.strict)
-        return super().deserialize(value)
+        return super(Nested, self).deserialize(value)
 
 
 class Dict(Instance):
@@ -629,7 +629,7 @@ class Dict(Instance):
             value (Field): the Field class/instance for values in this Dict.
             **kwargs: keyword arguments for the `Field` constructor.
         """
-        super().__init__(dict, **kwargs)
+        super(Dict, self).__init__(dict, **kwargs)
         self.key = _resolve_to_field_instance(key)
         self.value = _resolve_to_field_instance(value)
 
@@ -647,7 +647,7 @@ class Dict(Instance):
             dict: the serialized dictionary.
         """
         value = {self.key.serialize(k): self.value.serialize(v) for k, v in value.items()}
-        return super().serialize(value)
+        return super(Dict, self).serialize(value)
 
     def deserialize(self, value):
         """
@@ -662,7 +662,7 @@ class Dict(Instance):
         Returns:
             dict: the deserialized dictionary.
         """
-        value = super().deserialize(value)
+        value = super(Dict, self).deserialize(value)
         return {self.key.deserialize(k): self.value.deserialize(v) for k, v in value.items()}
 
     def validate(self, value):
@@ -675,7 +675,7 @@ class Dict(Instance):
         Args:
             value (dict): the dictionary to validate.
         """
-        super().validate(value)
+        super(Dict, self).validate(value)
 
         for k, v in value.items():
             self.key.validate(k)
@@ -724,7 +724,7 @@ class List(Instance):
             element (Field): the Field class/instance for elements in the List.
             **kwargs: keyword arguments for the `Field` constructor.
         """
-        super().__init__(list, **kwargs)
+        super(List, self).__init__(list, **kwargs)
         self.element = _resolve_to_field_instance(element)
 
     def serialize(self, value):
@@ -741,7 +741,7 @@ class List(Instance):
             list: the serialized list.
         """
         value = [self.element.serialize(v) for v in value]
-        return super().serialize(value)
+        return super(List, self).serialize(value)
 
     def deserialize(self, value):
         """
@@ -756,7 +756,7 @@ class List(Instance):
         Returns:
             list: the deserialized list.
         """
-        value = super().deserialize(value)
+        value = super(List, self).deserialize(value)
         return [self.element.deserialize(v) for v in value]
 
     def validate(self, value):
@@ -769,7 +769,7 @@ class List(Instance):
         Args:
             value (list): the list to validate.
         """
-        super().validate(value)
+        super(List, self).validate(value)
 
         for v in value:
             self.element.validate(v)
@@ -822,7 +822,7 @@ class Tuple(Instance):
                 Tuple.
             **kwargs: keyword arguments for the `Field` constructor.
         """
-        super().__init__(tuple, **kwargs)
+        super(Tuple, self).__init__(tuple, **kwargs)
         self.elements = tuple(_resolve_to_field_instance(e, none_allowed=False) for e in elements)
 
     def serialize(self, value):
@@ -853,7 +853,7 @@ class Tuple(Instance):
         Returns:
             tuple: the deserialized tuple.
         """
-        value = super().deserialize(value)
+        value = super(Tuple, self).deserialize(value)
         return tuple(e.deserialize(v) for e, v in zip_equal(self.elements, value))
 
     def validate(self, value):
@@ -866,7 +866,7 @@ class Tuple(Instance):
         Args:
             value (tuple): the tuple to validate.
         """
-        super().validate(value)
+        super(Tuple, self).validate(value)
 
         for e, v in zip_equal(self.elements, value):
             e.validate(v)
@@ -889,6 +889,18 @@ Int = create('Int', base=Instance, args=(int,))
 
 #: This field represents the built-in `str` type.
 Str = create('Str', base=Instance, args=(str,))
+
+try:
+    #: This field represents the built-in `basestring` type.
+    BaseString = create('BaseString', base=Instance, args=(basestring,))
+except NameError:
+    pass
+
+try:
+    #: This field represents the built-in `unicode` type.
+    Unicode = create('Unicode', base=Instance, args=(unicode,))
+except NameError:
+    pass
 
 # Str types with extra validation.
 Domain = create('Domain', base=Str, validators=[validate.domain])
@@ -938,7 +950,7 @@ class Choice(Field):
             choices: a list/range/tuple of allowed values.
             **kwargs: keyword arguments for the `Field` constructor.
         """
-        super().__init__(**kwargs)
+        super(Choice, self).__init__(**kwargs)
         self.choices = choices
 
     def validate(self, value):
@@ -982,7 +994,7 @@ class DateTime(Instance):
                 ISO 8601 datetimes.
             **kwargs: keyword arguments for the `Field` constructor.
         """
-        super().__init__(self.__class__.type, **kwargs)
+        super(DateTime, self).__init__(self.__class__.type, **kwargs)
         self.format = format
 
     def serialize(self, value):
@@ -1096,7 +1108,7 @@ class Uuid(Instance):
         Args:
             **kwargs: keyword arguments for the `Field` constructor.
         """
-        super().__init__(uuid.UUID, **kwargs)
+        super(Uuid, self).__init__(uuid.UUID, **kwargs)
 
     def serialize(self, value):
         """

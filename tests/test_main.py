@@ -1,9 +1,13 @@
 from uuid import UUID, uuid4
 
 from serde import Model, field
+from tests import py2_patch_str_with_basestring
 
 
+@py2_patch_str_with_basestring
 def test_base_0():
+    def strip_whitespace(s):
+        return ''.join(s.split())
 
     class MyUuid(field.Field):
 
@@ -89,7 +93,7 @@ def test_base_0():
                           'CL': 0, 'CC': 1, 'CR': 0,
                           'BL': 0, 'BC': 0, 'BR': 0}
 
-    assert game.to_json(indent=4, sort_keys=True) == json
+    assert strip_whitespace(game.to_json(indent=4, sort_keys=True)) == strip_whitespace(json)
 
 
 def test_base_1():

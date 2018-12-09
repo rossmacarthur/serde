@@ -5,6 +5,7 @@ def test_error():
     e = SerdeError('something failed')
 
     assert repr(e) == '<serde.error.SerdeError: something failed>'
+    assert str(e) == 'something failed'
 
 
 def test_error_context():

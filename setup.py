@@ -22,6 +22,7 @@ with io.open(os.path.join(here, 'README.rst'), encoding='utf8') as f:
 
 install_requires = [
     'isodate>=0.6.0<0.7.0',
+    'six>=1.0.0<2.0.0',
     'validators>=0.12.0<0.13.0'
 ]
 
@@ -43,6 +44,7 @@ lint_requires = [
 ]
 
 test_requires = [
+    'mock',
     'pytest>=3.3.0',
     'pytest-cov',
     'pytest-doctest-import'
@@ -67,7 +69,7 @@ setup(
         'documenting': document_requires,
         'packaging': package_requires
     },
-    python_requires='>=3.4',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=['serde'],

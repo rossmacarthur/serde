@@ -27,7 +27,7 @@ class SerdeError(Exception):
             field (~serde.field.Field): the Field context.
             model (~serde.model.Model): the Model context.
         """
-        super().__init__(message)
+        super(SerdeError, self).__init__(message)
         self.cause = None
         self.value = None
         self.field = None
@@ -51,7 +51,7 @@ class SerdeError(Exception):
             field (~serde.field.Field): the Field context.
             model (~serde.model.Model): the Model context.
         """
-        from .model import Model
+        from serde.model import Model
 
         if cause is not None:
             self.cause = cause
@@ -74,7 +74,7 @@ class SerdeError(Exception):
         """
         return '<{}.{}: {}>'.format(
             self.__class__.__module__,
-            self.__class__.__qualname__,
+            self.__class__.__name__,
             self.message
         )
 

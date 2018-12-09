@@ -3,7 +3,8 @@ Utility functions.
 """
 
 import importlib
-from itertools import zip_longest
+
+from six.moves import zip_longest
 
 
 def try_import(name, package=None):
@@ -62,7 +63,8 @@ def zip_until_right(*iterables):
     right = iter(iterables[-1])
     iterables = lefts + (right,)
 
-    yield from zip(*iterables)
+    for item in zip(*iterables):
+        yield item
 
     try:
         next(right)
