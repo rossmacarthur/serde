@@ -6,8 +6,8 @@ import serde
 
 # Project configuration
 project = 'Serde'
-copyright = '%d, Ross MacArthur' % datetime.now().year
-author = 'Ross MacArthur'
+copyright = '%d, %s' % (datetime.now().year, serde.__author__)
+author = serde.__author__
 version = serde.__version__
 release = serde.__version__
 

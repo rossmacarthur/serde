@@ -77,7 +77,7 @@ setup(
     # Metadata
     download_url='{url}/archive/{version}.tar.gz'.format(**metadata),
     project_urls={
-        'Documentation': 'https://serde.readthedocs.io',
+        'Documentation': 'https://ross.macarthur.io/project/serde/',
         'Issue Tracker': '{url}/issues'.format(**metadata)
     },
     classifiers=[
