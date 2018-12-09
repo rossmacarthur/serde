@@ -11,8 +11,8 @@ Version 0.3.0
 - Remove extra validation options from built-in type Fields. (`#34`_)
 - Add min() and max() validation functions. (`#34`_)
 - Add "inclusive" option to between() validator. (`#34`_)
-- Add "args" option to the create() method. (`#34`_)
-- Generate built-in types using the create() method. (`#34`_)
+- Add "args" option to the field.create() method. (`#34`_)
+- Generate built-in types using the field.create() method. (`#34`_)
 - Add Complex and Bytes Fields. (`#34`_)
 - Do not clutter root namespace with Fields. (`#34`_)
 
