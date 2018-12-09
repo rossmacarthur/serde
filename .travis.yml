@@ -16,7 +16,7 @@ install:
 
 # command to run tests
 script:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; make lint; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then make lint; fi
   - if [[ $TRAVIS_PYTHON_VERSION != 2.7 ]]; then make test; else make test-plain; fi
 
 # command to upload coverage
