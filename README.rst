@@ -5,8 +5,8 @@ Serde
     :target: https://pypi.org/project/serde/
     :alt: PyPI Version
 
-.. image:: https://img.shields.io/readthedocs/serde/latest.svg?style=flat-square
-    :target: https://serde.readthedocs.io
+.. image:: https://img.shields.io/badge/docs-passing-brightgreen.svg?style=flat-square
+    :target: https://ross.macarthur.io/project/serde/
     :alt: Documentation Status
 
 .. image:: https://img.shields.io/travis/rossmacarthur/serde/master.svg?style=flat-square
@@ -31,7 +31,7 @@ Install this package with
 
 
 View the latest usage and API documentation
-`here <https://serde.readthedocs.io/en/stable/api.html>`_.
+`here <https://ross.macarthur.io/project/serde/api.html>`_.
 
 License
 -------

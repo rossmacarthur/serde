@@ -1,6 +1,24 @@
 Changelog
 =========
 
+Version 0.3.0
+-------------
+
+*Unreleased*
+
+- Support Python 2.7. (`#35`_)
+- Add BaseString and Unicode Fields. (`#35`_)
+- Remove extra validation options from built-in type Fields. (`#34`_)
+- Add min() and max() validation functions. (`#34`_)
+- Add "inclusive" option to between() validator. (`#34`_)
+- Add "args" option to the field.create() method. (`#34`_)
+- Generate built-in types using the field.create() method. (`#34`_)
+- Add Complex and Bytes Fields. (`#34`_)
+- Do not clutter root namespace with Fields. (`#34`_)
+
+.. _#35: https://github.com/rossmacarthur/serde/pull/35
+.. _#34: https://github.com/rossmacarthur/serde/pull/34
+
 Version 0.2.1
 -------------
 

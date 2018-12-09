@@ -51,7 +51,7 @@ docs-test: ## Run doc tests.
 	$(MAKE) -C docs doctest
 
 dist: clean ## Build source and wheel package.
-	$(VIRTUAL_ENV)/bin/python setup.py sdist bdist_wheel
+	$(VIRTUAL_ENV)/bin/python setup.py sdist bdist_wheel --universal
 	ls -l dist
 
 release: dist ## Package and upload a release.
