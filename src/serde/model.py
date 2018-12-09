@@ -253,7 +253,7 @@ class Model(with_metaclass(ModelType, object)):
             *args: positional arguments values for each Fields on the Model. If
                 these are given they will be interpreted as corresponding to the
                 Fields in the order the Fields are defined on the Model.
-            **kwargs: keyboard argument values for each Field on the Model.
+            **kwargs: keyword argument values for each Field on the Model.
         """
         try:
             named_args = list(zip_until_right(self._fields.keys(), args))
