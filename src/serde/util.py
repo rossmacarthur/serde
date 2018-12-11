@@ -3,8 +3,35 @@ Utility functions.
 """
 
 import importlib
+from collections import OrderedDict
 
 from six.moves import zip_longest
+
+
+def dict_partition(d, keyfunc, dict=OrderedDict):
+    """
+    Partition a dictionary.
+
+    Args:
+        d (dict): the dictionary to operate on.
+        keyfunc (function): the function to partition with. It must accept the
+            dictionary key and value as arguments, and should return a boolean.
+        dict (type): the type of dictionaries to return.
+
+    Return:
+        (dict, dict): all of the elements for which the key function returned
+            True, and all of the elements for which it returned False.
+    """
+    left = dict()
+    right = dict()
+
+    for key, value in d.items():
+        if keyfunc(key, value):
+            left[key] = value
+        else:
+            right[key] = value
+
+    return left, right
 
 
 def try_import(name, package=None):

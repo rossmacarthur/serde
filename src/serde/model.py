@@ -78,7 +78,7 @@ from six import with_metaclass
 
 from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
 from serde.field import Field
-from serde.util import try_import, zip_until_right
+from serde.util import dict_partition, try_import, zip_until_right
 
 
 toml = try_import('toml')
@@ -207,31 +207,32 @@ class ModelType(type):
 
     def __new__(cls, cname, bases, attrs):
         """
-        Create a new `Model` type, overriding the relevant methods.
+        Create a new `Model` class.
 
         Args:
             cname (str): the class name.
-            bases (tuple): the classes's base classes.
+            bases (tuple): the base classes.
             attrs (dict): the attributes for this class.
 
         Returns:
             Model: a new Model class.
         """
-        fields = Fields()
-        final_attrs = OrderedDict()
-
-        # Add all the base classes _fields attributes.
-        for base in bases:
-            if hasattr(base, '_fields'):
-                fields.update(base._fields)
+        def is_field(key, value):
+            if isinstance(value, Field):
+                value._name = key
+                return True
+            return False
 
         # Split the attrs into Fields and non-Fields.
-        for name, value in attrs.items():
-            if isinstance(value, Field):
-                value._name = name
-                fields[name] = value
-            else:
-                final_attrs[name] = value
+        fields, final_attrs = dict_partition(attrs, is_field)
+
+        # Add base class Fields.
+        for base in bases:
+            if hasattr(base, '_fields'):
+                fields.update({
+                    name: field for name, field in base._fields.items()
+                    if name not in attrs
+                })
 
         # Order the fields by the Field identifier. This gets the order that
         # they were defined on the Models. We add these to the Model.
@@ -285,9 +286,10 @@ class Model(with_metaclass(ModelType, object)):
 
         if kwargs:
             raise SerdeError(
-                'invalid keyword argument'
-                + ' ' if len(kwargs.keys()) == 1 else 's '
-                + ', '.join('{!r}'.format(k) for k in kwargs.keys())
+                'invalid keyword argument{} {}'.format(
+                    '' if len(kwargs.keys()) == 1 else 's',
+                    ', '.join('{!r}'.format(k) for k in kwargs.keys())
+                )
             )
 
         self.validate_all()
@@ -451,9 +453,10 @@ class Model(with_metaclass(ModelType, object)):
 
         if strict and d:
             raise DeserializationError(
-                'unknown dictionary key'
-                + ' ' if len(d.keys()) == 1 else 's '
-                + ', '.join('{!r}'.format(k) for k in d.keys()),
+                'unknown dictionary key{} {}'.format(
+                    '' if len(d.keys()) == 1 else 's',
+                    ', '.join('{!r}'.format(k) for k in d.keys())
+                ),
                 model=cls
             )
 

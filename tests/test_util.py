@@ -5,6 +5,11 @@ from pytest import raises
 from serde import util
 
 
+def test_dict_partition():
+    d = {'a': 1, 'b': 5}
+    assert util.dict_partition(d, lambda k, v: v == 5) == ({'b': 5}, {'a': 1})
+
+
 def test_try_import():
     # Check that the returned value is a module.
     assert isinstance(util.try_import('toml'), types.ModuleType)
