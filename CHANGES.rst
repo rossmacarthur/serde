@@ -7,7 +7,11 @@ Version 0.3.1
 *Unreleased*
 
 - Fix not being able to create attributes, methods, and functions with the same
-  name as Fields on a Model.
+  name as Fields on a Model. (`#41`_, `#42`_)
+
+.. _#42: https://github.com/rossmacarthur/serde/pull/42
+
+.. _#41: https://github.com/rossmacarthur/serde/pull/41
 
 Version 0.3.0
 -------------

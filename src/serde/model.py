@@ -211,7 +211,7 @@ class ModelType(type):
 
         Args:
             cname (str): the class name.
-            bases (tuple): the classes's base classes.
+            bases (tuple): the base classes.
             attrs (dict): the attributes for this class.
 
         Returns:
