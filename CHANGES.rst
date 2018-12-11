@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Version 0.3.1
+-------------
+
+*Unreleased*
+
+- Fix not being able to create attributes, methods, and functions with the same
+  name as Fields on a Model.
+
 Version 0.3.0
 -------------
 

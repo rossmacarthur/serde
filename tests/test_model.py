@@ -84,6 +84,21 @@ class TestModel:
         assert example.b == 50
         assert example.c == 100.5
 
+        class Example6(Example2):
+            c = 'c'
+
+            @property
+            def a(self):
+                return 'a'
+
+            def b(self):
+                return 'b'
+
+        example = Example6()
+        assert example.a == 'a'
+        assert example.b() == 'b'
+        assert example.c == 'c'
+
     def test___init__(self):
         # A simple Model with no fields.
         class Example(Model):
