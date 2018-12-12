@@ -8,16 +8,18 @@ matrix:
     - python: 3.7
       dist: xenial
       sudo: true
+    - python: pypy
     - python: pypy3
 
 # command to install dependencies
 install:
-  - make install-travis
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then make install-dev; else make install-plain; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then pip install codecov; fi
 
 # command to run tests
 script:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then make lint; fi
-  - if [[ $TRAVIS_PYTHON_VERSION != 2.7 ]]; then make test; else make test-plain; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then make test; else make test-plain; fi
 
 # command to upload coverage
 after_success:

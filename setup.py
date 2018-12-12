@@ -20,20 +20,20 @@ metadata['name'] = metadata.pop('title')
 with io.open(os.path.join(here, 'README.rst'), encoding='utf8') as f:
     metadata['long_description'] = f.read()
 
+# Primary requirements
 install_requires = [
     'isodate>=0.6.0<0.7.0',
     'six>=1.0.0<2.0.0',
     'validators>=0.12.0<0.13.0'
 ]
-
 toml_requires = [
     'toml>=0.10.0<0.11.0'
 ]
-
 yaml_requires = [
     'ruamel.yaml>=0.15.0<0.16.0'
 ]
 
+# Development requirements
 lint_requires = [
     'flake8',
     'flake8-docstrings',
@@ -50,24 +50,14 @@ test_requires = [
     'pytest-doctest-import'
 ]
 
-document_requires = [
-    'sphinx'
-]
-
-package_requires = [
-    'twine'
-]
-
 setup(
     # Options
     install_requires=install_requires,
     extras_require={
         'toml': toml_requires,
         'yaml': yaml_requires,
-        'linting': lint_requires,
-        'testing': test_requires,
-        'documenting': document_requires,
-        'packaging': package_requires
+        'dev.lint': lint_requires,
+        'dev.test': test_requires
     },
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     packages=find_packages('src'),

@@ -1,4 +1,4 @@
-.PHONY: help clean venv install install-travis install-all lint sort-imports \
+.PHONY: help clean venv install install-plain install-dev install-all lint sort-imports \
 		test test-plain docs docs-clean docs-open docs-test dist release
 
 PYTHON := python3
@@ -6,7 +6,7 @@ VIRTUAL_ENV := $(or $(VIRTUAL_ENV), $(VIRTUAL_ENV), venv)
 
 help: ## Show this message and exit.
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} \
-	/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-13s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 clean: docs-clean ## Remove all build artifacts.
 	rm -rf build dist wheels venv *.egg-info
@@ -15,15 +15,17 @@ clean: docs-clean ## Remove all build artifacts.
 venv: ## Create virtualenv.
 	virtualenv --python=$(PYTHON) venv
 
-install: ## Install package.
-	$(VIRTUAL_ENV)/bin/pip install -e .
+install: ## Install package and all features.
+	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml]"
 
-install-travis: ## Install package and linting and testing dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml,linting,testing]"
-	$(VIRTUAL_ENV)/bin/pip install codecov
+install-plain: ## Install package, all features, and testing dependencies.
+	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml,dev.test]"
 
-install-all: ## Install package and development dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml,linting,testing,documenting,packaging]"
+install-dev: ## Install package, all features, and linting and testing dependencies.
+	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml,dev.lint,dev.test]"
+
+install-all: install-dev ## Install package, all features, and all development dependencies.
+	$(VIRTUAL_ENV)/bin/pip install sphinx twine
 
 lint: ## Run all lints.
 	$(VIRTUAL_ENV)/bin/flake8 --max-complexity 10 .
