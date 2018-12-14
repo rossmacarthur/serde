@@ -875,9 +875,6 @@ class Tuple(Instance):
 #: This field represents the built-in `bool` type.
 Bool = create('Bool', base=Instance, args=(bool,))
 
-#: This field represents the built-in `bytes` type.
-Bytes = create('Bytes', base=Instance, args=(bytes,))
-
 #: This field represents the built-in `complex` type.
 Complex = create('Complex', base=Instance, args=(complex,))
 
@@ -901,6 +898,13 @@ try:
     Unicode = create('Unicode', base=Instance, args=(unicode,))
 except NameError:
     pass
+
+if bytes == str:
+    #: This field represents the built-in `bytes` type.
+    Bytes = Str
+else:
+    #: This field represents the built-in `bytes` type.
+    Bytes = create('Bytes', base=Instance, args=(bytes,))
 
 # Str types with extra validation.
 Domain = create('Domain', base=Str, validators=[validate.domain])

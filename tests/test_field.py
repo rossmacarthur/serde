@@ -7,9 +7,9 @@ from pytest import raises
 from serde import Model
 from serde.error import SerdeError, ValidationError
 from serde.field import (
-    Bool, Choice, Date, DateTime, Dict, Domain, Email, Field, Float, Instance,
-    Int, IpAddress, Ipv4Address, Ipv6Address, List, MacAddress, Nested, Slug,
-    Str, Time, Tuple, Url, Uuid, _resolve_to_field_instance, create
+    Bool, Bytes, Choice, Date, DateTime, Dict, Domain, Email, Field, Float,
+    Instance, Int, IpAddress, Ipv4Address, Ipv6Address, List, MacAddress, Nested,
+    Slug, Str, Time, Tuple, Url, Uuid, _resolve_to_field_instance, create
 )
 
 
@@ -588,6 +588,7 @@ def test__resolve_to_field_instance():
 
     # All the base types should resolve correctly
     assert _resolve_to_field_instance(bool) == Bool()
+    assert _resolve_to_field_instance(bytes) == Bytes()
     assert _resolve_to_field_instance(dict) == Dict()
     assert _resolve_to_field_instance(float) == Float()
     assert _resolve_to_field_instance(int) == Int()
