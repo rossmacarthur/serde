@@ -887,6 +887,9 @@ Int = create('Int', base=Instance, args=(int,))
 #: This field represents the built-in `str` type.
 Str = create('Str', base=Instance, args=(str,))
 
+#: This field represents the built-in `bytes` type.
+Bytes = create('Bytes', base=Instance, args=(bytes,)) if bytes != str else Str
+
 try:
     #: This field represents the built-in `basestring` type.
     BaseString = create('BaseString', base=Instance, args=(basestring,))
@@ -899,12 +902,6 @@ try:
 except NameError:
     pass
 
-if bytes == str:
-    #: This field represents the built-in `bytes` type.
-    Bytes = Str
-else:
-    #: This field represents the built-in `bytes` type.
-    Bytes = create('Bytes', base=Instance, args=(bytes,))
 
 # Str types with extra validation.
 Domain = create('Domain', base=Str, validators=[validate.domain])
