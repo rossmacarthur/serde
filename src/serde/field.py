@@ -875,9 +875,6 @@ class Tuple(Instance):
 #: This field represents the built-in `bool` type.
 Bool = create('Bool', base=Instance, args=(bool,))
 
-#: This field represents the built-in `bytes` type.
-Bytes = create('Bytes', base=Instance, args=(bytes,))
-
 #: This field represents the built-in `complex` type.
 Complex = create('Complex', base=Instance, args=(complex,))
 
@@ -889,6 +886,9 @@ Int = create('Int', base=Instance, args=(int,))
 
 #: This field represents the built-in `str` type.
 Str = create('Str', base=Instance, args=(str,))
+
+#: This field represents the built-in `bytes` type.
+Bytes = create('Bytes', base=Instance, args=(bytes,)) if bytes != str else Str
 
 try:
     #: This field represents the built-in `basestring` type.
