@@ -902,7 +902,6 @@ try:
 except NameError:
     pass
 
-
 # Str types with extra validation.
 Domain = create('Domain', base=Str, validators=[validate.domain])
 Email = create('Email', base=Str, validators=[validate.email])
