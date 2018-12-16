@@ -33,6 +33,7 @@ def test__resolve_to_field_instance_field_class():
 
 def test__resolve_to_field_instance_model_class():
     # A Model class should become a Nested instance, wrapping the Model class.
+
     class Example(Model):
         pass
 
@@ -41,6 +42,7 @@ def test__resolve_to_field_instance_model_class():
 
 def test__resolve_to_field_instance_model():
     # A Model instance is not allowed.
+
     class Example(Model):
         pass
 
