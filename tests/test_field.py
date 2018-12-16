@@ -7,9 +7,8 @@ from pytest import raises
 from serde import Model
 from serde.error import DeserializationError, SerdeError, ValidationError
 from serde.field import (
-    Bool, Bytes, Choice, Complex, Date, DateTime, Dict, Domain, Email, Field,
-    Float, Instance, Int, IpAddress, Ipv4Address, Ipv6Address, List, MacAddress,
-    Nested, Slug, Str, Time, Tuple, Url, Uuid, _resolve_to_field_instance, create
+    Bool, Bytes, Choice, Complex, Date, DateTime, Dict, Field, Float, Instance,
+    Int, List, Nested, Str, Time, Tuple, Uuid, _resolve_to_field_instance, create
 )
 
 
@@ -387,13 +386,15 @@ class TestTuple:
         # A Tuple should serialize values based on each element Fields.
         example = Tuple(Uuid, Reversed)
         value = (uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'), 'test')
-        assert example.serialize(value) == ('2d7026c8-cc58-11e8-bd7a-784f4386978e', 'tset')
+        expected = ('2d7026c8-cc58-11e8-bd7a-784f4386978e', 'tset')
+        assert example.serialize(value) == expected
 
     def test_deserialize(self):
         # A Tuple should deserialize values based on each element Fields.
         example = Tuple(Uuid, Reversed)
         value = ('2d7026c8-cc58-11e8-bd7a-784f4386978e', 'tset')
-        assert example.deserialize(value) == (uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'), 'test')
+        expected = (uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'), 'test')
+        assert example.deserialize(value) == expected
 
     def test_validate(self):
         # A Tuple should validate values based on each element Fields.

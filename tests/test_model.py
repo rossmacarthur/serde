@@ -6,7 +6,6 @@ from pytest import raises
 
 from serde import Model, field, validate
 from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
-from tests import py2_patch_str_with_basestring
 
 
 class TestModel:
@@ -521,7 +520,7 @@ class TestModel:
             def __eq__(self, other):
                 return isinstance(other, CustomDict) and super(CustomDict, self).__eq__(other)
 
-        assert Example(a=5).to_dict(dict=CustomDict) == CustomDict([('a',5)])
+        assert Example(a=5).to_dict(dict=CustomDict) == CustomDict([('a', 5)])
 
     def test_to_dict_nested(self):
         # Check that nested Models are serialized correctly.
