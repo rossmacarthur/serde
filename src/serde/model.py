@@ -310,17 +310,7 @@ class Model(with_metaclass(ModelType, object)):
         """
         Return a hash value for this Model.
         """
-        values = []
-
-        for name in self._fields.keys():
-            value = getattr(self, name)
-
-            if isinstance(value, list):
-                values.append((name, frozenset(value)))
-            else:
-                values.append((name, value))
-
-        return hash(tuple(values))
+        return hash(tuple((name, getattr(self, name)) for name in self._fields.keys()))
 
     def __repr__(self):
         """
