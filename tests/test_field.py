@@ -21,7 +21,7 @@ Reversed = create(  # noqa: N806
 
 
 def test__resolve_to_field_instance_field():
-    # An instance of a field should be passed through.
+    # An instance of Field should be passed through.
     field = Field()
     assert _resolve_to_field_instance(field) is field
 
@@ -41,7 +41,7 @@ def test__resolve_to_field_instance_model_class():
 
 
 def test__resolve_to_field_instance_model():
-    # A Model instance is not allowed.
+    # A Model instance should not be allowed.
 
     class Example(Model):
         pass
