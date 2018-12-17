@@ -4,7 +4,7 @@ Changelog
 Version 0.3.1
 -------------
 
-*Unreleased*
+*Released on December 17th, 2018*
 
 - Fix a bug with the Model `__repr__` method. (`#44`_)
 - Make Bytes an alias of Str Field in Python 2.7. (`#43`_)
