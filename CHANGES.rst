@@ -6,12 +6,16 @@ Version 0.3.1
 
 *Unreleased*
 
+- Fix a bug with the Model `__repr__` method. (`#44`_)
+- Make Bytes an alias of Str Field in Python 2.7. (`#43`_)
 - Fix not being able to create attributes, methods, and functions with the same
   name as Fields on a Model. (`#41`_, `#42`_)
 
+.. _#44: https://github.com/rossmacarthur/serde/pull/44
+.. _#43: https://github.com/rossmacarthur/serde/pull/43
 .. _#42: https://github.com/rossmacarthur/serde/pull/42
 
-.. _#41: https://github.com/rossmacarthur/serde/pull/41
+.. _#41: https://github.com/rossmacarthur/serde/issues/41
 
 Version 0.3.0
 -------------
