@@ -4,7 +4,7 @@ Changelog
 Version 0.3.2
 -------------
 
-*Unreleased*
+*Released on December 19th, 2018*
 
 - Fix a bug where overriding Model `__init__` method affected Model `from_dict`.
   (`#45`_, `#46`_)
