@@ -369,6 +369,17 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': 'test', 'c': 'unknown'})
 
+    def test_from_dict_modified___init__(self):
+        # Check that overriding the __init__ method does not break from_dict().
+
+        class Example(Model):
+            a = field.Int()
+
+            def __init__(self):
+                super(Example, self).__init__(a=5)
+
+        assert Example.from_dict({'a': 5}) == Example()
+
     def test_from_dict_nested(self):
         # Check that nested Models are parsed correctly.
 
