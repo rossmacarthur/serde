@@ -251,38 +251,27 @@ class Model(with_metaclass(ModelType, object)):
         Create a new Model.
 
         Args:
-            *args: positional arguments values for each Fields on the Model. If
+            *args: positional arguments values for each Field on the Model. If
                 these are given they will be interpreted as corresponding to the
                 Fields in the order the Fields are defined on the Model.
             **kwargs: keyword argument values for each Field on the Model.
         """
         try:
-            named_args = list(zip_until_right(self._fields.keys(), args))
+            for name, value in zip_until_right(self._fields.keys(), args):
+                if name in kwargs:
+                    raise SerdeError(
+                        '__init__() got multiple values for keyword argument {!r}'
+                        .format(name)
+                    )
+
+                kwargs[name] = value
         except ValueError:
             raise SerdeError(
                 '__init__() takes a maximum of {!r} positional arguments but {!r} were given'
                 .format(len(self._fields) + 1, len(args) + 1)
             )
 
-        for name, value in named_args:
-            if name in kwargs:
-                raise SerdeError(
-                    '__init__() got multiple values for keyword argument {!r}'
-                    .format(name)
-                )
-
-            kwargs[name] = value
-
-        for name, field in self._fields.items():
-            value = kwargs.pop(name, None)
-
-            if value is None and field.default is not None:
-                if callable(field.default):
-                    value = field.default()
-                else:
-                    value = field.default
-
-            setattr(self, name, value)
+        self._set_field_attributes(kwargs)
 
         if kwargs:
             raise SerdeError(
@@ -322,6 +311,24 @@ class Model(with_metaclass(ModelType, object)):
             if getattr(self, name) is not None
         )
         return '{name}({values})'.format(name=self.__class__.__name__, values=values)
+
+    def _set_field_attributes(self, kwargs):
+        """
+        Set each of the Field attributes.
+
+        Args:
+            kwargs: keyword argument values for each Field on the Model.
+        """
+        for name, field in self._fields.items():
+            value = kwargs.pop(name, None)
+
+            if value is None and field.default is not None:
+                if callable(field.default):
+                    value = field.default()
+                else:
+                    value = field.default
+
+            setattr(self, name, value)
 
     @handle_field_errors(SerializationError)
     def _serialize_field(self, field, value):
@@ -450,7 +457,11 @@ class Model(with_metaclass(ModelType, object)):
                 model=cls
             )
 
-        return cls(**kwargs)
+        self = cls.__new__(cls)
+        self._set_field_attributes(kwargs)
+        self.validate_all()
+
+        return self
 
     @classmethod
     def from_json(cls, s, strict=True, **kwargs):
