@@ -1,6 +1,18 @@
 Changelog
 =========
 
+Version 0.3.2
+-------------
+
+*Unreleased*
+
+- Fix a bug where overriding Model `__init__` method affected Model `from_dict`.
+  (`#45`_, `#46`_)
+
+.. _#46: https://github.com/rossmacarthur/serde/pull/46
+
+.. _#45: https://github.com/rossmacarthur/serde/issues/45
+
 Version 0.3.1
 -------------
 
