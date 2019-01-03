@@ -14,7 +14,7 @@ deserialization, and validation for these attributes.
 
     >>> class User(Model):
     ...     name = field.Str(rename='username')
-    ...     age = field.Int(required=False)
+    ...     age = field.Optional(field.Int)
 
 Models are validated when they are instantiated and after they are deserialized.
 

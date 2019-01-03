@@ -5,10 +5,10 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde import Model
-from serde.error import DeserializationError, SerdeError, ValidationError
+from serde.error import DeserializationError, SerdeError, ValidationError, SkipSerialization
 from serde.field import (
-    Bool, Bytes, Choice, Complex, Date, DateTime, Dict, Field, Float, Instance,
-    Int, List, Nested, Str, Time, Tuple, Uuid, _resolve_to_field_instance, create
+    Bool, Bytes, Choice, Complex, Date, DateTime, Dict, Field, Float, Instance, Int,
+    List, Nested, Optional, Str, Time, Tuple, Uuid, _resolve_to_field_instance, create
 )
 
 
@@ -71,8 +71,6 @@ class TestField:
         field = Field()
         assert field.id >= 0
         assert field.rename is None
-        assert field.required is True
-        assert field.default is None
         assert field.validators == []
 
         # A second Field instantiated should have a higher counter.
@@ -81,10 +79,8 @@ class TestField:
 
     def test___init___options(self):
         # A Field with extra options set.
-        field = Field(rename='test', required=False, default=5, validators=[None])
+        field = Field(rename='test', validators=[None])
         assert field.rename == 'test'
-        assert field.required is False
-        assert field.default == 5
         assert field.validators == [None]
 
     def test__setattr__(self):
@@ -132,10 +128,14 @@ class TestField:
         assert field.deserialize(value) == value
 
     def test_validate(self):
-        # Any value is allowed on the base Field.
+        # Any value is allowed on the base Field except None.
         field = Field()
-        for value in (None, 0, 'string', object(), type):
+        for value in (0, 'string', object(), type):
             field.validate(value)
+
+        # None should not be allowed.
+        with raises(ValidationError):
+            field.validate(None)
 
 
 def test_create_base():
@@ -213,14 +213,12 @@ class TestInstance:
         # Construct a basic Instance and check values are set correctly.
         example = Instance(int)
         assert example.type == int
-        assert example.required is True
         assert example.validators == []
 
     def test___init___options(self):
         # Construct an Instance and make sure values are passed to Field.
-        example = Instance(int, required=False, validators=[None])
+        example = Instance(int, validators=[None])
         assert example.type == int
-        assert example.required is False
         assert example.validators == [None]
 
     def test_validate(self):
@@ -243,17 +241,15 @@ class TestNested:
         example = Nested(Model)
         assert example.type == Model
         assert example.dict is None
-        assert example.required is True
         assert example.validators == []
 
     def test___init___options(self):
         # Construct a Nested with extra options and make sure values are passed
         # to Field.
-        example = Nested(Model, dict=dict, strict=False, required=False, validators=[None])
+        example = Nested(Model, dict=dict, strict=False, validators=[None])
         assert example.type == Model
         assert example.dict is dict
         assert example.strict is False
-        assert example.required is False
         assert example.validators == [None]
 
     def test_serialize(self):
@@ -295,6 +291,70 @@ class TestNested:
         assert example.deserialize({'a': 0, 'b': 1}) == Example(a=0)
 
 
+class TestOptional:
+
+    def test___init___basic(self):
+        # Construct a basic Optional and check values are set correctly.
+        example = Optional()
+        assert example.inner == Field()
+        assert example.default is None
+        assert example.validators == []
+
+    def test___init___options(self):
+        # Construct an Optional with extra options and make sure values are
+        # passed to Field.
+        example = Optional(Str, default='test', validators=[None])
+        assert example.inner == Str()
+        assert example.default == 'test'
+        assert example.validators == [None]
+
+    def test__normalize_default(self):
+        # When default is set, the Optional should return that value when the
+        # input is None.
+        example = Optional(default='test')
+        assert example._normalize(None) == 'test'
+
+    def test__normalize_callable_default(self):
+        # When a callable default is set, the Optional should call that function
+        # and return that value.
+        example = Optional(default=dict)
+        assert example._normalize(None) == {}
+
+    def test_serialize_something(self):
+        # An Optional should call the wrapped Field's serialize method.
+        example = Optional(Reversed)
+        assert example.serialize('test') == 'tset'
+
+    def test_serialize_none(self):
+        # An Optional should raise SkipSerialization if the value is None.
+        example = Optional(Reversed)
+
+        with raises(SkipSerialization):
+            assert example.serialize(None)
+
+    def test_deserialize_something(self):
+        # An Optional should call the wrapped Field's deserialize method.
+        example = Optional(Reversed)
+        assert example.deserialize('test') == 'tset'
+
+    def test_deserialize_none(self):
+        # An Optional deserialize None as None.
+        example = Optional(Reversed)
+        assert example.deserialize(None) is None
+
+    def test_validate_something(self):
+        # An Optional should call the wrapped Field's validate method.
+        example = Optional(Reversed)
+
+        with raises(ValidationError):
+            assert example.validate(5)
+
+    def test_validate_none(self):
+        # An Optional should not do any validation for None.
+        example = Optional(Reversed)
+        assert example.validate(None) is None
+
+
 class TestDict:
 
     def test___init___basic(self):
@@ -302,16 +362,14 @@ class TestDict:
         example = Dict()
         assert example.key == Field()
         assert example.value == Field()
-        assert example.required is True
         assert example.validators == []
 
     def test___init___options(self):
         # Construct a Dict with extra options and make sure values are passed to
         # Field.
-        example = Dict(key=Str, value=Int, required=False, validators=[None])
+        example = Dict(key=Str, value=Int, validators=[None])
         assert example.key == Str()
         assert example.value == Int()
-        assert example.required is False
         assert example.validators == [None]
 
     def test_serialize(self):
@@ -338,15 +396,13 @@ class TestList:
         # Construct a basic List and check values are set correctly.
         example = List()
         assert example.element == Field()
-        assert example.required is True
         assert example.validators == []
 
     def test___init___options(self):
         # Construct a List with extra options and make sure values are passed to
         # Field.
-        example = List(element=Int, required=False, validators=[None])
+        example = List(element=Int, validators=[None])
         assert example.element == Int()
-        assert example.required is False
         assert example.validators == [None]
 
     def test_serialize(self):
@@ -373,15 +429,13 @@ class TestTuple:
         # Construct a basic Tuple and check values are set correctly.
         example = Tuple()
         example.elements == ()
-        assert example.required is True
         assert example.validators == []
 
     def test___init___options(self):
         # Construct a Tuple with extra options and make sure values are passed to
         # Field.
-        example = Tuple(Int, Str, required=False, validators=[None])
+        example = Tuple(Int, Str, validators=[None])
         assert example.elements == (Int(), Str())
-        assert example.required is False
         assert example.validators == [None]
 
     def test_serialize(self):
@@ -411,9 +465,8 @@ class TestChoice:
 
     def test___init__(self):
         # Construct a basic Choice and check values are set correctly.
-        example = Choice(range(5), required=False, validators=[None])
+        example = Choice(range(5), validators=[None])
         assert example.choices == range(5)
-        assert example.required is False
         assert example.validators == [None]
 
     def test_validate(self):
@@ -429,8 +482,7 @@ class TestDateTime:
 
     def test___init__(self):
         # Construct a basic DateTime and check values are set correctly.
-        example = DateTime(format='%Y%m%d %H:%M:%S', required=False)
-        assert example.required is False
+        example = DateTime(format='%Y%m%d %H:%M:%S')
         assert example.format == '%Y%m%d %H:%M:%S'
 
     def test_serialize_iso8601(self):
@@ -508,10 +560,8 @@ class TestUuid:
 
     def test___init__(self):
         # Construct a basic Uuid and check values are set correctly.
-        example = Uuid(required=False, default=uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'))
+        example = Uuid()
         assert example.type == uuid.UUID
-        assert example.required is False
-        assert example.default == uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e')
 
     def test_serialize(self):
         # A Uuid should serialize a uuid.UUID as a string.

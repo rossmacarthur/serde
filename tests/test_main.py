@@ -21,7 +21,7 @@ def test_base_0():
             assert isinstance(value, UUID)
 
     class Player(Model):
-        key = MyUuid(required=False, default=uuid4)
+        key = field.Optional(MyUuid, default=uuid4)
         name = field.Tuple(str, str)
         age = field.Int()
         rating = field.Float()
@@ -102,8 +102,8 @@ def test_base_1():
 
     class User(Model):
         name = field.Str(rename='username', serializers=[lambda s: s.strip()])
-        age = field.Int(required=False)
-        addresses = field.List(Address, required=False)
+        age = field.Optional(field.Int)
+        addresses = field.Optional(field.List(Address))
 
     # Serialization
     user = User(name='John Smith', age=53, addresses=[Address(email='john@smith.com')])
@@ -124,7 +124,7 @@ def test_base_2():
     class Version(Model):
         major = field.Int()
         minor = field.Int()
-        patch = field.Int(required=False, default=0)
+        patch = field.Optional(field.Int, default=0)
 
     class Package(Model):
         name = field.Str(rename='packageName')
