@@ -592,11 +592,11 @@ class Optional(Field):
     """
     An optional Field.
 
-    An Optional is allowed to be None. Serialization, deserialization, and
-    validation using the wrapped Field will only be called if the value is not
-    None. The wrapped Field can be specified using a Field class, a Field
-    instance, a Model class, or a built-in type that has a corresponding Field
-    type in this library.
+    An Optional is a Field that is allowed to be None. Serialization,
+    deserialization, and validation using the wrapped Field will only be called
+    if the value is not None. The wrapped Field can be specified using a Field
+    class, a Field instance, a Model class, or a built-in type that has a
+    corresponding Field type in this library.
 
     ::
 

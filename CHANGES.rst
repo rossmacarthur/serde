@@ -1,6 +1,18 @@
 Changelog
 =========
 
+Version 0.4.0
+-------------
+
+*Unreleased*
+
+- Add Optional Field. (`#51`_, `#48`_, `#49`_)
+
+.. _#51: https://github.com/rossmacarthur/serde/pull/51
+
+.. _#48: https://github.com/rossmacarthur/serde/issues/48
+.. _#49: https://github.com/rossmacarthur/serde/issues/49
+
 Version 0.3.2
 -------------
 
