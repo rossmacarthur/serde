@@ -5,7 +5,9 @@ import mock
 from pytest import raises
 
 from serde import Model, field, validate
-from serde.error import DeserializationError, MissingDependency, SerdeError, SerializationError, ValidationError
+from serde.error import (
+    DeserializationError, MissingDependency, SerdeError, SerializationError, ValidationError
+)
 
 
 class TestModel:
