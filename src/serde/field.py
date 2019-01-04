@@ -3,11 +3,11 @@ Field types for `Models <serde.model.Model>`.
 
 Fields handle serializing, deserializing, and validation of input values for
 Model objects. They should be instantiated when assigned to the Model. Fields
-support extra serialization, deserialization, and validation without having to
-subclass `Field`.
+support extra serialization, deserialization, and validation of values without
+having to subclass `Field`.
 
 Note: Extra serializers are called prior to the default field serialization,
-while extra deserializers and validators are called after the default
+while extra deserializers, and validators are called after the default
 operations.
 
 ::
@@ -17,8 +17,8 @@ operations.
 
     >>> class Person(Model):
     ...     name = Str(deserializers=[lambda s: s.strip()])
-    ...     fave_number = Int(required=False, validators=[assert_is_odd])
-    ...     fave_color = Choice(['black', 'blue', 'pink'], required=False, default='pink')
+    ...     fave_number = Optional(Int, validators=[assert_is_odd])
+    ...     fave_color = Optional(Choice(['black', 'pink']), default='pink')
 
     >>> person = Person('William Shakespeare', fave_number=455)
     >>> person.name
@@ -81,7 +81,7 @@ import uuid
 import isodate
 
 from serde import validate
-from serde.error import SerdeError
+from serde.error import SerdeError, SkipSerialization, ValidationError
 from serde.util import zip_equal
 
 
@@ -108,6 +108,7 @@ __all__ = [
     'List',
     'MacAddress',
     'Nested',
+    'Optional',
     'Slug',
     'Str',
     'String',
@@ -184,28 +185,20 @@ class Field(object):
     """
     A field on a `~serde.model.Model`.
 
-    Fields handle serializing, deserializing, and validation of input values for
-    Model objects.
+    Fields handle serializing, deserializing, and validation of
+    input values for Model objects.
     """
 
     # This is so we can get the order the fields were instantiated in.
     __counter = 0
 
-    def __init__(
-        self, rename=None, required=True, default=None,
-        serializers=None, deserializers=None, validators=None
-    ):
+    def __init__(self, rename=None, serializers=None, deserializers=None, validators=None):
         """
         Create a new Field.
 
         Args:
             rename (str): override the name for the field when serializing and
                 expect this name when deserializing.
-            required (bool): whether this field is required. Required fields
-                have to be present in instantiation and deserialization.
-            default: a value to use if there is no input field value. This can
-                also be a function that generates the default. The function
-                must take no arguments.
             serializers (list): a list of serializer functions taking the value
                 to serialize as an argument. The functions need to raise an
                 `Exception` if they fail. These serializer functions will be
@@ -224,8 +217,6 @@ class Field(object):
         Field.__counter += 1
 
         self.rename = rename
-        self.required = required
-        self.default = default
         self.serializers = serializers or []
         self.deserializers = deserializers or []
         self.validators = validators or []
@@ -254,7 +245,7 @@ class Field(object):
                 has already been set.
         """
         if name == '_name' and hasattr(self, '_name'):
-            raise SerdeError('field instance used multiple times')
+            raise SerdeError('Field instance used multiple times')
 
         super(Field, self).__setattr__(name, value)
 
@@ -296,6 +287,21 @@ class Field(object):
 
         return value
 
+    def _normalize(self, value):
+        """
+        Normalize the given value according to this Field's specification.
+
+        This is called after deserialization and on initialization, both before
+        validation.
+
+        Args:
+            value: the value to normalize.
+
+        Returns:
+            the normalized value.
+        """
+        return value
+
     def _validate(self, value):
         """
         Validate the given value according to this Field's specification.
@@ -318,13 +324,15 @@ class Field(object):
         This is the rename value, given when the Field is instantiated,
         otherwise it is the attribute name of this Field on the Model.
         """
-        if not hasattr(self, '_name'):
-            raise SerdeError('field is not on a Model')
+        try:
+            name = self._name
+        except AttributeError:
+            raise SerdeError('Field is not on a Model')
 
-        if self.rename is None:
-            return self._name
+        if self.rename is not None:
+            return self.rename
 
-        return self.rename
+        return name
 
     def serialize(self, value):
         """
@@ -357,7 +365,8 @@ class Field(object):
         Args:
             value: the value to validate.
         """
-        pass
+        if value is None:
+            raise ValidationError('None is not a valid Field value')
 
 
 def _create_serialize(cls, serializers):
@@ -502,7 +511,7 @@ class Nested(Instance):
 
         >>> class Person(Model):
         ...     name = Str()
-        ...     birthday = Nested(Birthday, required=False)
+        ...     birthday = Nested(Birthday)
 
         >>> person = Person('Beyonce', birthday=Birthday(4, 'September'))
         >>> person.name
@@ -540,7 +549,7 @@ class Nested(Instance):
         Create a new Nested.
 
         Args:
-            model: the Model class that this Field wraps.
+            model: the Model class that this Nested wraps.
             dict (type): the class of the deserialized dictionary. This defaults
                 to an `~collections.OrderedDict` so that the fields will be
                 returned in the order they were defined on the Model.
@@ -577,6 +586,129 @@ class Nested(Instance):
         """
         value = self.type.from_dict(value, strict=self.strict)
         return super(Nested, self).deserialize(value)
+
+
+class Optional(Field):
+    """
+    An optional Field.
+
+    An Optional is a Field that is allowed to be None. Serialization,
+    deserialization, and validation using the wrapped Field will only be called
+    if the value is not None. The wrapped Field can be specified using a Field
+    class, a Field instance, a Model class, or a built-in type that has a
+    corresponding Field type in this library.
+
+    ::
+
+        >>> class Quote(Model):
+        ...     author = field.Optional(field.Str)
+        ...     year = field.Optional(field.Int, default=2004)
+        ...     content = field.Str()
+
+        >>> quote = Quote(year=2000, content='Beautiful is better than ugly.')
+        >>> assert quote.author is None
+        >>> quote.year
+        2000
+        >>> quote.content
+        'Beautiful is better than ugly.'
+
+        >>> assert quote.to_dict() == {
+        ...     'content': 'Beautiful is better than ugly.',
+        ...     'year': 2000
+        ... }
+
+        >>> quote = Quote.from_dict({
+        ...     'author': 'Tim Peters',
+        ...     'content': 'Now is better than never',
+        ... })
+        >>> quote.author
+        'Tim Peters'
+        >>> quote.year
+        2004
+        >>> quote.content
+        'Now is better than never'
+    """
+
+    def __init__(self, inner=None, default=None, **kwargs):
+        """
+        Create a new Optional.
+
+        Args:
+            inner: the the Field class/instance that this Optional wraps.
+            default: a value to use if there is no input field value or the
+                input value is None. This can also be a callable that generates
+                the default. The function must take no arguments.
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super(Optional, self).__init__(**kwargs)
+        self.inner = _resolve_to_field_instance(inner)
+        self.default = default
+
+    def _normalize(self, value):
+        """
+        Normalize the given value according to the inner Field's specification.
+
+        This is called after deserialization and on initialization, both before
+        validation. If a default is defined, this method will set the value to
+        the default if the value is None.
+
+        Args:
+            value: the value to normalize.
+
+        Returns:
+            the normalized value.
+        """
+        if value is None and self.default is not None:
+            if callable(self.default):
+                value = self.default()
+            else:
+                value = self.default
+
+        return value
+
+    def serialize(self, value):
+        """
+        Serialize the given value according to the inner Field's specification.
+
+        Serialization will only be called if the value is not None.
+
+        Args:
+            value: the value to serialize.
+
+        Returns:
+            the serialized value.
+        """
+        if value is None:
+            raise SkipSerialization()
+
+        return self.inner.serialize(value)
+
+    def deserialize(self, value):
+        """
+        Deserialize the given value according to the inner Field's specification.
+
+        Deserialization will only be called if the value is not None.
+
+        Args:
+            value: the value to deserialize.
+
+        Returns:
+            the deserialized value or None.
+        """
+        if value is not None:
+            return self.inner.deserialize(value)
+
+    def validate(self, value):
+        """
+        Validate the given value according to the inner Field's specification.
+
+        Validation will only be called if the value is not None.
+
+        Args:
+            value: the value to validate.
+        """
+        if value is not None:
+            self.inner.validate(value)
 
 
 class Dict(Instance):
@@ -697,7 +829,7 @@ class List(Instance):
     ::
 
         >>> class User(Model):
-        ...     emails = List(str, default=[])
+        ...     emails = List(str)
 
         >>> user = User(['john@smith.com', 'john.smith@email.com'])
         >>> user.emails[0]

@@ -5,7 +5,9 @@ import mock
 from pytest import raises
 
 from serde import Model, field, validate
-from serde.error import DeserializationError, SerdeError, SerializationError, ValidationError
+from serde.error import (
+    DeserializationError, MissingDependency, SerdeError, SerializationError, ValidationError
+)
 
 
 class TestModel:
@@ -123,8 +125,8 @@ class TestModel:
         with raises(SerdeError):
             Example(a=None)
 
-    def test___init___required(self):
-        # Check that a required Field behaves as it should.
+    def test___init___normal(self):
+        # Check that a normal Field behaves as it should.
 
         class Example(Model):
             a = field.Int()
@@ -135,10 +137,10 @@ class TestModel:
             Example()
 
     def test___init___optional(self):
-        # Check that a non required Field behaves as it should.
+        # Check that an Optional Field behaves as it should.
 
         class Example(Model):
-            a = field.Int(required=False)
+            a = field.Optional(field.Int)
 
         assert Example().a is None
         assert Example(a=5).a == 5
@@ -147,7 +149,7 @@ class TestModel:
         # Check that the default Field value is applied correctly.
 
         class Example(Model):
-            a = field.Int(default=0)
+            a = field.Optional(field.Int, default=0)
 
         assert Example().a == 0
         assert Example(a=5).a == 5
@@ -185,7 +187,7 @@ class TestModel:
 
         class Example(Model):
             a = field.Int()
-            b = field.Str(required=False)
+            b = field.Optional(field.Str)
 
         Example(a=5, b=None)
 
@@ -227,7 +229,7 @@ class TestModel:
 
         class Example(Model):
             a = field.Int()
-            b = field.Bool(required=False)
+            b = field.Optional(field.Bool)
 
         assert Example(a=5) != Example(a=6)
         assert Example(a=5) != Example(a=6, b=True)
@@ -333,7 +335,7 @@ class TestModel:
 
         assert Example.from_dict({'a': 5}) == Example(a=5)
 
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({})
 
     def test_from_dict_optional(self):
@@ -341,7 +343,7 @@ class TestModel:
         # deserializing.
 
         class Example(Model):
-            a = field.Int(required=False)
+            a = field.Optional(field.Int)
 
         assert Example.from_dict({'a': 5}) == Example(a=5)
         assert Example.from_dict({}) == Example()
@@ -474,7 +476,7 @@ class TestModel:
         assert Example.from_toml('a = 5') == Example(a=5)
 
         with mock.patch('serde.model.toml', None):
-            with raises(SerdeError):
+            with raises(MissingDependency):
                 Example.from_toml('a = 50')
 
     def test_from_yaml(self):
@@ -486,7 +488,7 @@ class TestModel:
         assert Example.from_yaml('a: 5') == Example(a=5)
 
         with mock.patch('serde.model.yaml', None):
-            with raises(SerdeError):
+            with raises(MissingDependency):
                 Example.from_yaml('a: 5')
 
     def test_to_dict_empty(self):
@@ -497,8 +499,8 @@ class TestModel:
 
         assert Example().to_dict() == {}
 
-    def test_to_dict_required(self):
-        # Check that required Fields are present when serializing.
+    def test_to_dict_normal(self):
+        # Check that Fields need to be present when serializing.
 
         class Example(Model):
             a = field.Int()
@@ -506,10 +508,10 @@ class TestModel:
         assert Example(a=5).to_dict() == {'a': 5}
 
     def test_to_dict_optional(self):
-        # Check that optional Fields are not present when serializing.
+        # Check that unset optional Fields are not present when serializing.
 
         class Example(Model):
-            a = field.Int(required=False)
+            a = field.Optional(field.Int)
 
         assert Example().to_dict() == {}
 
@@ -615,7 +617,7 @@ class TestModel:
         assert Example(a=5).to_toml() == 'a = 5\n'
 
         with mock.patch('serde.model.toml', None):
-            with raises(SerdeError):
+            with raises(MissingDependency):
                 Example(a=5).to_toml()
 
     def test_to_yaml(self):
@@ -627,5 +629,5 @@ class TestModel:
         assert Example(a=5).to_yaml(dict=dict, default_flow_style=False) == 'a: 5\n'
 
         with mock.patch('serde.model.yaml', None):
-            with raises(SerdeError):
+            with raises(MissingDependency):
                 Example(a=5).to_yaml()
