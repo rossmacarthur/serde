@@ -1,7 +1,7 @@
 from pytest import raises
 
 from serde import validate
-from serde.error import ValidationError
+from serde.exceptions import ValidationError
 
 
 def test_instance():

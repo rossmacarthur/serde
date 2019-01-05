@@ -5,8 +5,8 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde import Model
-from serde.error import DeserializationError, SerdeError, SkipSerialization, ValidationError
-from serde.field import (
+from serde.exceptions import DeserializationError, SerdeError, SkipSerialization, ValidationError
+from serde.fields import (
     Bool, Bytes, Choice, Complex, Date, DateTime, Dict, Field, Float, Instance, Int,
     List, Nested, Optional, Str, Time, Tuple, Uuid, _resolve_to_field_instance, create
 )

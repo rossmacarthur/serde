@@ -10,6 +10,6 @@ API
 .. toctree::
 
     model
-    field
-    error
+    fields
+    exceptions
     validate

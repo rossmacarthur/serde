@@ -3,18 +3,18 @@ Serde is a lightweight, general-purpose, ORM framework for defining,
 serializing, deserializing, and validating data structures in Python.
 
 Objects are defined by subclassing `~serde.model.Model` and assigning
-`~serde.field.Field` attributes on the Model. In the following example `User` is
-the subclassed `~serde.model.Model` with two fields `name` and `age`. The
-`~serde.field.Str` and `~serde.field.Int` classes handle serialization,
+`~serde.fields.Field` attributes on the Model. In the following example `User`
+is the subclassed `~serde.model.Model` with two fields `name` and `age`. The
+`~serde.fields.Str` and `~serde.fields.Int` classes handle serialization,
 deserialization, and validation for these attributes.
 
 ::
 
-    >>> from serde import Model, field
+    >>> from serde import Model, fields
 
     >>> class User(Model):
-    ...     name = field.Str(rename='username')
-    ...     age = field.Optional(field.Int)
+    ...     name = fields.Str(rename='username')
+    ...     age = fields.Optional(fields.Int)
 
 Models are validated when they are instantiated and after they are deserialized.
 
@@ -50,13 +50,13 @@ deserialize a `User` from a dictionary we use the
 Other supported data formats including `JSON <serde.model.Model.to_json()>`,
 `TOML <serde.model.Model.to_toml()>`, and `YAML <serde.model.Model.to_yaml()>`.
 See `~serde.model` for more examples. Documentation for supported fields can be
-found in `~serde.field`.
+found in `~serde.fields`.
 """
 
 from serde.model import Model
 
 
-__all__ = ['Model', 'error', 'field', 'validate']
+__all__ = ['Model', 'exceptions', 'fields', 'validate']
 __title__ = 'serde'
 __version__ = '0.3.2'
 __url__ = 'https://github.com/rossmacarthur/serde'
