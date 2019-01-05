@@ -1,20 +1,22 @@
-Changelog
-=========
+Releases
+========
 
-Version 0.4.0
--------------
+0.4.0
+-----
 
 *Unreleased*
 
 - Add Optional Field. (`#51`_, `#48`_, `#49`_)
+- Pluralise module names. (`#52`_)
 
+.. _#52: https://github.com/rossmacarthur/serde/pull/52
 .. _#51: https://github.com/rossmacarthur/serde/pull/51
 
 .. _#48: https://github.com/rossmacarthur/serde/issues/48
 .. _#49: https://github.com/rossmacarthur/serde/issues/49
 
-Version 0.3.2
--------------
+0.3.2
+-----
 
 *Released on December 19th, 2018*
 
@@ -25,8 +27,8 @@ Version 0.3.2
 
 .. _#45: https://github.com/rossmacarthur/serde/issues/45
 
-Version 0.3.1
--------------
+0.3.1
+-----
 
 *Released on December 17th, 2018*
 
@@ -41,8 +43,8 @@ Version 0.3.1
 
 .. _#41: https://github.com/rossmacarthur/serde/issues/41
 
-Version 0.3.0
--------------
+0.3.0
+-----
 
 *Released on December 9th, 2018*
 
@@ -59,8 +61,8 @@ Version 0.3.0
 .. _#35: https://github.com/rossmacarthur/serde/pull/35
 .. _#34: https://github.com/rossmacarthur/serde/pull/34
 
-Version 0.2.1
--------------
+0.2.1
+-----
 
 *Released on November 21th, 2018*
 
@@ -76,8 +78,8 @@ Version 0.2.1
 .. _#3: https://github.com/rossmacarthur/serde/issues/3
 .. _#2: https://github.com/rossmacarthur/serde/issues/2
 
-Version 0.2.0
--------------
+0.2.0
+-----
 
 *Released on November 16th, 2018*
 
@@ -102,8 +104,8 @@ Version 0.2.0
 .. _#8: https://github.com/rossmacarthur/serde/issues/8
 .. _#7: https://github.com/rossmacarthur/serde/issues/7
 
-Version 0.1.2
--------------
+0.1.2
+-----
 
 *Released on October 28th, 2018*
 
@@ -111,8 +113,8 @@ Version 0.1.2
 
 .. _#1: https://github.com/rossmacarthur/serde/pull/1
 
-Version 0.1.1
--------------
+0.1.1
+-----
 
 *Released on October 27th, 2018*
 

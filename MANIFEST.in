@@ -1,7 +1,7 @@
-include CHANGES.rst
 include LICENSE
 include Makefile
 include README.rst
+include RELEASES.rst
 
 recursive-include docs *
 recursive-include tests *
