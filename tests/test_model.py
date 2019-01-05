@@ -4,8 +4,8 @@ from collections import OrderedDict
 import mock
 from pytest import raises
 
-from serde import Model, field, validate
-from serde.error import (
+from serde import Model, fields, validate
+from serde.exceptions import (
     DeserializationError, MissingDependency, SerdeError, SerializationError, ValidationError
 )
 
@@ -26,55 +26,55 @@ class TestModel:
         # off the class and added as a `_fields` attribute.
 
         class Example(Model):
-            a = field.Int()
-            b = field.Bool()
+            a = fields.Int()
+            b = fields.Bool()
 
         # The field attributes should not be present on the final class.
         assert not hasattr(Example, 'a')
         assert not hasattr(Example, 'b')
 
         # But they should be in the _fields attribute
-        assert isinstance(Example._fields.a, field.Int)
-        assert isinstance(Example._fields.b, field.Bool)
+        assert isinstance(Example._fields.a, fields.Int)
+        assert isinstance(Example._fields.b, fields.Bool)
 
     def test___new___subclassed_basic(self):
         # When extending a Model the parent field attributes should also be
         # present.
 
         class Example(Model):
-            a = field.Int()
-            b = field.Bool()
+            a = fields.Int()
+            b = fields.Bool()
 
         class Example2(Model):
             pass
 
-        assert isinstance(Example._fields.a, field.Int)
-        assert isinstance(Example._fields.b, field.Bool)
+        assert isinstance(Example._fields.a, fields.Int)
+        assert isinstance(Example._fields.b, fields.Bool)
 
     def test___new___subclassed_overriding_fields(self):
         # Subclassed Models with Fields of the same name should override the
         # parent Fields.
 
         class Example(Model):
-            a = field.Int()
-            b = field.Int()
+            a = fields.Int()
+            b = fields.Int()
 
         class Example2(Example):
-            b = field.Float()
-            c = field.Float()
+            b = fields.Float()
+            c = fields.Float()
 
-        assert isinstance(Example2._fields.a, field.Int)
-        assert isinstance(Example2._fields.b, field.Float)
-        assert isinstance(Example2._fields.c, field.Float)
+        assert isinstance(Example2._fields.a, fields.Int)
+        assert isinstance(Example2._fields.b, fields.Float)
+        assert isinstance(Example2._fields.c, fields.Float)
 
     def test___new___subclassed_overriding_attributes(self):
         # Subclassed Models with functions, attributes, and properties should
         # override the Fields.
 
         class Example(Model):
-            a = field.Int()
-            b = field.Bool()
-            c = field.Str()
+            a = fields.Int()
+            b = fields.Bool()
+            c = fields.Str()
 
         class Example2(Model):
 
@@ -101,14 +101,14 @@ class TestModel:
         # super() if they so wish.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         class Example2(Example):
 
             def __init__(self):
                 super(Example2, self).__init__(a=5)
 
-        assert isinstance(Example2._fields.a, field.Int)
+        assert isinstance(Example2._fields.a, fields.Int)
         assert Example2().a == 5
 
     def test___init___empty(self):
@@ -129,7 +129,7 @@ class TestModel:
         # Check that a normal Field behaves as it should.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example(a=5).a == 5
 
@@ -140,7 +140,7 @@ class TestModel:
         # Check that an Optional Field behaves as it should.
 
         class Example(Model):
-            a = field.Optional(field.Int)
+            a = fields.Optional(fields.Int)
 
         assert Example().a is None
         assert Example(a=5).a == 5
@@ -149,7 +149,7 @@ class TestModel:
         # Check that the default Field value is applied correctly.
 
         class Example(Model):
-            a = field.Optional(field.Int, default=0)
+            a = fields.Optional(fields.Int, default=0)
 
         assert Example().a == 0
         assert Example(a=5).a == 5
@@ -158,8 +158,8 @@ class TestModel:
         # Check that you can pass in Field values as arguments.
 
         class Example(Model):
-            a = field.Int()
-            b = field.Str()
+            a = fields.Int()
+            b = fields.Str()
 
         example = Example(a=5, b='test')
         assert example.a == 5
@@ -174,7 +174,7 @@ class TestModel:
         # that you can't pass more arguments than fields.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         with raises(SerdeError):
             Example(5, a=5)
@@ -186,8 +186,8 @@ class TestModel:
         # The __init__() method should validate the values.
 
         class Example(Model):
-            a = field.Int()
-            b = field.Optional(field.Str)
+            a = fields.Int()
+            b = fields.Optional(fields.Str)
 
         Example(a=5, b=None)
 
@@ -204,7 +204,7 @@ class TestModel:
         # Check that extra validators work.
 
         class Example(Model):
-            a = field.Int(validators=[validate.between(100, 200)])
+            a = fields.Int(validators=[validate.between(100, 200)])
 
         assert Example(a=101).a == 101
 
@@ -215,10 +215,10 @@ class TestModel:
         # Check that nested Model construction works.
 
         class SubExample(Model):
-            a = field.Int()
+            a = fields.Int()
 
         class Example(Model):
-            sub = field.Nested(SubExample)
+            sub = fields.Nested(SubExample)
 
         example = Example(sub=SubExample(a=5))
         assert example.sub == SubExample(a=5)
@@ -228,8 +228,8 @@ class TestModel:
         # Check that the Model equals method works.
 
         class Example(Model):
-            a = field.Int()
-            b = field.Optional(field.Bool)
+            a = fields.Int()
+            b = fields.Optional(fields.Bool)
 
         assert Example(a=5) != Example(a=6)
         assert Example(a=5) != Example(a=6, b=True)
@@ -239,7 +239,7 @@ class TestModel:
         # Check that a basic Model hash works.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert hash(Example(5)) == hash(Example(a=5))
         assert hash(Example(5)) != hash(Example(a=4))
@@ -248,10 +248,10 @@ class TestModel:
         # Check that a nested Model hash works.
 
         class SubExample(Model):
-            a = field.Int()
+            a = fields.Int()
 
         class Example(Model):
-            sub = field.Nested(SubExample)
+            sub = fields.Nested(SubExample)
 
         assert hash(Example(SubExample(5))) == hash(Example(sub=SubExample(a=5)))
         assert hash(Example(SubExample(5))) != hash(Example(sub=SubExample(a=4)))
@@ -260,8 +260,8 @@ class TestModel:
         # Check that a basic Model __repr__ works.
 
         class Example(Model):
-            a = field.Int()
-            b = field.Str()
+            a = fields.Int()
+            b = fields.Str()
 
         assert repr(Example(a=5, b='test')) == "Example(a=5, b='test')"
 
@@ -269,10 +269,10 @@ class TestModel:
         # Check that a nested Model __repr__ works.
 
         class SubExample(Model):
-            a = field.Int()
+            a = fields.Int()
 
         class Example(Model):
-            sub = field.Nested(SubExample)
+            sub = fields.Nested(SubExample)
 
         assert repr(Example(sub=SubExample(a=5))) == 'Example(sub=SubExample(a=5))'
 
@@ -281,7 +281,7 @@ class TestModel:
         # values they are validated.
 
         class Example(Model):
-            a = field.Int(validators=[validate.min(100)])
+            a = fields.Int(validators=[validate.min(100)])
 
         example = Example(a=101)
         example.a = 5
@@ -293,7 +293,7 @@ class TestModel:
         # the validate() method.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
             def validate(self):
                 assert self.a != 0
@@ -310,7 +310,7 @@ class TestModel:
         # Check that error context is added to ValidationErrors.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         try:
             Example(a='not an integer')
@@ -331,7 +331,7 @@ class TestModel:
         # Check that required Fields have to be present when deserializing.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example.from_dict({'a': 5}) == Example(a=5)
 
@@ -343,7 +343,7 @@ class TestModel:
         # deserializing.
 
         class Example(Model):
-            a = field.Optional(field.Int)
+            a = fields.Optional(fields.Int)
 
         assert Example.from_dict({'a': 5}) == Example(a=5)
         assert Example.from_dict({}) == Example()
@@ -352,7 +352,7 @@ class TestModel:
         # Check that renaming a Field deserializes that value.
 
         class Example(Model):
-            a = field.Int(rename='b')
+            a = fields.Int(rename='b')
 
         assert Example.from_dict({'b': 5}) == Example(a=5)
 
@@ -364,7 +364,7 @@ class TestModel:
         # visa versa.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example.from_dict({'a': 5, 'c': 'unknown'}, strict=False) == Example(a=5)
 
@@ -375,7 +375,7 @@ class TestModel:
         # Check that overriding the __init__ method does not break from_dict().
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
             def __init__(self):
                 super(Example, self).__init__(a=5)
@@ -386,10 +386,10 @@ class TestModel:
         # Check that nested Models are parsed correctly.
 
         class SubExample(Model):
-            a = field.Int()
+            a = fields.Int()
 
         class Example(Model):
-            sub = field.Nested(SubExample)
+            sub = fields.Nested(SubExample)
 
         assert Example.from_dict({'sub': {'a': 5}}) == Example(sub=SubExample(a=5))
 
@@ -405,7 +405,7 @@ class TestModel:
             return actual_function
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         Example._fields.a.deserialize = always_raise(AssertionError)
         with raises(DeserializationError):
@@ -423,7 +423,7 @@ class TestModel:
         # Check that error context is added to DeserializationErrors.
 
         class Example(Model):
-            a = field.DateTime()
+            a = fields.DateTime()
 
         try:
             Example.from_dict({'a': 'not a datetime'})
@@ -436,7 +436,7 @@ class TestModel:
         # Check that custom deserializers are applied.
 
         class Example(Model):
-            a = field.Str(deserializers=[lambda x: x[::-1]])
+            a = fields.Str(deserializers=[lambda x: x[::-1]])
 
         assert Example.from_dict({'a': 'test'}) == Example(a='tset')
 
@@ -444,7 +444,7 @@ class TestModel:
         # Check that you can deserialize from JSON.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example.from_json('{"a": 5}') == Example(a=5)
 
@@ -452,7 +452,7 @@ class TestModel:
         # Check that the from_json() method passes through the strict option.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example.from_json('{"a": 5, "b": "unknown"}', strict=False) == Example(a=5)
 
@@ -463,7 +463,7 @@ class TestModel:
         # Check that extra JSON kwargs can be passed.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example.from_json('{"a": 5}', object_hook=OrderedDict) == Example(a=5)
 
@@ -471,7 +471,7 @@ class TestModel:
         # Check that you can deserialize from TOML, if its installed.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example.from_toml('a = 5') == Example(a=5)
 
@@ -483,7 +483,7 @@ class TestModel:
         # Check that you can deserialize from YAML, if its installed.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example.from_yaml('a: 5') == Example(a=5)
 
@@ -503,7 +503,7 @@ class TestModel:
         # Check that Fields need to be present when serializing.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example(a=5).to_dict() == {'a': 5}
 
@@ -511,7 +511,7 @@ class TestModel:
         # Check that unset optional Fields are not present when serializing.
 
         class Example(Model):
-            a = field.Optional(field.Int)
+            a = fields.Optional(fields.Int)
 
         assert Example().to_dict() == {}
 
@@ -519,7 +519,7 @@ class TestModel:
         # Check that renaming a Field serializes that value.
 
         class Example(Model):
-            a = field.Int(rename='b')
+            a = fields.Int(rename='b')
 
         assert Example(a=5).to_dict() == {'b': 5}
 
@@ -527,7 +527,7 @@ class TestModel:
         # Check that the dictionary type can be modified.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         class CustomDict(OrderedDict):
             def __eq__(self, other):
@@ -539,10 +539,10 @@ class TestModel:
         # Check that nested Models are serialized correctly.
 
         class SubExample(Model):
-            a = field.Int()
+            a = fields.Int()
 
         class Example(Model):
-            sub = field.Nested(SubExample)
+            sub = fields.Nested(SubExample)
 
         assert Example(sub=SubExample(a=5)).to_dict() == {'sub': {'a': 5}}
 
@@ -555,7 +555,7 @@ class TestModel:
             return actual_function
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         Example._fields.a.serialize = always_raise(AssertionError)
         with raises(SerializationError):
@@ -573,7 +573,7 @@ class TestModel:
         # Check that error context is added to SerializationErrors.
 
         class Example(Model):
-            a = field.DateTime()
+            a = fields.DateTime()
 
         try:
             example = Example(a=datetime.datetime.utcnow())
@@ -587,7 +587,7 @@ class TestModel:
         # Check that custom serializers are applied.
 
         class Example(Model):
-            a = field.Str(serializers=[lambda x: x[::-1]])
+            a = fields.Str(serializers=[lambda x: x[::-1]])
 
         assert Example(a='tset').to_dict() == {'a': 'test'}
 
@@ -595,7 +595,7 @@ class TestModel:
         # Check that you can serialize to JSON.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example(a=50).to_json() == '{"a": 50}'
 
@@ -603,8 +603,8 @@ class TestModel:
         # Check that extra JSON kwargs can be passed.
 
         class Example(Model):
-            b = field.Str()
-            a = field.Int()
+            b = fields.Str()
+            a = fields.Int()
 
         assert Example(a=5, b='test').to_json(sort_keys=True) == '{"a": 5, "b": "test"}'
 
@@ -612,7 +612,7 @@ class TestModel:
         # Check that you can serialize to TOML, if its installed.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example(a=5).to_toml() == 'a = 5\n'
 
@@ -624,7 +624,7 @@ class TestModel:
         # Check that you can serialize to YAML, if its installed.
 
         class Example(Model):
-            a = field.Int()
+            a = fields.Int()
 
         assert Example(a=5).to_yaml(dict=dict, default_flow_style=False) == 'a: 5\n'
 

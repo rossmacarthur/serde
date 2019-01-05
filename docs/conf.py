@@ -13,9 +13,11 @@ release = serde.__version__
 
 # General configuration
 default_role = 'obj'
-doctest_default_flags = (doctest.DONT_ACCEPT_TRUE_FOR_1
-                         | doctest.ELLIPSIS
-                         | doctest.NORMALIZE_WHITESPACE)
+doctest_default_flags = (
+    doctest.DONT_ACCEPT_TRUE_FOR_1
+    | doctest.ELLIPSIS
+    | doctest.NORMALIZE_WHITESPACE
+)
 doctest_global_setup = 'from serde import *'
 extensions = [
     'sphinx.ext.autodoc',

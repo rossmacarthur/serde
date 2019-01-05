@@ -4,7 +4,7 @@ Validator functions for use with `Fields <serde.field.Field>`.
 
 import validators
 
-from serde.error import ValidationError
+from serde.exceptions import ValidationError
 
 
 __all__ = [
@@ -42,7 +42,8 @@ def instance(type):
             value: the value to validate.
 
         Raises:
-            ValidationError: when the value is not an instance of the type.
+            `~serde.exceptions.ValidationError`: when the value is not an
+                instance of the type.
         """
         if not isinstance(value, type):
             raise ValidationError(
@@ -71,8 +72,9 @@ def min(endpoint, inclusive=True):
         Args:
             value: the value to validate.
 
-        ValidationError: when the value is greater than and/or equal to the
-                maximum.
+        Raises:
+            `~serde.exceptions.ValidationError`: when the value is greater than
+                and/or equal to the maximum.
         """
         if inclusive:
             if value < endpoint:
@@ -109,8 +111,8 @@ def max(endpoint, inclusive=True):
             value: the value to validate.
 
         Raises:
-            ValidationError: when the value is not less than and/or equal to the
-                maximum.
+            `~serde.exceptions.ValidationError`: when the value is not less than
+                and/or equal to the maximum.
         """
         if inclusive:
             if value > endpoint:
@@ -148,8 +150,8 @@ def between(min_endpoint, max_endpoint, inclusive=True):
             value: the value to validate.
 
         Raises:
-            ValidationError: when the value is not between the minimum and
-                maximum.
+            `~serde.exceptions.ValidationError`: when the value is not between
+                the minimum and maximum.
         """
         min(min_endpoint, inclusive=inclusive)(value)
         max(max_endpoint, inclusive=inclusive)(value)
@@ -172,7 +174,8 @@ def contains(allowed):
         Validate that the given list/range/tuple contains the given value.
 
         Raises:
-            ValidationError: when the value is not one of the allowed values.
+            `~serde.exceptions.ValidationError`: when the value is not one of
+                the allowed values.
         """
         if value not in allowed:
             raise ValidationError('{!r} is not a valid choice'.format(value))
@@ -188,7 +191,8 @@ def domain(value):
         value (str): the value to validate.
 
     Raises:
-        ValidationError: when the value is not a valid domain.
+        `~serde.exceptions.ValidationError`: when the value is not a valid
+            domain.
     """
     if not validators.domain(value):
         raise ValidationError('{!r} is not a valid domain'.format(value))
@@ -202,7 +206,8 @@ def email(value):
         value (str): the value to validate.
 
     Raises:
-        ValidationError: when the value is not a valid email.
+        `~serde.exceptions.ValidationError`: when the value is not a valid
+            email.
     """
     if not validators.email(value):
         raise ValidationError('{!r} is not a valid email'.format(value))
@@ -216,7 +221,8 @@ def ip_address(value):
         value (str): the value to validate.
 
     Raises:
-        ValidationError: when the value is not a valid IP address.
+        `~serde.exceptions.ValidationError`: when the value is not a valid IP
+            address.
     """
     if not validators.ipv4(value) and not validators.ipv6(value):
         raise ValidationError('{!r} is not a valid IP address'.format(value))
@@ -230,7 +236,8 @@ def ipv4_address(value):
         value (str): the value to validate.
 
     Raises:
-        ValidationError: when the value is not a valid IP version 4 address.
+        `~serde.exceptions.ValidationError`: when the value is not a valid IP
+            version 4 address.
     """
     if not validators.ipv4(value):
         raise ValidationError('{!r} is not a valid IPv4 address'.format(value))
@@ -244,7 +251,8 @@ def ipv6_address(value):
         value (str): the value to validate.
 
     Raises:
-        ValidationError: when the value is not a valid IP version 6 address.
+        `~serde.exceptions.ValidationError`: when the value is not a valid IP
+            version 6 address.
     """
     if not validators.ipv6(value):
         raise ValidationError('{!r} is not a valid IPv6 address'.format(value))
@@ -258,7 +266,8 @@ def mac_address(value):
         value (str): the value to validate.
 
     Raises:
-        ValidationError: when the value is not a valid MAC address.
+        `~serde.exceptions.ValidationError`: when the value is not a valid MAC
+            address.
     """
     if not validators.mac_address(value):
         raise ValidationError('{!r} is not a valid MAC address'.format(value))
@@ -272,7 +281,7 @@ def slug(value):
         value (str): the value to validate.
 
     Raises:
-        ValidationError: when the value is not a valid slug.
+        `~serde.exceptions.ValidationError`: when the value is not a valid slug.
     """
     if not validators.slug(value):
         raise ValidationError('{!r} is not a valid slug'.format(value))
@@ -286,7 +295,7 @@ def url(value):
         value (str): the value to validate.
 
     Raises:
-        ValidationError: when the value is not a valid URL.
+        `~serde.exceptions.ValidationError`: when the value is not a valid URL.
     """
     if not validators.url(value):
         raise ValidationError('{!r} is not a valid URL'.format(value))

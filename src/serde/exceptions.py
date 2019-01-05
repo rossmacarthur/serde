@@ -1,5 +1,5 @@
 """
-Exception types used in Serde.
+This module contains Exception classes that are used in Serde.
 """
 
 

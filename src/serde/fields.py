@@ -1,8 +1,8 @@
 """
-Field types for `Models <serde.model.Model>`.
+This module contains Field classes for `Models <serde.model.Model>`.
 
 Fields handle serializing, deserializing, and validation of input values for
-Model objects. They should be instantiated when assigned to the Model. Fields
+Model objects. They are instantiated when assigned to the Model. Fields
 support extra serialization, deserialization, and validation of values without
 having to subclass `Field`.
 
@@ -31,7 +31,7 @@ operations.
     >>> Person.from_dict({'name': 'Beyonce', 'fave_number': 4})
     Traceback (most recent call last):
     ...
-    serde.error.ValidationError: value is not odd!
+    serde.exceptions.ValidationError: value is not odd!
 
 The `create()` method can be used to generate a new Field class from arbitrary
 functions without having to manually subclass a Field. For example if we wanted
@@ -39,7 +39,7 @@ a `Percent` field we would do the following.
 
 ::
 
-    >>> Percent = field.create(
+    >>> Percent = fields.create(
     ...     'Percent',
     ...     Float,
     ...     validators=[validate.between(0.0, 100.0)]
@@ -49,30 +49,33 @@ a `Percent` field we would do the following.
     True
 
 Here is an example where we subclass a field and override the serialize,
-deserialize, and validate methods.
+deserialize, and validate methods. Note: there is already an Email field in this
+module, this is just an example of how it could be created.
 
 ::
 
-    >>> class Reversed(Field):
+    >>> class Email(Field):
     ...
     ...     def serialize(self, value):
-    ...         return value[::-1]
+    ...         return value.strip()
     ...
     ...     def deserialize(self, value):
-    ...         return value[::-1]
+    ...         return value.strip()
     ...
     ...     def validate(self, value):
     ...         assert isinstance(value, str)
+    ...         validate.email(value)
 
-    >>> class Example(Model):
-    ...     silly = Reversed(rename='sILLy')
+    >>> class User(Model):
+    ...     email = Email()
 
-    >>> example = Example('test')
-    >>> example.silly
-    'test'
+    >>> user = User(email='john@smith.com')
+    >>> user.email
+    'john@smith.com'
 
-    >>> example.to_dict()
-    OrderedDict([('sILLy', 'tset')])
+    >>> user.to_dict()
+    OrderedDict([('email', 'john@smith.com')])
+
 """
 
 import datetime
@@ -81,8 +84,8 @@ import uuid
 import isodate
 
 from serde import validate
-from serde.error import SerdeError, SkipSerialization, ValidationError
-from serde.util import zip_equal
+from serde.exceptions import SerdeError, SkipSerialization, ValidationError
+from serde.utils import zip_equal
 
 
 __all__ = [
@@ -241,8 +244,8 @@ class Field(object):
         Set a named attribute on a Field.
 
         Raises:
-            `~serde.error.SerdeError`: when the _name attribute is set after it
-                has already been set.
+            `~serde.exceptions.SerdeError`: when the _name attribute is set
+                after it has already been set.
         """
         if name == '_name' and hasattr(self, '_name'):
             raise SerdeError('Field instance used multiple times')
@@ -601,9 +604,9 @@ class Optional(Field):
     ::
 
         >>> class Quote(Model):
-        ...     author = field.Optional(field.Str)
-        ...     year = field.Optional(field.Int, default=2004)
-        ...     content = field.Str()
+        ...     author = Optional(Str)
+        ...     year = Optional(Int, default=2004)
+        ...     content = Str()
 
         >>> quote = Quote(year=2000, content='Beautiful is better than ugly.')
         >>> assert quote.author is None
@@ -744,12 +747,12 @@ class Dict(Instance):
         >>> Example({'pi': '3.1415927'})
         Traceback (most recent call last):
             ...
-        serde.error.ValidationError: expected 'float' but got 'str'
+        serde.exceptions.ValidationError: expected 'float' but got 'str'
 
         >>> Example.from_dict({'constants': {100: 3.1415927}})
         Traceback (most recent call last):
             ...
-        serde.error.ValidationError: expected 'str' but got 'int'
+        serde.exceptions.ValidationError: expected 'str' but got 'int'
     """
 
     def __init__(self, key=None, value=None, **kwargs):
@@ -840,12 +843,12 @@ class List(Instance):
         >>> User(emails={'john@smith.com': None })
         Traceback (most recent call last):
             ...
-        serde.error.ValidationError: expected 'list' but got 'dict'
+        serde.exceptions.ValidationError: expected 'list' but got 'dict'
 
         >>> User.from_dict({'emails': [1234]})
         Traceback (most recent call last):
             ...
-        serde.error.ValidationError: expected 'str' but got 'int'
+        serde.exceptions.ValidationError: expected 'str' but got 'int'
     """
 
     def __init__(self, element=None, **kwargs):
@@ -937,12 +940,12 @@ class Tuple(Instance):
         >>> Person('Beyonce', birthday=(4, 'September'))
         Traceback (most recent call last):
             ...
-        serde.error.ValidationError: iterables have different lengths
+        serde.exceptions.ValidationError: iterables have different lengths
 
         >>> Person.from_dict({'name': 'Beyonce', 'birthday': (4, 9, 1994)})
         Traceback (most recent call last):
             ...
-        serde.error.ValidationError: expected 'str' but got 'int'
+        serde.exceptions.ValidationError: expected 'str' but got 'int'
     """
 
     def __init__(self, *elements, **kwargs):
@@ -1071,7 +1074,7 @@ class Choice(Field):
         >>> Car('yellow')
         Traceback (most recent call last):
         ...
-        serde.error.ValidationError: 'yellow' is not a valid choice
+        serde.exceptions.ValidationError: 'yellow' is not a valid choice
     """
 
     def __init__(self, choices, **kwargs):
@@ -1230,7 +1233,7 @@ class Uuid(Instance):
         >>> User('not a uuid')
         Traceback (most recent call last):
         ...
-        serde.error.ValidationError: expected 'UUID' but got 'str'
+        serde.exceptions.ValidationError: expected 'UUID' but got 'str'
     """
 
     def __init__(self, **kwargs):

@@ -1,4 +1,4 @@
-.PHONY: help clean venv install install-plain install-dev install-all lint sort-imports \
+.PHONY: help clean install install-plain install-dev install-all lint sort-imports \
 		test test-plain docs docs-clean docs-open docs-test dist release
 
 PYTHON := python3
@@ -9,11 +9,8 @@ help: ## Show this message and exit.
 	/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-13s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
 clean: docs-clean ## Remove all build artifacts.
-	rm -rf build dist wheels venv *.egg-info
-	find . \( -name *.pyc -o -name *.pyo -o -name __pycache__ \) -exec rm -rf {} +
-
-venv: ## Create virtualenv.
-	virtualenv --python=$(PYTHON) venv
+	rm -rf build dist wheels
+	find . \( -name *.pyc -o -name *.pyo -o -name __pycache__ -o -name *.egg-info \) -exec rm -rf {} +
 
 install: ## Install package and all features.
 	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml]"

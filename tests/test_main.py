@@ -1,6 +1,6 @@
 from uuid import UUID, uuid4
 
-from serde import Model, field
+from serde import Model, fields
 from tests import py2_patch_str_with_basestring
 
 
@@ -9,7 +9,7 @@ def test_base_0():
     def strip_whitespace(s):
         return ''.join(s.split())
 
-    class MyUuid(field.Field):
+    class MyUuid(fields.Field):
 
         def serialize(self, value):
             return str(value)
@@ -21,15 +21,15 @@ def test_base_0():
             assert isinstance(value, UUID)
 
     class Player(Model):
-        key = field.Optional(MyUuid, default=uuid4)
-        name = field.Tuple(str, str)
-        age = field.Int()
-        rating = field.Float()
+        key = fields.Optional(MyUuid, default=uuid4)
+        name = fields.Tuple(str, str)
+        age = fields.Int()
+        rating = fields.Float()
 
     class Game(Model):
-        finished = field.Bool()
-        players = field.List(Player)
-        board = field.Dict(str, int)
+        finished = fields.Bool()
+        players = fields.List(Player)
+        board = fields.Dict(str, int)
 
     # Create a player manually
     player = Player(name=('James', 'Williams'), age=23, rating=52.3)
@@ -89,32 +89,38 @@ def test_base_0():
     assert game.players[1].age == 43
     assert game.players[1].rating == 71.0
 
-    assert game.board == {'TL': -1, 'TC': 0, 'TR': 0,
-                          'CL': 0, 'CC': 1, 'CR': 0,
-                          'BL': 0, 'BC': 0, 'BR': 0}
+    assert game.board == {
+        'TL': -1, 'TC': 0, 'TR': 0,
+        'CL': 0, 'CC': 1, 'CR': 0,
+        'BL': 0, 'BC': 0, 'BR': 0
+    }
 
     assert strip_whitespace(game.to_json(indent=4, sort_keys=True)) == strip_whitespace(json)
 
 
 def test_base_1():
     class Address(Model):
-        email = field.Str()
+        email = fields.Str()
 
     class User(Model):
-        name = field.Str(rename='username', serializers=[lambda s: s.strip()])
-        age = field.Optional(field.Int)
-        addresses = field.Optional(field.List(Address))
+        name = fields.Str(rename='username', serializers=[lambda s: s.strip()])
+        age = fields.Optional(fields.Int)
+        addresses = fields.Optional(fields.List(Address))
 
     # Serialization
     user = User(name='John Smith', age=53, addresses=[Address(email='john@smith.com')])
-    assert user.to_dict() == {'username': 'John Smith',
-                              'age': 53,
-                              'addresses': [{'email': 'john@smith.com'}]}
+    assert user.to_dict() == {
+        'username': 'John Smith',
+        'age': 53,
+        'addresses': [{'email': 'john@smith.com'}]
+    }
 
     # Deserialization
-    user = User.from_dict({'username': 'John Smith',
-                           'age': 53,
-                           'addresses': [{'email': 'john@smith.com'}]})
+    user = User.from_dict({
+        'username': 'John Smith',
+        'age': 53,
+        'addresses': [{'email': 'john@smith.com'}]
+    })
     assert user.name == 'John Smith'
     assert user.age == 53
     assert user.addresses == [Address(email='john@smith.com')]
@@ -122,13 +128,13 @@ def test_base_1():
 
 def test_base_2():
     class Version(Model):
-        major = field.Int()
-        minor = field.Int()
-        patch = field.Optional(field.Int, default=0)
+        major = fields.Int()
+        minor = fields.Int()
+        patch = fields.Optional(fields.Int, default=0)
 
     class Package(Model):
-        name = field.Str(rename='packageName')
-        version = field.Nested(Version)
+        name = fields.Str(rename='packageName')
+        version = fields.Nested(Version)
 
     # Create an instance of the Model
     package = Package(name='requests', version=Version(2, 19, 1))

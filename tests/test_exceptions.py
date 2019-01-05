@@ -1,10 +1,10 @@
-from serde.error import BaseSerdeError, SerdeError
+from serde.exceptions import BaseSerdeError, SerdeError
 
 
 def test_base_error():
     e = BaseSerdeError('something failed')
 
-    assert repr(e) == '<serde.error.BaseSerdeError: something failed>'
+    assert repr(e) == '<serde.exceptions.BaseSerdeError: something failed>'
     assert str(e) == 'something failed'
 
 

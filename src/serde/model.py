@@ -6,7 +6,7 @@ serialized to and from dictionaries with `~Model.to_dict`, `~Model.from_dict`
 and to and from data formats such as JSON with `~Model.to_json` and
 `~Model.from_json`.
 
-When Models are subclassed, all `Fields <serde.field.Field>` attributes are
+When Models are subclassed, all `Fields <serde.fields.Field>` attributes are
 pulled off and used to uniquely determine the operation of instantiation,
 serialization, deserialization, and validation methods for the Model.
 
@@ -14,10 +14,10 @@ Consider a simple example of a `Pet`, with a `name` attribute.
 
 ::
 
-    >>> from serde import Model, field
+    >>> from serde import Model, fields
 
     >>> class Pet(Model):
-    ...     name = field.Str()
+    ...     name = fields.Str()
 
 This can be subclassed and the subclassed Model will have all the fields of the
 parent.
@@ -25,7 +25,7 @@ parent.
 ::
 
     >>> class Dog(Pet):
-    ...     hates_cats = field.Optional(field.Bool, default=True)
+    ...     hates_cats = fields.Optional(fields.Bool, default=True)
 
     >>> max = Dog(name='Max', hates_cats=False)
     >>> max.name
@@ -33,17 +33,17 @@ parent.
     >>> max.hates_cats
     False
     >>> max._fields.name
-    <serde.field.Str object at ...>
+    <serde.fields.Str object at ...>
 
-Models can be nested using the `~serde.field.Nested` Field. The
+Models can be nested using the `~serde.fields.Nested` fields. The
 `~Model.to_dict()` and `~Model.from_dict()` methods will used for serialization
 and deserialization.
 
 ::
 
     >>> class Owner(Model):
-    ...     name = field.Str()
-    ...     pet = field.Optional(field.Nested(Pet))
+    ...     name = fields.Str()
+    ...     pet = fields.Optional(fields.Nested(Pet))
 
     >>> jeffery = Owner(name='Jeffery', pet=Dog('Brutus'))
     >>> jeffery.name
@@ -76,12 +76,12 @@ from functools import wraps
 
 from six import with_metaclass
 
-from serde.error import (
+from serde.exceptions import (
     DeserializationError, MissingDependency, SerdeError,
     SerializationError, SkipSerialization, ValidationError
 )
-from serde.field import Field
-from serde.util import dict_partition, try_import, zip_until_right
+from serde.fields import Field
+from serde.utils import dict_partition, try_import, zip_until_right
 
 
 toml = try_import('toml')
@@ -171,7 +171,7 @@ class ModelType(type):
     """
     A metaclass for Models.
 
-    This metaclass pulls `~serde.field.Field` attributes off the defined class
+    This metaclass pulls `~serde.fields.Field` attributes off the defined class
     and adds them as a `_fields` attribute to the resulting object. Model
     methods then use the `_fields` attribute to construct, validate, and convert
     Models between data formats.
@@ -330,8 +330,8 @@ class Model(with_metaclass(ModelType, object)):
         ::
 
             >>> class Owner(Model):
-            ...     cats_name = field.Optional(field.Str)
-            ...     dogs_name = field.Optional(field.Str)
+            ...     cats_name = fields.Optional(fields.Str)
+            ...     dogs_name = fields.Optional(fields.Str)
             ...
             ...     def validate(self):
             ...         msg = 'No one is a cat *and* a dog person!'
@@ -341,7 +341,7 @@ class Model(with_metaclass(ModelType, object)):
             >>> owner = Owner(cats_name='Luna', dogs_name='Max')
             Traceback (most recent call last):
                 ...
-            serde.error.ValidationError: No one is a cat *and* a dog person!
+            serde.exceptions.ValidationError: No one is a cat *and* a dog person!
         """
         pass
 
@@ -361,8 +361,8 @@ class Model(with_metaclass(ModelType, object)):
             Model: an instance of this Model.
 
         Raises:
-            `~serde.error.DeserializationError`: when a Field value can not be
-                deserialized or there are unknown dictionary keys.
+            `~serde.exceptions.DeserializationError`: when a Field value can not
+                be deserialized or there are unknown dictionary keys.
         """
         self = cls.__new__(cls)
 
@@ -454,7 +454,7 @@ class Model(with_metaclass(ModelType, object)):
             dict: the Model serialized as a dictionary.
 
         Raises:
-            `~serde.error.SerializationError`: when a Field value cannot be
+            `~serde.exceptions.SerializationError`: when a Field value cannot be
                 serialized.
         """
         if dict is None:
