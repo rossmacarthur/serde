@@ -1,9 +1,9 @@
 dl {
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
 }
 
 pre, dl pre {
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
 }

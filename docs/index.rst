@@ -6,4 +6,5 @@ Documentation
 .. toctree::
 
     api
+    contributing
     releases
