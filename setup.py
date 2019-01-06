@@ -58,7 +58,7 @@ lint_requires = [
 ]
 test_requires = [
     'mock',
-    'pytest>=3.3.0',
+    'pytest>=3.3.0<4.1.0',
     'pytest-cov',
     'pytest-doctest-import'
 ]
