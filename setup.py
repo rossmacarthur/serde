@@ -36,15 +36,15 @@ metadata = get_metadata()
 
 # Primary requirements
 install_requires = [
-    'isodate>=0.6.0<0.7.0',
-    'six>=1.0.0<2.0.0',
-    'validators>=0.12.0<0.13.0'
+    'isodate >=0.6.0, <0.7.0',
+    'six >=1.0.0, <2.0.0',
+    'validators >=0.12.0, <0.13.0'
 ]
 toml_requires = [
-    'toml>=0.10.0<0.11.0'
+    'toml >=0.10.0, <0.11.0'
 ]
 yaml_requires = [
-    'ruamel.yaml>=0.15.0<0.16.0'
+    'ruamel.yaml >=0.15.0, <0.16.0'
 ]
 
 # Development requirements
@@ -58,7 +58,7 @@ lint_requires = [
 ]
 test_requires = [
     'mock',
-    'pytest>=3.3.0,<4.1.0',
+    'pytest >=3.3.0, <4.1.0',
     'pytest-cov',
     'pytest-doctest-import',
 ]
