@@ -60,7 +60,7 @@ test_requires = [
     'mock',
     'pytest >=3.3.0, <4.1.0',
     'pytest-cov',
-    'pytest-doctest-import',
+    'pytest-doctest-import'
 ]
 
 setup(
