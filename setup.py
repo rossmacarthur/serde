@@ -1,3 +1,7 @@
+"""
+Setup file for Serde.
+"""
+
 import io
 import os
 import re
@@ -5,20 +9,30 @@ import re
 from setuptools import find_packages, setup
 
 
-here = os.path.abspath(os.path.dirname(__file__))
+def get_metadata():
+    """
+    Return metadata for Serde.
+    """
+    here = os.path.abspath(os.path.dirname(__file__))
+    init_path = os.path.join(here, 'src', 'serde', '__init__.py')
+    readme_path = os.path.join(here, 'README.rst')
 
-with io.open(os.path.join(here, 'src', 'serde', '__init__.py'), encoding='utf8') as f:
-    about_text = f.read()
+    with io.open(init_path, encoding='utf-8') as f:
+        about_text = f.read()
 
-metadata = {
-    key: re.search(r'__' + key + r'__ = ["\'](.*?)["\']', about_text).group(1)
-    for key in ('title', 'version', 'url', 'author', 'author_email', 'license', 'description')
-}
+    metadata = {
+        key: re.search(r'__' + key + r'__ = ["\'](.*?)["\']', about_text).group(1)
+        for key in ('title', 'version', 'url', 'author', 'author_email', 'license', 'description')
+    }
+    metadata['name'] = metadata.pop('title')
 
-metadata['name'] = metadata.pop('title')
+    with io.open(readme_path, encoding='utf-8') as f:
+        metadata['long_description'] = f.read()
 
-with io.open(os.path.join(here, 'README.rst'), encoding='utf8') as f:
-    metadata['long_description'] = f.read()
+    return metadata
+
+
+metadata = get_metadata()
 
 # Primary requirements
 install_requires = [
@@ -42,7 +56,6 @@ lint_requires = [
     'flake8-quotes',
     'pep8-naming'
 ]
-
 test_requires = [
     'mock',
     'pytest>=3.3.0',

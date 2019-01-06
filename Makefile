@@ -1,7 +1,7 @@
-.PHONY: help clean install install-plain install-dev install-all lint sort-imports \
-		test test-plain docs docs-clean docs-open docs-test dist release
+.PHONY: help clean install install-plain install-dev install-all \
+		lint sort-imports test test-plain dist release           \
+		docs docs-clean docs-open docs-test
 
-PYTHON := python3
 VIRTUAL_ENV := $(or $(VIRTUAL_ENV), $(VIRTUAL_ENV), venv)
 
 help: ## Show this message and exit.
@@ -37,6 +37,13 @@ test: ## Run all tests.
 test-plain: ## Run tests excluding doctests.
 	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing
 
+dist: clean ## Build source and wheel package.
+	$(VIRTUAL_ENV)/bin/python setup.py sdist bdist_wheel --universal
+	ls -l dist
+
+release: dist ## Package and upload a release.
+	$(VIRTUAL_ENV)/bin/twine upload dist/*
+
 docs: ## Compile docs.
 	$(MAKE) -C docs html
 
@@ -48,10 +55,3 @@ docs-open: docs ## Compile and open the docs.
 
 docs-test: ## Run doc tests.
 	$(MAKE) -C docs doctest
-
-dist: clean ## Build source and wheel package.
-	$(VIRTUAL_ENV)/bin/python setup.py sdist bdist_wheel --universal
-	ls -l dist
-
-release: dist ## Package and upload a release.
-	$(VIRTUAL_ENV)/bin/twine upload dist/*
