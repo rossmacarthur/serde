@@ -4,16 +4,18 @@ Releases
 0.4.0
 -----
 
-*Unreleased*
+*Released on January 6th, 2019*
 
-- Add Optional Field. (`#51`_, `#48`_, `#49`_)
+- Fix a bug where dependencies were not pinned correctly. (`#54`_)
 - Pluralise module names. (`#52`_)
+- Add Optional Field. (`#51`_, `#48`_, `#49`_)
 
+.. _#54: https://github.com/rossmacarthur/serde/pull/54
 .. _#52: https://github.com/rossmacarthur/serde/pull/52
 .. _#51: https://github.com/rossmacarthur/serde/pull/51
 
-.. _#48: https://github.com/rossmacarthur/serde/issues/48
 .. _#49: https://github.com/rossmacarthur/serde/issues/49
+.. _#48: https://github.com/rossmacarthur/serde/issues/48
 
 0.3.2
 -----
