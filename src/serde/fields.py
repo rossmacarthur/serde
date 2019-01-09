@@ -1095,6 +1095,7 @@ class Choice(Field):
         Args:
             value: the value to validate.
         """
+        super(Choice, self).validate(value)
         validate.contains(self.choices)(value)
 
 
