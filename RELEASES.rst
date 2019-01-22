@@ -1,6 +1,19 @@
 Releases
 ========
 
+0.4.1
+-----
+
+*Unreleased*
+
+- Use 'simplejson' package if available. (`#60`_, `#63`_)
+- Fix a bug where Choice Field didn't call super().validate(). (`#62`_)
+
+.. _#63: https://github.com/rossmacarthur/serde/pull/63
+.. _#62: https://github.com/rossmacarthur/serde/pull/62
+
+.. _#60: https://github.com/rossmacarthur/serde/issues/60
+
 0.4.0
 -----
 

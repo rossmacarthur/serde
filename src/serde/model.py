@@ -69,7 +69,6 @@ To deserialize from JSON we use the `Model.from_json()` method.
 
 """
 
-import json
 from collections import OrderedDict
 from contextlib import contextmanager
 from functools import wraps
@@ -83,6 +82,11 @@ from serde.exceptions import (
 from serde.fields import Field
 from serde.utils import dict_partition, try_import, zip_until_right
 
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 toml = try_import('toml')
 yaml = try_import('ruamel.yaml')

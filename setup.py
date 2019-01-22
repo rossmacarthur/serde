@@ -40,6 +40,9 @@ install_requires = [
     'six >=1.0.0, <2.0.0',
     'validators >=0.12.0, <0.13.0'
 ]
+json_requires = [
+    'simplejson >=3.0.0, <4.0.0'
+]
 toml_requires = [
     'toml >=0.10.0, <0.11.0'
 ]
@@ -67,6 +70,7 @@ setup(
     # Options
     install_requires=install_requires,
     extras_require={
+        'json': json_requires,
         'toml': toml_requires,
         'yaml': yaml_requires,
         'dev.lint': lint_requires,
