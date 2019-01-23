@@ -4,7 +4,7 @@ Releases
 0.4.1
 -----
 
-*Unreleased*
+*Released on January 23rd, 2019*
 
 - Fix a bug where Optional Field didn't call the inner Field's normalize.
   (`#65`_)
