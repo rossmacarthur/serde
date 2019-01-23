@@ -661,11 +661,14 @@ class Optional(Field):
         Returns:
             the normalized value.
         """
-        if value is None and self.default is not None:
-            if callable(self.default):
-                value = self.default()
-            else:
-                value = self.default
+        if value is None:
+            if self.default is not None:
+                if callable(self.default):
+                    value = self.default()
+                else:
+                    value = self.default
+        else:
+            value = self.inner._normalize(value)
 
         return value
 
