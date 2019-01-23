@@ -320,6 +320,24 @@ class TestOptional:
         example = Optional(default=dict)
         assert example._normalize(None) == {}
 
+    def test__normalize_something(self):
+        # An Optional should call the wrapped Field's _normalize method.
+        class Test(Field):
+            def _normalize(self, value):
+                return value[::-1]
+
+        example = Optional(Test)
+        assert example._normalize('test') == 'tset'
+
+    def test__normalize_none(self):
+        # An Optional always _normalizes None to None.
+        class Test(Field):
+            def _normalize(self, value):
+                return value[::-1]
+
+        example = Optional(Test)
+        assert example._normalize(None) is None
+
     def test_serialize_something(self):
         # An Optional should call the wrapped Field's serialize method.
         example = Optional(Reversed)

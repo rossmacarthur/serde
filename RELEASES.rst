@@ -6,9 +6,12 @@ Releases
 
 *Unreleased*
 
+- Fix a bug where Optional Field didn't call the inner Field's normalize.
+  (`#65`_)
 - Use 'simplejson' package if available. (`#60`_, `#63`_)
 - Fix a bug where Choice Field didn't call super().validate(). (`#62`_)
 
+.. _#65: https://github.com/rossmacarthur/serde/pull/65
 .. _#63: https://github.com/rossmacarthur/serde/pull/63
 .. _#62: https://github.com/rossmacarthur/serde/pull/62
 
