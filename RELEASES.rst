@@ -6,9 +6,11 @@ Releases
 
 *Unreleased*
 
+- Container Fields now properly call inner Field methods. (`#70`_)
 - Add equal and length validators. (`#67`_, `#69`_)
 - Add basestring and unicode to built-in Field map. (`#68`_)
 
+.. _#70: https://github.com/rossmacarthur/serde/pull/70
 .. _#69: https://github.com/rossmacarthur/serde/pull/69
 .. _#68: https://github.com/rossmacarthur/serde/pull/68
 
