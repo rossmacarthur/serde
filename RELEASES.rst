@@ -6,9 +6,13 @@ Releases
 
 *Unreleased*
 
-- Add basestring and unicode to built-in Field map (`#68`_)
+- Add equal and length validators. (`#67`_, `#69`_)
+- Add basestring and unicode to built-in Field map. (`#68`_)
 
+.. _#69: https://github.com/rossmacarthur/serde/pull/69
 .. _#68: https://github.com/rossmacarthur/serde/pull/68
+
+.. _#67: https://github.com/rossmacarthur/serde/issues/67
 
 0.4.1
 -----

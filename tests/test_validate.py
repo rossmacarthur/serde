@@ -20,6 +20,14 @@ def test_instance():
         validate.instance(float)(1)
 
 
+def test_equal():
+    value = object()
+    validate.equal(value)(value)
+
+    with raises(ValidationError):
+        validate.equal(object())(20)
+
+
 def test_min():
     validate.min(100)(100)
     validate.min(100)(1000)
@@ -51,6 +59,45 @@ def test_between():
 
     with raises(ValidationError):
         validate.between(-100, 100, inclusive=False)(100)
+
+
+def test_length():
+    validate.length(10)(range(10))
+    validate.length(3)([1, 2, 3])
+
+    with raises(ValidationError):
+        validate.length(10)((1, 2))
+
+
+def test_length_min():
+    validate.length_min(5)(range(10))
+    validate.length_min(5, inclusive=False)(range(6))
+
+    with raises(ValidationError):
+        validate.length_min(5)(range(2))
+
+    with raises(ValidationError):
+        validate.length_min(5, inclusive=False)(range(5))
+
+
+def test_length_max():
+    validate.length_max(5)(range(2))
+
+    with raises(ValidationError):
+        validate.length_max(5)(range(10))
+
+    with raises(ValidationError):
+        validate.length_max(5, inclusive=False)(range(5))
+
+
+def test_length_between():
+    validate.length_between(0, 10)(range(10))
+
+    with raises(ValidationError):
+        validate.length_between(10, 100)(range(5))
+
+    with raises(ValidationError):
+        validate.length_between(0, 10, inclusive=False)([])
 
 
 def test_contains():
