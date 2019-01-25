@@ -1,6 +1,15 @@
 Releases
 ========
 
+0.4.2
+-----
+
+*Unreleased*
+
+- Add basestring and unicode to built-in Field map (`#68`_)
+
+.. _#68: https://github.com/rossmacarthur/serde/pull/68
+
 0.4.1
 -----
 

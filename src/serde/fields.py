@@ -163,23 +163,13 @@ def _resolve_to_field_instance(thing, none_allowed=True):
 
     # If the thing is a built-in type that we support then create an Instance
     # with that type.
-    field_class = {
-        bool: Bool,
-        bytes: Bytes,
-        complex: Complex,
-        dict: Dict,
-        float: Float,
-        int: Int,
-        list: List,
-        str: Str,
-        tuple: Tuple
-    }.get(thing, None)
+    field_class = BUILTIN_FIELD_CLASSES.get(thing, None)
 
     if field_class is not None:
         return field_class()
 
     raise TypeError(
-        '{!r} is not a Field, a Model class, an instance of a Field, or a supported type'
+        '{!r} is not a Field, a Model class, an instance of a Field, or a supported built-in type'
         .format(thing)
     )
 
@@ -1272,3 +1262,26 @@ class Uuid(Instance):
             ~uuid.UUID: the deserialized Uuid.
         """
         return uuid.UUID(value)
+
+
+BUILTIN_FIELD_CLASSES = {
+    bool: Bool,
+    bytes: Bytes,
+    complex: Complex,
+    dict: Dict,
+    float: Float,
+    int: Int,
+    list: List,
+    str: Str,
+    tuple: Tuple
+}
+
+try:
+    BUILTIN_FIELD_CLASSES[basestring] = BaseString
+except NameError:
+    pass
+
+try:
+    FIELD_CLASSES[unicode] = Unicode
+except NameError:
+    pass
