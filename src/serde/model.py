@@ -76,8 +76,8 @@ from functools import wraps
 from six import with_metaclass
 
 from serde.exceptions import (
-    DeserializationError, MissingDependency, SerdeError,
-    SerializationError, SkipSerialization, ValidationError
+    DeserializationError, MissingDependency, NormalizationError,
+    SerdeError, SerializationError, SkipSerialization, ValidationError
 )
 from serde.fields import Field
 from serde.utils import dict_partition, try_import, zip_until_right
@@ -249,7 +249,7 @@ class Model(with_metaclass(ModelType, object)):
             )
 
         for name, field in self._fields.items():
-            setattr(self, name, field._normalize(kwargs.pop(name, None)))
+            setattr(self, name, kwargs.pop(name, None))
 
         if kwargs:
             raise SerdeError(
@@ -259,6 +259,7 @@ class Model(with_metaclass(ModelType, object)):
                 )
             )
 
+        self.normalize_all()
         self.validate_all()
 
     def __eq__(self, other):
@@ -305,12 +306,42 @@ class Model(with_metaclass(ModelType, object)):
         with map_errors(DeserializationError, model=cls, field=field, value=value):
             return field._deserialize(value)
 
+    @classmethod
+    def _normalize_field(cls, field, value):
+        """
+        Normalize a single Field and map all errors to `NormalizatinoError`.
+        """
+        with map_errors(NormalizationError, model=cls, field=field, value=value):
+            return field._normalize(value)
+
     def _validate_field(self, field, value):
         """
         Validate a single Field and map all errors to `ValidationError`.
         """
         with map_errors(ValidationError, model=self.__class__, field=field, value=value):
             field._validate(value)
+
+    def normalize_all(self):
+        """
+        Normalize all Fields on this Model, and the Model itself.
+
+        This is called by the Model constructor, and on deserialization, so this
+        is only needed if you modify attributes directly and want to renormalize
+        the Model.
+
+        Normalization errors are ignored by default.
+        """
+        for name, field in self._fields.items():
+            try:
+                setattr(self, name, self._normalize_field(field, getattr(self, name)))
+            except NormalizationError:
+                pass
+
+        try:
+            with map_errors(NormalizationError, model=self.__class__):
+                self.normalize()
+        except NormalizationError:
+            pass
 
     def validate_all(self):
         """
@@ -324,6 +355,31 @@ class Model(with_metaclass(ModelType, object)):
 
         with map_errors(ValidationError, model=self.__class__):
             self.validate()
+
+    def normalize(self):
+        """
+        Normalize this Model.
+
+        Override this method to add any additional normalization to the Model.
+        This will be called after each Field has been normalized.
+
+        ::
+
+            >>> class Fruit(Model):
+            ...     name = fields.Str()
+            ...     family = fields.Str()
+            ...
+            ...     def normalize(self):
+            ...         self.name = self.name.strip()
+            ...         self.family = self.family.strip()
+
+            >>> fruit = Fruit(name='Tangerine ', family=' Citrus fruit')
+            >>> fruit.name
+            'Tangerine'
+            >>> fruit.family
+            'Citrus fruit'
+        """
+        pass
 
     def validate(self):
         """
@@ -388,9 +444,7 @@ class Model(with_metaclass(ModelType, object)):
                 model=cls
             )
 
-        for name, field in cls._fields.items():
-            setattr(self, name, field._normalize(getattr(self, name)))
-
+        self.normalize_all()
         self.validate_all()
 
         return self

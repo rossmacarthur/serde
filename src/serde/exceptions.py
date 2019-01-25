@@ -120,6 +120,12 @@ class DeserializationError(SerdeError):
     """
 
 
+class NormalizationError(SerdeError):
+    """
+    Raised when field normalization fails.
+    """
+
+
 class ValidationError(SerdeError):
     """
     Raised when field validation fails.

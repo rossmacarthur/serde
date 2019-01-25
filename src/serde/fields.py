@@ -1,14 +1,14 @@
 """
 This module contains Field classes for `Models <serde.model.Model>`.
 
-Fields handle serializing, deserializing, and validation of input values for
-Model objects. They are instantiated when assigned to the Model. Fields
-support extra serialization, deserialization, and validation of values without
-having to subclass `Field`.
+Fields handle serializing, deserializing, normalizing, and validation of input
+values for Model objects. They are instantiated when assigned to the Model.
+Fields support extra serialization, deserialization, normalization, and
+validation of values without having to subclass `Field`.
 
 Note: Extra serializers are called prior to the default field serialization,
-while extra deserializers, and validators are called after the default
-operations.
+while extra deserializers, normalizers, and validators are called after the
+default operations.
 
 ::
 
@@ -141,14 +141,16 @@ class Field(object):
     """
     A field on a `~serde.model.Model`.
 
-    Fields handle serializing, deserializing, and validation of
+    Fields handle serializing, deserializing, normalization, and validation of
     input values for Model objects.
     """
 
     # This is so we can get the order the fields were instantiated in.
     __counter = 0
 
-    def __init__(self, rename=None, serializers=None, deserializers=None, validators=None):
+    def __init__(
+        self, rename=None, serializers=None, deserializers=None, normalizers=None, validators=None
+    ):
         """
         Create a new Field.
 
@@ -163,6 +165,10 @@ class Field(object):
                 value to deserialize as an argument. The functions need to raise
                 an `Exception` if they fail. These deserializer functions will
                 be applied after the primary deserializer on this Field.
+            normalizers (list): a list of normalizer functions taking the value
+                to normalize as an argument. The functions need to raise an
+                `Exception` if they fail. These deserializer functions will be
+                applied after the primary deserializer on this Field.
             validators (list): a list of validator functions taking the value
                 to validate as an argument. The functions need to raise an
                 `Exception` if they fail.
@@ -175,6 +181,7 @@ class Field(object):
         self.rename = rename
         self.serializers = serializers or []
         self.deserializers = deserializers or []
+        self.normalizers = normalizers or []
         self.validators = validators or []
 
     def _attrs(self):
@@ -256,6 +263,11 @@ class Field(object):
         Returns:
             the normalized value.
         """
+        value = self.normalize(value)
+
+        for normalizer in self.normalizers:
+            value = normalizer(value)
+
         return value
 
     def _validate(self, value):
@@ -314,6 +326,18 @@ class Field(object):
         """
         return value
 
+    def normalize(self, value):
+        """
+        Normalize the given value according to this Field's specification.
+
+        Args:
+            value: the value to normalize.
+
+        Returns:
+            the normalized value.
+        """
+        return value
+
     def validate(self, value):
         """
         Validate the given value according to this Field's specification.
@@ -355,6 +379,21 @@ def _create_deserialize(cls, deserializers):
     return deserialize
 
 
+def _create_normalize(cls, normalizers):
+    """
+    Create a new normalize method with extra normalizer functions.
+    """
+    def normalize(self, value):
+        value = super(cls, self).normalize(value)
+        for normalizer in normalizers:
+            value = normalizer(value)
+        return value
+
+    normalize.__doc__ = normalizers[0].__doc__
+
+    return normalize
+
+
 def _create_validate(cls, validators):
     """
     Create a new validate method with extra validator functions.
@@ -369,7 +408,10 @@ def _create_validate(cls, validators):
     return validate
 
 
-def create(name, base=None, args=None, serializers=None, deserializers=None, validators=None):
+def create(
+    name, base=None, args=None,
+    serializers=None, deserializers=None, normalizers=None, validators=None
+):
     """
     Create a new Field class.
 
@@ -388,6 +430,10 @@ def create(name, base=None, args=None, serializers=None, deserializers=None, val
             to deserialize as an argument. The functions need to raise an
             `Exception` if they fail. These deserializer functions will be
             applied after the primary deserializer on this Field.
+        normalizers (list): a list of normalizer functions taking the value to
+            normalize as an argument. The functions need to raise an `Exception`
+            if they fail. These normalizer functions will be applied after the
+            primary normalizer on this Field.
         validators (list): a list of validator functions taking the value to
             validate as an argument. The functions need to raise an `Exception`
             if they fail.
@@ -416,6 +462,9 @@ def create(name, base=None, args=None, serializers=None, deserializers=None, val
 
     if deserializers:
         setattr(cls, 'deserialize', _create_deserialize(cls, deserializers))
+
+    if normalizers:
+        setattr(cls, 'normalize', _create_normalize(cls, normalizers))
 
     if validators:
         setattr(cls, 'validate', _create_validate(cls, validators))
@@ -600,31 +649,6 @@ class Optional(Field):
         self.inner = _resolve_to_field_instance(inner)
         self.default = default
 
-    def _normalize(self, value):
-        """
-        Normalize the given value according to the inner Field's specification.
-
-        This is called after deserialization and on initialization, both before
-        validation. If a default is defined, this method will set the value to
-        the default if the value is None.
-
-        Args:
-            value: the value to normalize.
-
-        Returns:
-            the normalized value.
-        """
-        if value is None:
-            if self.default is not None:
-                if callable(self.default):
-                    value = self.default()
-                else:
-                    value = self.default
-        else:
-            value = self.inner._normalize(value)
-
-        return value
-
     def serialize(self, value):
         """
         Serialize the given value according to the inner Field's specification.
@@ -657,6 +681,32 @@ class Optional(Field):
         if value is not None:
             return self.inner._deserialize(value)
 
+    def normalize(self, value):
+        """
+        Normalize the given value according to the inner Field's specification.
+
+        This is called after deserialization and on initialization, both before
+        validation. If a default is defined, this method will set the value to
+        the default if the value is None. Otherwise it will call the inner
+        Field's normalize method.
+
+        Args:
+            value: the value to normalize.
+
+        Returns:
+            the normalized value.
+        """
+        if value is None:
+            if self.default is not None:
+                if callable(self.default):
+                    value = self.default()
+                else:
+                    value = self.default
+        else:
+            value = self.inner._normalize(value)
+
+        return value
+
     def validate(self, value):
         """
         Validate the given value according to the inner Field's specification.
@@ -675,10 +725,10 @@ class Dict(Instance):
     A dictionary Field with a required key and value type.
 
     This field represents the built-in `dict` type. Each key and value will be
-    serialized, deserialized, and validated with the specified key and value
-    types. The key and value types can be specified using Field classes, Field
-    instances, Model classes, or built-in types that have a corresponding Field
-    type in this library.
+    serialized, deserialized, normalized, and validated with the specified key
+    and value types. The key and value types can be specified using Field
+    classes, Field instances, Model classes, or built-in types that have a
+    corresponding Field type in this library.
 
     Consider an example model with a constants attribute which is map of strings
     to floats.
@@ -737,7 +787,9 @@ class Dict(Instance):
         Returns:
             dict: the serialized dictionary.
         """
-        value = {self.key._serialize(k): self.value._serialize(v) for k, v in value.items()}
+        value = type(value)(
+            (self.key._serialize(k), self.value._serialize(v)) for k, v in value.items()
+        )
         return super(Dict, self).serialize(value)
 
     def deserialize(self, value):
@@ -748,13 +800,33 @@ class Dict(Instance):
         specified key and value Field instances.
 
         Args:
-            value (dict): the dictonary to deserialize.
+            value (dict): the dictionary to deserialize.
 
         Returns:
             dict: the deserialized dictionary.
         """
         value = super(Dict, self).deserialize(value)
-        return {self.key._deserialize(k): self.value._deserialize(v) for k, v in value.items()}
+        return type(value)(
+            (self.key._deserialize(k), self.value._deserialize(v)) for k, v in value.items()
+        )
+
+    def normalize(self, value):
+        """
+        Normalize the given dictionary.
+
+        Each key and value in the dictionary will be normalized with the
+        specified key and value Field instances.
+
+        Args:
+            value (dict): the dictionary to normalize.
+
+        Returns:
+            dict: the normalized dictionary.
+        """
+        value = super(Dict, self).normalize(value)
+        return type(value)(
+            (self.key._normalize(k), self.value._normalize(v)) for k, v in value.items()
+        )
 
     def validate(self, value):
         """
@@ -778,10 +850,10 @@ class List(Instance):
     A list Field with a required element type.
 
     This field represents the built-in `list` type. Each element will be
-    serialized, deserialized, and validated with the specified element type. The
-    element type can be specified using Field classes, Field instances, Model
-    classes, or built-in types that have a corresponding Field type in this
-    library.
+    serialized, deserialized, normalized and validated with the specified
+    element type. The element type can be specified using Field classes, Field
+    instances, Model classes, or built-in types that have a corresponding Field
+    type in this library.
 
     Consider a user model that can have multiple emails
 
@@ -796,7 +868,7 @@ class List(Instance):
         >>> user.emails[1]
         'john.smith@email.com'
 
-        >>> User(emails={'john@smith.com': None })
+        >>> User(emails={'john@smith.com': None})
         Traceback (most recent call last):
             ...
         serde.exceptions.ValidationError: expected 'list' but got 'dict'
@@ -831,7 +903,7 @@ class List(Instance):
         Returns:
             list: the serialized list.
         """
-        value = [self.element._serialize(v) for v in value]
+        value = type(value)(self.element._serialize(v) for v in value)
         return super(List, self).serialize(value)
 
     def deserialize(self, value):
@@ -848,7 +920,23 @@ class List(Instance):
             list: the deserialized list.
         """
         value = super(List, self).deserialize(value)
-        return [self.element._deserialize(v) for v in value]
+        return type(value)(self.element._deserialize(v) for v in value)
+
+    def normalize(self, value):
+        """
+        Normalize the given list.
+
+        Each element in the list will be normalized with the specified element
+        Field instance.
+
+        Args:
+            value (list): the list to normalize.
+
+        Returns:
+            list: the normalized list.
+        """
+        value = super(List, self).normalize(value)
+        return type(value)(self.element._normalize(v) for v in value)
 
     def validate(self, value):
         """
@@ -870,10 +958,10 @@ class Tuple(Instance):
     """
     A tuple Field with required element types.
 
-    Each element will be serialized, deserialized, and validated with the
-    specified element type. The given element types can be specified using Field
-    classes, Field instances, Model classes, or built-in types that have a
-    corresponding Field type in this library.
+    Each element will be serialized, deserialized, normalized, and validated
+    with the specified element type. The given element types can be specified
+    using Field classes, Field instances, Model classes, or built-in types that
+    have a corresponding Field type in this library.
 
     Consider an example person that has a name and a birthday
 
@@ -929,7 +1017,7 @@ class Tuple(Instance):
         Returns:
             tuple: the serialized tuple.
         """
-        return tuple(e._serialize(v) for e, v in zip_equal(self.elements, value))
+        return type(value)(e._serialize(v) for e, v in zip_equal(self.elements, value))
 
     def deserialize(self, value):
         """
@@ -945,7 +1033,23 @@ class Tuple(Instance):
             tuple: the deserialized tuple.
         """
         value = super(Tuple, self).deserialize(value)
-        return tuple(e._deserialize(v) for e, v in zip_equal(self.elements, value))
+        return type(value)(e._deserialize(v) for e, v in zip_equal(self.elements, value))
+
+    def normalize(self, value):
+        """
+        Normalize the given tuple.
+
+        Each element in the tuple will be normalized with the specified element
+        Field instance.
+
+        Args:
+            value (tuple): the tuple to normalize.
+
+        Returns:
+            tuple: the normalized tuple.
+        """
+        value = super(Tuple, self).normalize(value)
+        return type(value)(e._normalize(v) for e, v in zip_equal(self.elements, value))
 
     def validate(self, value):
         """

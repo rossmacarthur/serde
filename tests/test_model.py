@@ -182,6 +182,15 @@ class TestModel:
         with raises(SerdeError):
             Example(5, 6)
 
+    def test___init___normalizers(self):
+        # The __init__() method should apply custom normalizers.
+
+        class Example(Model):
+            a = fields.Str(normalizers=[lambda x: x[::-1]])
+
+        example = Example(a='test')
+        assert example.a == 'tset'
+
     def test___init___validation(self):
         # The __init__() method should validate the values.
 
@@ -275,6 +284,45 @@ class TestModel:
             sub = fields.Nested(SubExample)
 
         assert repr(Example(sub=SubExample(a=5))) == 'Example(sub=SubExample(a=5))'
+
+    def test_normalize_all_good(self):
+        # normalize_all() should renormalize the Model so that if we have
+        # changed values they are normalized.
+
+        class Example(Model):
+            a = fields.Str(normalizers=[lambda x: x[::-1]])
+
+        example = Example(a='unused')
+        example.a = 'test'
+        example.normalize_all()
+        assert example.a == 'tset'
+
+    def test_normalize_all_bad_normalizers(self):
+        # normalize_all() should catch all normalization exceptions.
+
+        class Example(Model):
+            a = fields.Str()
+
+        def raises_exception(value):
+            raise ValueError
+
+        example = Example(a='test')
+        example._fields.a.normalizers = [raises_exception]
+        example.normalize_all()
+        assert example.a == 'test'
+
+    def test_normalize_all_bad_normalize(self):
+        # normalize_all() should catch all normalization exceptions.
+
+        class Example(Model):
+            a = fields.Str()
+
+            def normalize(self):
+                raise ValueError
+
+        example = Example(a='test')
+        example.normalize_all()
+        assert example.a == 'test'
 
     def test_validate_all(self):
         # validate_all() should revalidate the Model so that if we have changed
@@ -439,6 +487,15 @@ class TestModel:
             a = fields.Str(deserializers=[lambda x: x[::-1]])
 
         assert Example.from_dict({'a': 'test'}) == Example(a='tset')
+
+    def test_from_dict_normalizers(self):
+        # Check that custom normalizers are applied.
+
+        class Example(Model):
+            a = fields.Str(normalizers=[lambda x: x[::-1]])
+
+        example = Example.from_dict({'a': 'test'})
+        assert example.a == 'tset'
 
     def test_from_cbor(self):
         # Check that you can deserialize from CBOR.

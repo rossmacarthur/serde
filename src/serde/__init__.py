@@ -50,7 +50,44 @@ deserialize a `User` from a dictionary we use the
 Other supported data formats including `JSON <serde.model.Model.to_json()>`,
 `CBOR <serde.model.Model.to_cbor()>`, `TOML <serde.model.Model.to_toml()>`, and
 `YAML <serde.model.Model.to_yaml()>`. See `~serde.model` for more examples.
-Documentation for supported fields can be found in `~serde.fields`.
+Documentation for supported fields can be ound in `~serde.fields`.
+
+The Stages
+----------
+
+There are five main stages that Model or Model instance can go through.
+
+- **Deserialization** happens when you create a Model instance from a serialized
+  version using `Model.from_dict() <serde.model.Model.from_dict()>` or similar.
+- **Instantiation** happens when you construct a Model instance in Python using
+  `Model.__init__() <serde.model.Model.__init__()>`.
+- **Normalization** happens after instantiation and after deserialization. This
+  is usually a way to transform things before they are validated. For example:
+  this is where an `~serde.fields.Optional` field sets defaults.
+- **Validation** is where the Model and Fields are validated.
+- **Serialization** is when you serialize a Model instance to a supported
+  serialization format using `Model.to_dict() <serde.model.Model.to_dict()>` or
+  similar.
+
+The diagram below shows how the stages fit in with each other.
+
+::
+
+                              +---------------+
+                              | Instantiation |---+
+                              +---------------+   |
+                                                  v
+                   +-----------------+    +---------------+    +------------+
+            +----->| Deserialization |--->| Normalization |--->| Validation |--+
+            |      +-----------------+    +---------------+    +------------+  |
+    +-------------+                                                            |
+    |             |                             +----------+                   |
+    |  SERIALIZED |      +---------------+      |          |                   |
+    |    DATA     |<-----| Serialization |<-----|  MODEL   |<------------------+
+    |             |      +---------------+      | INSTANCE |
+    +-------------+                             |          |
+                                                +----------+
+
 """
 
 from serde.model import Model
