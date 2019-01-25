@@ -677,7 +677,7 @@ class Optional(Field):
         if value is None:
             raise SkipSerialization()
 
-        return self.inner.serialize(value)
+        return self.inner._serialize(value)
 
     def deserialize(self, value):
         """
@@ -692,7 +692,7 @@ class Optional(Field):
             the deserialized value or None.
         """
         if value is not None:
-            return self.inner.deserialize(value)
+            return self.inner._deserialize(value)
 
     def validate(self, value):
         """
@@ -704,7 +704,7 @@ class Optional(Field):
             value: the value to validate.
         """
         if value is not None:
-            self.inner.validate(value)
+            self.inner._validate(value)
 
 
 class Dict(Instance):
@@ -774,7 +774,7 @@ class Dict(Instance):
         Returns:
             dict: the serialized dictionary.
         """
-        value = {self.key.serialize(k): self.value.serialize(v) for k, v in value.items()}
+        value = {self.key._serialize(k): self.value._serialize(v) for k, v in value.items()}
         return super(Dict, self).serialize(value)
 
     def deserialize(self, value):
@@ -791,7 +791,7 @@ class Dict(Instance):
             dict: the deserialized dictionary.
         """
         value = super(Dict, self).deserialize(value)
-        return {self.key.deserialize(k): self.value.deserialize(v) for k, v in value.items()}
+        return {self.key._deserialize(k): self.value._deserialize(v) for k, v in value.items()}
 
     def validate(self, value):
         """
@@ -806,8 +806,8 @@ class Dict(Instance):
         super(Dict, self).validate(value)
 
         for k, v in value.items():
-            self.key.validate(k)
-            self.value.validate(v)
+            self.key._validate(k)
+            self.value._validate(v)
 
 
 class List(Instance):
@@ -868,7 +868,7 @@ class List(Instance):
         Returns:
             list: the serialized list.
         """
-        value = [self.element.serialize(v) for v in value]
+        value = [self.element._serialize(v) for v in value]
         return super(List, self).serialize(value)
 
     def deserialize(self, value):
@@ -885,7 +885,7 @@ class List(Instance):
             list: the deserialized list.
         """
         value = super(List, self).deserialize(value)
-        return [self.element.deserialize(v) for v in value]
+        return [self.element._deserialize(v) for v in value]
 
     def validate(self, value):
         """
@@ -900,7 +900,7 @@ class List(Instance):
         super(List, self).validate(value)
 
         for v in value:
-            self.element.validate(v)
+            self.element._validate(v)
 
 
 class Tuple(Instance):
@@ -966,7 +966,7 @@ class Tuple(Instance):
         Returns:
             tuple: the serialized tuple.
         """
-        return tuple(e.serialize(v) for e, v in zip_equal(self.elements, value))
+        return tuple(e._serialize(v) for e, v in zip_equal(self.elements, value))
 
     def deserialize(self, value):
         """
@@ -982,7 +982,7 @@ class Tuple(Instance):
             tuple: the deserialized tuple.
         """
         value = super(Tuple, self).deserialize(value)
-        return tuple(e.deserialize(v) for e, v in zip_equal(self.elements, value))
+        return tuple(e._deserialize(v) for e, v in zip_equal(self.elements, value))
 
     def validate(self, value):
         """
@@ -997,7 +997,7 @@ class Tuple(Instance):
         super(Tuple, self).validate(value)
 
         for e, v in zip_equal(self.elements, value):
-            e.validate(v)
+            e._validate(v)
 
 
 #: This field represents the built-in `bool` type.

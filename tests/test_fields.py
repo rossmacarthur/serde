@@ -4,7 +4,7 @@ from collections import OrderedDict
 
 from pytest import raises
 
-from serde import Model
+from serde import Model, validate
 from serde.exceptions import DeserializationError, SerdeError, SkipSerialization, ValidationError
 from serde.fields import (
     Bool, Bytes, Choice, Complex, Date, DateTime, Dict, Field, Float, Instance, Int,
@@ -339,9 +339,14 @@ class TestOptional:
         assert example._normalize(None) is None
 
     def test_serialize_something(self):
-        # An Optional should call the wrapped Field's serialize method.
+        # An Optional should call the wrapped Field's _serialize method.
         example = Optional(Reversed)
         assert example.serialize('test') == 'tset'
+
+    def test_serialize_something_extra(self):
+        # An Optional should call the wrapped Field's _serialize method.
+        example = Optional(Field(serializers=[lambda x: x.strip()]))
+        assert example.serialize('test ') == 'test'
 
     def test_serialize_none(self):
         # An Optional should raise SkipSerialization if the value is None.
@@ -351,9 +356,14 @@ class TestOptional:
             assert example.serialize(None)
 
     def test_deserialize_something(self):
-        # An Optional should call the wrapped Field's deserialize method.
+        # An Optional should call the wrapped Field's _deserialize method.
         example = Optional(Reversed)
         assert example.deserialize('test') == 'tset'
+
+    def test_deserialize_something_extra(self):
+        # An Optional should call the wrapped Field's _deserialize method.
+        example = Optional(Field(deserializers=[lambda x: x.strip()]))
+        assert example.deserialize('test ') == 'test'
 
     def test_deserialize_none(self):
         # An Optional deserialize None as None.
@@ -361,8 +371,15 @@ class TestOptional:
         assert example.deserialize(None) is None
 
     def test_validate_something(self):
-        # An Optional should call the wrapped Field's validate method.
+        # An Optional should call the wrapped Field's _validate method.
         example = Optional(Reversed)
+
+        with raises(ValidationError):
+            assert example.validate(5)
+
+    def test_validate_something_extra(self):
+        # An Optional should call the wrapped Field's _validate method.
+        example = Optional(Field(validators=[validate.equal(10)]))
 
         with raises(ValidationError):
             assert example.validate(5)
@@ -395,17 +412,36 @@ class TestDict:
         example = Dict(key=Reversed, value=Reversed)
         assert example.serialize({'ab': 'test', 'cd': 'hello'}) == {'ba': 'tset', 'dc': 'olleh'}
 
+    def test_serialize_extra(self):
+        # A Dict should serialize values based on the key and value Fields.
+        example = Dict(key=Field(serializers=[lambda x: x[::-1]]))
+        assert example.serialize({'ab': 'test', 'cd': 'hello'}) == {'ba': 'test', 'dc': 'hello'}
+
     def test_deserialize(self):
         # A Dict should deserialize values based on the key and value Fields.
         example = Dict(key=Reversed, value=Reversed)
         assert example.deserialize({'ba': 'tset', 'dc': 'olleh'}) == {'ab': 'test', 'cd': 'hello'}
 
+    def test_deserialize_extra(self):
+        # A Dict should serialize values based on the key and value Fields.
+        example = Dict(key=Field(deserializers=[lambda x: x[::-1]]))
+        assert example.deserialize({'ba': 'test', 'dc': 'hello'}) == {'ab': 'test', 'cd': 'hello'}
+
     def test_validate(self):
         # A Dict should validate values based on the key and value Fields.
         example = Dict(key=Int, value=Str)
         example.validate({0: 'test', 1: 'hello'})
+
         with raises(ValidationError):
             example.validate({'test': 0})
+
+    def test_validate_extra(self):
+        # A Dict should validate values based on the key and value Fields.
+        example = Dict(value=Field(validators=[validate.equal(10)]))
+        example.validate({'test': 10, 'hello': 10})
+
+        with raises(ValidationError):
+            example.validate({'test': 11})
 
 
 class TestList:
@@ -428,17 +464,36 @@ class TestList:
         example = List(element=Reversed)
         assert example.serialize(['test', 'hello']) == ['tset', 'olleh']
 
+    def test_serialize_extra(self):
+        # A List should serialize values based on the element Field.
+        example = List(element=Field(serializers=[lambda x: x[::-1]]))
+        assert example.serialize(['test', 'hello']) == ['tset', 'olleh']
+
     def test_deserialize(self):
         # A List should deserialize values based on the element Field.
         example = List(element=Reversed)
-        assert example.serialize(['tset', 'olleh']) == ['test', 'hello']
+        assert example.deserialize(['tset', 'olleh']) == ['test', 'hello']
+
+    def test_deserialize_extra(self):
+        # A List should deserialize values based on the element Field.
+        example = List(element=Field(deserializers=[lambda x: x[::-1]]))
+        assert example.deserialize(['tset', 'olleh']) == ['test', 'hello']
 
     def test_validate(self):
         # A List should validate values based on the element Field.
         example = List(element=Int)
         example.validate([0, 1, 2, 3, 4])
+
         with raises(ValidationError):
             example.validate(['1', '2', 'a', 'string'])
+
+    def test_validate_extra(self):
+        # A List should validate values based on the element Field.
+        example = List(element=Field(validators=[validate.equal(10)]))
+        example.validate([10, 10, 10])
+
+        with raises(ValidationError):
+            example.validate([10, 11, 12, 13])
 
 
 class TestTuple:
@@ -463,6 +518,11 @@ class TestTuple:
         expected = ('2d7026c8-cc58-11e8-bd7a-784f4386978e', 'tset')
         assert example.serialize(value) == expected
 
+    def test_serialize_extra(self):
+        # A Tuple should serialize values based on each element Fields.
+        example = Tuple(Field, Field(serializers=[lambda x: x[::-1]]))
+        assert example.serialize(('test', 'test')) == ('test', 'tset')
+
     def test_deserialize(self):
         # A Tuple should deserialize values based on each element Fields.
         example = Tuple(Uuid, Reversed)
@@ -470,13 +530,26 @@ class TestTuple:
         expected = (uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'), 'test')
         assert example.deserialize(value) == expected
 
+    def test_deserialize_extra(self):
+        # A Tuple should deserialize values based on each element Fields.
+        example = Tuple(Field, Field(deserializers=[lambda x: x[::-1]]))
+        assert example.deserialize(('test', 'test')) == ('test', 'tset')
+
     def test_validate(self):
         # A Tuple should validate values based on each element Fields.
-        # A field that is a tuple (bool, str, Stringify)
         example = Tuple(Int, Str, Bool)
         example.validate((5, 'test', True))
+
         with raises(ValidationError):
             example.validate((5, 'test', 'not a bool'))
+
+    def test_validate_extra(self):
+        # A Tuple should validate values based on each element Fields.
+        example = Tuple(Field, Field(validators=[validate.equal(10)]))
+        example.validate((20, 10))
+
+        with raises(ValidationError):
+            example.validate((20, 11))
 
 
 class TestChoice:
