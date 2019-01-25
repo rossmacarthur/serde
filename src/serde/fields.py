@@ -163,13 +163,13 @@ def _resolve_to_field_instance(thing, none_allowed=True):
 
     # If the thing is a built-in type that we support then create an Instance
     # with that type.
-    field_class = FIELD_CLASSES.get(thing, None)
+    field_class = BUILTIN_FIELD_CLASSES.get(thing, None)
 
     if field_class is not None:
         return field_class()
 
     raise TypeError(
-        '{!r} is not a Field, a Model class, an instance of a Field, or a supported type'
+        '{!r} is not a Field, a Model class, an instance of a Field, or a supported built-in type'
         .format(thing)
     )
 
@@ -1264,7 +1264,7 @@ class Uuid(Instance):
         return uuid.UUID(value)
 
 
-FIELD_CLASSES = {
+BUILTIN_FIELD_CLASSES = {
     bool: Bool,
     bytes: Bytes,
     complex: Complex,
@@ -1277,7 +1277,7 @@ FIELD_CLASSES = {
 }
 
 try:
-    FIELD_CLASSES[basestring] = BaseString
+    BUILTIN_FIELD_CLASSES[basestring] = BaseString
 except NameError:
     pass
 
