@@ -47,35 +47,6 @@ a `Percent` field we would do the following.
 
     >>> issubclass(Percent, Float)
     True
-
-Here is an example where we subclass a field and override the serialize,
-deserialize, and validate methods. Note: there is already an Email field in this
-module, this is just an example of how it could be created.
-
-::
-
-    >>> class Email(Field):
-    ...
-    ...     def serialize(self, value):
-    ...         return value.strip()
-    ...
-    ...     def deserialize(self, value):
-    ...         return value.strip()
-    ...
-    ...     def validate(self, value):
-    ...         assert isinstance(value, str)
-    ...         validate.email(value)
-
-    >>> class User(Model):
-    ...     email = Email()
-
-    >>> user = User(email='john@smith.com')
-    >>> user.email
-    'john@smith.com'
-
-    >>> user.to_dict()
-    OrderedDict([('email', 'john@smith.com')])
-
 """
 
 import datetime
@@ -98,26 +69,18 @@ __all__ = [
     'DateTime',
     'Dict',
     'Dictionary',
-    'Domain',
-    'Email',
     'Field',
     'Float',
     'Instance',
     'Int',
     'Integer',
-    'IpAddress',
-    'Ipv4Address',
-    'Ipv6Address',
     'List',
-    'MacAddress',
     'Nested',
     'Optional',
-    'Slug',
     'Str',
     'String',
     'Time',
     'Tuple',
-    'Url',
     'Uuid',
     'create'
 ]
@@ -1029,16 +992,6 @@ try:
     Unicode = create('Unicode', base=Instance, args=(unicode,))
 except NameError:
     pass
-
-# Str types with extra validation.
-Domain = create('Domain', base=Str, validators=[validate.domain])
-Email = create('Email', base=Str, validators=[validate.email])
-IpAddress = create('IpAddress', base=Str, validators=[validate.ip_address])
-Ipv4Address = create('Ipv4Address', base=Str, validators=[validate.ipv4_address])
-Ipv6Address = create('Ipv6Address', base=Str, validators=[validate.ipv6_address])
-MacAddress = create('MacAddress', base=Str, validators=[validate.mac_address])
-Slug = create('Slug', base=Str, validators=[validate.slug])
-Url = create('Url', base=Str, validators=[validate.url])
 
 # Aliases
 Boolean = Bool
