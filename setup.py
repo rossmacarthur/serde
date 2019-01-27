@@ -40,6 +40,9 @@ install_requires = [
     'six >=1.0.0, <2.0.0',
     'validators >=0.12.0, <0.13.0'
 ]
+cbor_requires = [
+    'cbor2 >=4.0.0, <5.0.0'
+]
 json_requires = [
     'simplejson >=3.0.0, <4.0.0'
 ]
@@ -70,6 +73,7 @@ setup(
     # Options
     install_requires=install_requires,
     extras_require={
+        'cbor': cbor_requires,
         'json': json_requires,
         'toml': toml_requires,
         'yaml': yaml_requires,

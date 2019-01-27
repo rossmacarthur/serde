@@ -440,6 +440,18 @@ class TestModel:
 
         assert Example.from_dict({'a': 'test'}) == Example(a='tset')
 
+    def test_from_cbor(self):
+        # Check that you can deserialize from CBOR.
+
+        class Example(Model):
+            a = fields.Int()
+
+        assert Example.from_cbor(b'\xa1aa\x05') == Example(a=5)
+
+        with mock.patch('serde.model.cbor', None):
+            with raises(MissingDependency):
+                Example(a=5).from_cbor(b'\xa1aa\x05')
+
     def test_from_json_basic(self):
         # Check that you can deserialize from JSON.
 
@@ -590,6 +602,19 @@ class TestModel:
             a = fields.Str(serializers=[lambda x: x[::-1]])
 
         assert Example(a='tset').to_dict() == {'a': 'test'}
+
+    def test_to_cbor(self):
+        # Check that you can serialize to CBOR.
+
+        class Example(Model):
+            a = fields.Int()
+
+        Example.to_dict = mock.Mock(return_value={u'a': 5})
+        assert Example(a=5).to_cbor() == b'\xa1aa\x05'
+
+        with mock.patch('serde.model.cbor', None):
+            with raises(MissingDependency):
+                Example(a=5).to_cbor()
 
     def test_to_json_basic(self):
         # Check that you can serialize to JSON.

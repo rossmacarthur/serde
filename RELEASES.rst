@@ -6,6 +6,7 @@ Releases
 
 *Unreleased*
 
+- Support conversion between CBOR. (`#40`_, `#74`_)
 - Remove Fields and validators that were moved to `serde-ext`_ package. (`#66`_,
   `#71`_)
 - Container Fields now properly call inner Field methods. (`#70`_)
@@ -14,6 +15,7 @@ Releases
 
 .. _serde-ext: https://github.com/rossmacarthur/serde-ext
 
+.. _#74: https://github.com/rossmacarthur/serde/pull/74
 .. _#71: https://github.com/rossmacarthur/serde/pull/71
 .. _#70: https://github.com/rossmacarthur/serde/pull/70
 .. _#69: https://github.com/rossmacarthur/serde/pull/69
@@ -21,6 +23,7 @@ Releases
 
 .. _#67: https://github.com/rossmacarthur/serde/issues/67
 .. _#66: https://github.com/rossmacarthur/serde/issues/66
+.. _#40: https://github.com/rossmacarthur/serde/issues/40
 
 0.4.1
 -----

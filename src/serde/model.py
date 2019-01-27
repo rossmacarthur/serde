@@ -88,6 +88,7 @@ try:
 except ImportError:
     import json
 
+cbor = try_import('cbor2')
 toml = try_import('toml')
 yaml = try_import('ruamel.yaml')
 
@@ -395,6 +396,23 @@ class Model(with_metaclass(ModelType, object)):
         return self
 
     @classmethod
+    @requires_module('cbor', package='cbor2')
+    def from_cbor(cls, b, strict=True, **kwargs):
+        """
+        Load the Model from a CBOR bytestring.
+
+        Args:
+            b (bytes): the CBOR byte string.
+            strict (bool): if set to False then no exception will be raised when
+                unknown dictionary keys are present.
+            **kwargs: extra keyword arguments to pass directly to `cbor.loads`.
+
+        Returns:
+            Model: an instance of this Model.
+        """
+        return cls.from_dict(cbor.loads(b, **kwargs), strict=strict)
+
+    @classmethod
     def from_json(cls, s, strict=True, **kwargs):
         """
         Load the Model from a JSON string.
@@ -473,6 +491,21 @@ class Model(with_metaclass(ModelType, object)):
                 pass
 
         return result
+
+    @requires_module('cbor', package='cbor2')
+    def to_cbor(self, dict=None, **kwargs):
+        """
+        Dump the Model to a CBOR byte string.
+
+        Args:
+            dict (type): the class of the deserialized dictionary that is passed
+                to `cbor.dumps`.
+            **kwargs: extra keyword arguments to pass directly to `cbor.dumps`.
+
+        Returns:
+            bytes: a CBOR representation of this Model.
+        """
+        return cbor.dumps(self.to_dict(dict=dict), **kwargs)
 
     def to_json(self, dict=None, **kwargs):
         """
