@@ -1,20 +1,26 @@
 Releases
 ========
 
-0.4.2
+0.5.0
 -----
 
 *Unreleased*
 
+- Remove Fields and validators that were moved to `serde-ext`_ package. (`#66`_,
+  `#71`_)
 - Container Fields now properly call inner Field methods. (`#70`_)
 - Add equal and length validators. (`#67`_, `#69`_)
 - Add basestring and unicode to built-in Field map. (`#68`_)
 
+.. _serde-ext: https://github.com/rossmacarthur/serde-ext
+
+.. _#71: https://github.com/rossmacarthur/serde/pull/71
 .. _#70: https://github.com/rossmacarthur/serde/pull/70
 .. _#69: https://github.com/rossmacarthur/serde/pull/69
 .. _#68: https://github.com/rossmacarthur/serde/pull/68
 
 .. _#67: https://github.com/rossmacarthur/serde/issues/67
+.. _#66: https://github.com/rossmacarthur/serde/issues/66
 
 0.4.1
 -----
