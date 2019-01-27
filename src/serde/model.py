@@ -88,7 +88,7 @@ try:
 except ImportError:
     import json
 
-cbor = try_import('cbor')
+cbor = try_import('cbor2')
 toml = try_import('toml')
 yaml = try_import('ruamel.yaml')
 
