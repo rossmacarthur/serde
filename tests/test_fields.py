@@ -127,6 +127,12 @@ class TestField:
         value = object()
         assert field.deserialize(value) == value
 
+    def test_normalize(self):
+        # The base Field simply passes things through.
+        field = Field()
+        value = object()
+        assert field.normalize(value) == value
+
     def test_validate(self):
         # Any value is allowed on the base Field except None.
         field = Field()
@@ -164,9 +170,9 @@ def test_create_args():
         Example()
 
 
-def test_create_serializer_and_deserializer():
-    # You should be able to create a new Field with extra serializers and
-    # deserializers.
+def test_create_serializer_and_normalizer_and_deserializer():
+    # You should be able to create a new Field with extra serializers,
+    # normalizers, and deserializers.
 
     def reverser(value):
         return value[::-1]
@@ -175,15 +181,19 @@ def test_create_serializer_and_deserializer():
         'Reversed',
         base=Str,
         serializers=[reverser],
-        deserializers=[reverser]
+        deserializers=[reverser],
+        normalizers=[reverser]
     )
 
     class Example(Model):
         a = Reversed()
 
-    example = Example.from_dict({'a': 'test'})
+    example = Example(a='test')
     assert example.a == 'tset'
-    assert example.to_dict() == {'a': 'test'}
+
+    example = Example.from_dict({'a': 'test'})
+    assert example.a == 'test'
+    assert example.to_dict() == {'a': 'tset'}
 
 
 def test_create_validator():
@@ -308,35 +318,35 @@ class TestOptional:
         assert example.default == 'test'
         assert example.validators == [None]
 
-    def test__normalize_default(self):
+    def test_normalize_default(self):
         # When default is set, the Optional should return that value when the
         # input is None.
         example = Optional(default='test')
-        assert example._normalize(None) == 'test'
+        assert example.normalize(None) == 'test'
 
-    def test__normalize_callable_default(self):
+    def test_normalize_callable_default(self):
         # When a callable default is set, the Optional should call that function
         # and return that value.
         example = Optional(default=dict)
-        assert example._normalize(None) == {}
+        assert example.normalize(None) == {}
 
-    def test__normalize_something(self):
-        # An Optional should call the wrapped Field's _normalize method.
+    def test_normalize_something(self):
+        # An Optional should call the wrapped Field's normalize method.
         class Test(Field):
-            def _normalize(self, value):
+            def normalize(self, value):
                 return value[::-1]
 
         example = Optional(Test)
-        assert example._normalize('test') == 'tset'
+        assert example.normalize('test') == 'tset'
 
-    def test__normalize_none(self):
-        # An Optional always _normalizes None to None.
+    def test_normalize_none(self):
+        # An Optional always normalizes None to None.
         class Test(Field):
-            def _normalize(self, value):
+            def normalize(self, value):
                 return value[::-1]
 
         example = Optional(Test)
-        assert example._normalize(None) is None
+        assert example.normalize(None) is None
 
     def test_serialize_something(self):
         # An Optional should call the wrapped Field's _serialize method.
