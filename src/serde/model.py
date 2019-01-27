@@ -309,7 +309,7 @@ class Model(with_metaclass(ModelType, object)):
     @classmethod
     def _normalize_field(cls, field, value):
         """
-        Normalize a single Field and map all errors to `NormalizatinoError`.
+        Normalize a single Field and map all errors to `NormalizationError`.
         """
         with map_errors(NormalizationError, model=cls, field=field, value=value):
             return field._normalize(value)
@@ -325,7 +325,7 @@ class Model(with_metaclass(ModelType, object)):
         """
         Normalize all Fields on this Model, and the Model itself.
 
-        This is called by the Model constructor, and on deserialization, so this
+        This is called by the Model constructor and on deserialization, so this
         is only needed if you modify attributes directly and want to renormalize
         the Model.
 

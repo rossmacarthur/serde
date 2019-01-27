@@ -787,9 +787,7 @@ class Dict(Instance):
         Returns:
             dict: the serialized dictionary.
         """
-        value = type(value)(
-            (self.key._serialize(k), self.value._serialize(v)) for k, v in value.items()
-        )
+        value = {self.key._serialize(k): self.value._serialize(v) for k, v in value.items()}
         return super(Dict, self).serialize(value)
 
     def deserialize(self, value):
@@ -806,9 +804,7 @@ class Dict(Instance):
             dict: the deserialized dictionary.
         """
         value = super(Dict, self).deserialize(value)
-        return type(value)(
-            (self.key._deserialize(k), self.value._deserialize(v)) for k, v in value.items()
-        )
+        return {self.key._deserialize(k): self.value._deserialize(v) for k, v in value.items()}
 
     def normalize(self, value):
         """
@@ -824,9 +820,7 @@ class Dict(Instance):
             dict: the normalized dictionary.
         """
         value = super(Dict, self).normalize(value)
-        return type(value)(
-            (self.key._normalize(k), self.value._normalize(v)) for k, v in value.items()
-        )
+        return {self.key._normalize(k): self.value._normalize(v) for k, v in value.items()}
 
     def validate(self, value):
         """
@@ -868,10 +862,10 @@ class List(Instance):
         >>> user.emails[1]
         'john.smith@email.com'
 
-        >>> User(emails={'john@smith.com': None})
+        >>> User(emails=1234)
         Traceback (most recent call last):
             ...
-        serde.exceptions.ValidationError: expected 'list' but got 'dict'
+        serde.exceptions.ValidationError: expected 'list' but got 'int'
 
         >>> User.from_dict({'emails': [1234]})
         Traceback (most recent call last):
@@ -903,7 +897,7 @@ class List(Instance):
         Returns:
             list: the serialized list.
         """
-        value = type(value)(self.element._serialize(v) for v in value)
+        value = [self.element._serialize(v) for v in value]
         return super(List, self).serialize(value)
 
     def deserialize(self, value):
@@ -920,7 +914,7 @@ class List(Instance):
             list: the deserialized list.
         """
         value = super(List, self).deserialize(value)
-        return type(value)(self.element._deserialize(v) for v in value)
+        return [self.element._deserialize(v) for v in value]
 
     def normalize(self, value):
         """
@@ -936,7 +930,7 @@ class List(Instance):
             list: the normalized list.
         """
         value = super(List, self).normalize(value)
-        return type(value)(self.element._normalize(v) for v in value)
+        return [self.element._normalize(v) for v in value]
 
     def validate(self, value):
         """
@@ -1017,7 +1011,7 @@ class Tuple(Instance):
         Returns:
             tuple: the serialized tuple.
         """
-        return type(value)(e._serialize(v) for e, v in zip_equal(self.elements, value))
+        return tuple(e._serialize(v) for e, v in zip_equal(self.elements, value))
 
     def deserialize(self, value):
         """
@@ -1033,7 +1027,7 @@ class Tuple(Instance):
             tuple: the deserialized tuple.
         """
         value = super(Tuple, self).deserialize(value)
-        return type(value)(e._deserialize(v) for e, v in zip_equal(self.elements, value))
+        return tuple(e._deserialize(v) for e, v in zip_equal(self.elements, value))
 
     def normalize(self, value):
         """
@@ -1049,7 +1043,7 @@ class Tuple(Instance):
             tuple: the normalized tuple.
         """
         value = super(Tuple, self).normalize(value)
-        return type(value)(e._normalize(v) for e, v in zip_equal(self.elements, value))
+        return tuple(e._normalize(v) for e, v in zip_equal(self.elements, value))
 
     def validate(self, value):
         """

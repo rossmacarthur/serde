@@ -5,6 +5,7 @@ This module contains Exception classes that are used in Serde.
 
 __all__ = [
     'DeserializationError',
+    'NormalizationError',
     'SerdeError',
     'SerializationError',
     'SkipSerialization',
