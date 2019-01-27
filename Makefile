@@ -13,13 +13,13 @@ clean: docs-clean ## Remove all build artifacts.
 	find . \( -name *.pyc -o -name *.pyo -o -name __pycache__ -o -name *.egg-info \) -exec rm -rf {} +
 
 install: ## Install package and all features.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml]"
+	$(VIRTUAL_ENV)/bin/pip install -e ".[cbor,toml,yaml]"
 
 install-plain: ## Install package, all features, and testing dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml,dev.test]"
+	$(VIRTUAL_ENV)/bin/pip install -e ".[cbor,toml,yaml,dev.test]"
 
 install-dev: ## Install package, all features, and linting and testing dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[toml,yaml,dev.lint,dev.test]"
+	$(VIRTUAL_ENV)/bin/pip install -e ".[cbor,toml,yaml,dev.lint,dev.test]"
 
 install-all: install-dev ## Install package, all features, and all development dependencies.
 	$(VIRTUAL_ENV)/bin/pip install sphinx twine
