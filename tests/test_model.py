@@ -448,6 +448,10 @@ class TestModel:
 
         assert Example.from_cbor(b'\xa1aa\x05') == Example(a=5)
 
+        with mock.patch('serde.model.cbor', None):
+            with raises(MissingDependency):
+                Example(a=5).from_cbor(b'\xa1aa\x05')
+
     def test_from_json_basic(self):
         # Check that you can deserialize from JSON.
 
@@ -606,6 +610,10 @@ class TestModel:
             a = fields.Int()
 
         assert Example(a=5).to_cbor() == b'\xa1aa\x05'
+
+        with mock.patch('serde.model.cbor', None):
+            with raises(MissingDependency):
+                Example(a=5).to_cbor()
 
     def test_to_json_basic(self):
         # Check that you can serialize to JSON.
