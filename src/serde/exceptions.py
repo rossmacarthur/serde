@@ -75,7 +75,7 @@ class SerdeError(BaseSerdeError):
             message (str): a message describing the error that occurred.
             cause (Exception): the exception that caused this error.
             value: the Field value context.
-            field (~serde.field.Field): the Field context.
+            field (~serde.fields.Field): the Field context.
             model (~serde.model.Model): the Model context.
         """
         super(SerdeError, self).__init__(message)
@@ -92,7 +92,7 @@ class SerdeError(BaseSerdeError):
         Args:
             cause (Exception): the exception that caused this error.
             value: the Field value context.
-            field (~serde.field.Field): the Field context.
+            field (~serde.fields.Field): the Field context.
             model (~serde.model.Model): the Model context.
         """
         if cause is not None:

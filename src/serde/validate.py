@@ -1,5 +1,5 @@
 """
-Validator functions for use with `Fields <serde.field.Field>`.
+Validator functions for use with `Fields <serde.fields.Field>`.
 """
 
 from serde.exceptions import ValidationError
@@ -8,7 +8,12 @@ from serde.exceptions import ValidationError
 __all__ = [
     'between',
     'contains',
+    'equal',
     'instance',
+    'length',
+    'length_between',
+    'length_max',
+    'length_min',
     'max',
     'min'
 ]
