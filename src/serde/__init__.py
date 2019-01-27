@@ -48,9 +48,9 @@ deserialize a `User` from a dictionary we use the
     46
 
 Other supported data formats including `JSON <serde.model.Model.to_json()>`,
-`TOML <serde.model.Model.to_toml()>`, and `YAML <serde.model.Model.to_yaml()>`.
-See `~serde.model` for more examples. Documentation for supported fields can be
-found in `~serde.fields`.
+`CBOR <serde.model.Model.to_cbor()>`, `TOML <serde.model.Model.to_toml()>`, and
+`YAML <serde.model.Model.to_yaml()>`. See `~serde.model` for more examples.
+Documentation for supported fields can be found in `~serde.fields`.
 """
 
 from serde.model import Model

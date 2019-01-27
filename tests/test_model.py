@@ -609,6 +609,7 @@ class TestModel:
         class Example(Model):
             a = fields.Int()
 
+        Example.to_dict = mock.Mock(return_value={u'a': 5})
         assert Example(a=5).to_cbor() == b'\xa1aa\x05'
 
         with mock.patch('serde.model.cbor', None):
