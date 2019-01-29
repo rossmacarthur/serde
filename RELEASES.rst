@@ -1,6 +1,13 @@
 Releases
 ========
 
+0.5.1
+-----
+
+- Reexport `serde-ext`_ Fields and validators. (`#75`_)
+
+.. _#75: https://github.com/rossmacarthur/serde/pull/75
+
 0.5.0
 -----
 
