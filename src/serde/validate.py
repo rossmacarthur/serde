@@ -3,6 +3,7 @@ Validator functions for use with `Fields <serde.fields.Field>`.
 """
 
 from serde.exceptions import ValidationError
+from serde.utils import try_import_all
 
 
 __all__ = [
@@ -315,3 +316,6 @@ def contains(allowed):
             raise ValidationError('{!r} is not a valid choice'.format(value))
 
     return contains_
+
+
+try_import_all('serde_ext.validate', globals())

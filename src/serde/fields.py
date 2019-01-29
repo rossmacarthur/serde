@@ -56,7 +56,7 @@ import isodate
 
 from serde import validate
 from serde.exceptions import SerdeError, SkipSerialization, ValidationError
-from serde.utils import zip_equal
+from serde.utils import try_import_all, zip_equal
 
 
 __all__ = [
@@ -1336,3 +1336,6 @@ try:
     FIELD_CLASSES[unicode] = Unicode
 except NameError:
     pass
+
+
+try_import_all('serde_ext.fields', globals())

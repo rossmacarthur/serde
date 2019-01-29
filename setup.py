@@ -40,6 +40,9 @@ install_requires = [
     'six >=1.0.0, <2.0.0',
     'validators >=0.12.0, <0.13.0'
 ]
+ext_requires = [
+    'serde-ext >=0.1.0, <0.2.0'
+]
 cbor_requires = [
     'cbor2 >=4.0.0, <5.0.0'
 ]
@@ -73,6 +76,7 @@ setup(
     # Options
     install_requires=install_requires,
     extras_require={
+        'ext': ext_requires,
         'cbor': cbor_requires,
         'json': json_requires,
         'toml': toml_requires,
