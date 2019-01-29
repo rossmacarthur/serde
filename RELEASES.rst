@@ -4,7 +4,7 @@ Releases
 0.5.0
 -----
 
-*Unreleased*
+*Released on January 29th, 2019*
 
 - Support conversion between CBOR. (`#40`_, `#74`_)
 - Remove Fields and validators that were moved to `serde-ext`_ package. (`#66`_,

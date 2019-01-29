@@ -95,7 +95,7 @@ from serde.model import Model
 
 __all__ = ['Model', 'exceptions', 'fields', 'validate']
 __title__ = 'serde'
-__version__ = '0.4.1'
+__version__ = '0.5.0'
 __url__ = 'https://github.com/rossmacarthur/serde'
 __author__ = 'Ross MacArthur'
 __author_email__ = 'ross@macarthur.io'
