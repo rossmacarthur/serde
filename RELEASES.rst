@@ -4,6 +4,8 @@ Releases
 0.5.1
 -----
 
+*Released on January 29th, 2019*
+
 - Reexport `serde-ext`_ Fields and validators. (`#75`_)
 
 .. _#75: https://github.com/rossmacarthur/serde/pull/75
