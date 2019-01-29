@@ -51,6 +51,25 @@ def try_import(name, package=None):
         pass
 
 
+def try_import_all(name, namespace):
+    """
+    Try import the names from the given library, ignoring ImportErrors.
+
+    Args:
+        name (str): the name to import.
+        namespace (dict): the namespace to update.
+    """
+    module = try_import(name)
+
+    if module:
+        if hasattr(module, '__all__'):
+            all_names = module.__all__
+        else:
+            all_names = (name for name in dir(module) if not name.startswith('_'))
+
+        namespace.update({name: getattr(module, name) for name in all_names})
+
+
 def zip_equal(*iterables):
     """
     A zip function that validates that all the iterables have the same length.
