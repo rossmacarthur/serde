@@ -37,8 +37,7 @@ metadata = get_metadata()
 # Primary requirements
 install_requires = [
     'isodate >=0.6.0, <0.7.0',
-    'six >=1.0.0, <2.0.0',
-    'validators >=0.12.0, <0.13.0'
+    'six >=1.0.0, <2.0.0'
 ]
 ext_requires = [
     'serde-ext >=0.1.0, <0.2.0'
