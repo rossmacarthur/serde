@@ -30,12 +30,12 @@ lint: ## Run all lints.
 sort-imports: ## Sort import statements according to isort configuration.
 	$(VIRTUAL_ENV)/bin/isort --recursive .
 
-test: ## Run all tests.
+test: ## Run tests excluding doctests.
+	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing
+
+test-all: ## Run all tests.
 	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing --cov-fail-under 100 \
 								  --doctest-modules --doctest-import "*<serde"
-
-test-plain: ## Run tests excluding doctests.
-	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing
 
 dist: clean ## Build source and wheel package.
 	$(VIRTUAL_ENV)/bin/python setup.py sdist bdist_wheel --universal
