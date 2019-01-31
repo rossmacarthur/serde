@@ -69,6 +69,7 @@ To deserialize from JSON we use the `Model.from_json()` method.
 
 """
 
+import pickle
 from collections import OrderedDict
 from contextlib import contextmanager
 from functools import wraps
@@ -483,6 +484,23 @@ class Model(with_metaclass(ModelType, object)):
         return cls.from_dict(json.loads(s, **kwargs), strict=strict)
 
     @classmethod
+    def from_pickle(cls, b, strict=True, **kwargs):
+        """
+        Load the Model from a Pickle byte string.
+
+        Args:
+            b (bytes): the Pickle byte string.
+            strict (bool): if set to False then no exception will be raised when
+                unknown dictionary keys are present.
+            **kwargs: extra keyword arguments to pass directly to
+                `pickle.loads`.
+
+        Returns:
+            Model: an instance of this Model.
+        """
+        return cls.from_dict(pickle.loads(b, **kwargs), strict=strict)
+
+    @classmethod
     @requires_module('toml')
     def from_toml(cls, s, strict=True, **kwargs):
         """
@@ -549,7 +567,7 @@ class Model(with_metaclass(ModelType, object)):
     @requires_module('cbor', package='cbor2')
     def to_cbor(self, dict=None, **kwargs):
         """
-        Dump the Model to a CBOR byte string.
+        Dump the Model as a CBOR byte string.
 
         Args:
             dict (type): the class of the deserialized dictionary that is passed
@@ -574,6 +592,18 @@ class Model(with_metaclass(ModelType, object)):
             str: a JSON representation of this Model.
         """
         return json.dumps(self.to_dict(dict=dict), **kwargs)
+
+    def to_pickle(self, dict=None, **kwargs):
+        """
+        Dump the Model as a Pickle byte string.
+
+        Args:
+            dict (type): the class of the deserialized dictionary that is passed
+                to `pickle.dumps`.
+            **kwargs: extra keyword arguments to pass directly to
+                `pickle.dumps`.
+        """
+        return pickle.dumps(self.to_dict(dict=dict), **kwargs)
 
     @requires_module('toml')
     def to_toml(self, dict=None, **kwargs):
