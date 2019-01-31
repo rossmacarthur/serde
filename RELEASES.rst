@@ -1,6 +1,17 @@
 Releases
 ========
 
+0.5.2
+-----
+
+*Unreleased*
+
+- Support conversion between Pickle. (`#10`_, `#76`_)
+
+.. _#76: https://github.com/rossmacarthur/serde/pull/76
+
+.. _#10: https://github.com/rossmacarthur/serde/issues/10
+
 0.5.1
 -----
 
