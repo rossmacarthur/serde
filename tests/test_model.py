@@ -8,6 +8,7 @@ from serde import Model, fields, validate
 from serde.exceptions import (
     DeserializationError, MissingDependency, SerdeError, SerializationError, ValidationError
 )
+from tests import py2_only, py3_only
 
 
 class TestModel:
@@ -536,6 +537,24 @@ class TestModel:
 
         assert Example.from_json('{"a": 5}', object_hook=OrderedDict) == Example(a=5)
 
+    @py3_only
+    def test_from_pickle(self):
+        # Check that you can deserialize from Pickle.
+
+        class Example(Model):
+            a = fields.Int()
+
+        assert Example.from_pickle(b'\x80\x03}q\x00X\x01\x00\x00\x00aq\x01K\x05s.') == Example(a=5)
+
+    @py2_only
+    def test_from_pickle_py2(self):
+        # Check that you can deserialize from Pickle.
+
+        class Example(Model):
+            a = fields.Int()
+
+        assert Example.from_pickle(b'(dp0\nS\'a\'\np1\nI5\ns.') == Example(a=5)
+
     def test_from_toml(self):
         # Check that you can deserialize from TOML, if its installed.
 
@@ -689,6 +708,24 @@ class TestModel:
             a = fields.Int()
 
         assert Example(a=5, b='test').to_json(sort_keys=True) == '{"a": 5, "b": "test"}'
+
+    @py3_only
+    def test_to_pickle(self):
+        # Check that you can serialize to Pickle.
+
+        class Example(Model):
+            a = fields.Int()
+
+        assert Example(a=5).to_pickle(dict=dict) == b'\x80\x03}q\x00X\x01\x00\x00\x00aq\x01K\x05s.'
+
+    @py2_only
+    def test_to_pickle_py2(self):
+        # Check that you can serialize to Pickle.
+
+        class Example(Model):
+            a = fields.Int()
+
+        assert Example(a=5).to_pickle(dict=dict) == b'(dp0\nS\'a\'\np1\nI5\ns.'
 
     def test_to_toml(self):
         # Check that you can serialize to TOML, if its installed.
