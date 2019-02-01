@@ -1086,6 +1086,12 @@ except NameError:
     pass
 
 try:
+    #: This field represents the built-in `long` type.
+    Long = create('Long', base=Instance, args=(long,))
+except NameError:
+    pass
+
+try:
     #: This field represents the built-in `unicode` type.
     Unicode = create('Unicode', base=Instance, args=(unicode,))
 except NameError:
@@ -1329,6 +1335,11 @@ BUILTIN_FIELD_CLASSES = {
 
 try:
     BUILTIN_FIELD_CLASSES[basestring] = BaseString
+except NameError:
+    pass
+
+try:
+    BUILTIN_FIELD_CLASSES[long] = Long
 except NameError:
     pass
 
