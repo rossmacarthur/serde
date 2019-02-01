@@ -6,8 +6,10 @@ Releases
 
 *Unreleased*
 
+- Add Long Field in Python 2. (`#79`_)
 - Support conversion between Pickle. (`#10`_, `#76`_)
 
+.. _#79: https://github.com/rossmacarthur/serde/pull/79
 .. _#76: https://github.com/rossmacarthur/serde/pull/76
 
 .. _#10: https://github.com/rossmacarthur/serde/issues/10
