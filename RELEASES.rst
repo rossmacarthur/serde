@@ -4,12 +4,14 @@ Releases
 0.5.2
 -----
 
-*Unreleased*
+*Released on February 4th, 2019*
 
 - Add Long Field in Python 2. (`#79`_)
+- Fix a bug where validators was a required dependency. (`#78`_)
 - Support conversion between Pickle. (`#10`_, `#76`_)
 
 .. _#79: https://github.com/rossmacarthur/serde/pull/79
+.. _#78: https://github.com/rossmacarthur/serde/pull/78
 .. _#76: https://github.com/rossmacarthur/serde/pull/76
 
 .. _#10: https://github.com/rossmacarthur/serde/issues/10
