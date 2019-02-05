@@ -6,7 +6,8 @@ from pytest import raises
 
 from serde import Model, fields, validate
 from serde.exceptions import (
-    DeserializationError, MissingDependency, SerdeError, SerializationError, ValidationError
+    DeserializationError, InstantiationError, MissingDependency,
+    NormalizationError, SerdeError, SerializationError, ValidationError
 )
 from tests import py2_only, py3_only
 
@@ -201,13 +202,13 @@ class TestModel:
 
         Example(a=5, b=None)
 
-        with raises(ValidationError):
+        with raises(InstantiationError):
             Example(a=None)
 
-        with raises(ValidationError):
+        with raises(InstantiationError):
             Example(a='test')
 
-        with raises(ValidationError):
+        with raises(InstantiationError):
             Example(b=5)
 
     def test___init___validators(self):
@@ -218,7 +219,7 @@ class TestModel:
 
         assert Example(a=101).a == 101
 
-        with raises(ValidationError):
+        with raises(InstantiationError):
             Example(a=5)
 
     def test___init___nested(self):
@@ -299,7 +300,7 @@ class TestModel:
         assert example.a == 'tset'
 
     def test_normalize_all_bad_normalizers(self):
-        # normalize_all() should catch all normalization exceptions.
+        # normalize_all() should raise normalization exceptions.
 
         class Example(Model):
             a = fields.Str()
@@ -309,21 +310,25 @@ class TestModel:
 
         example = Example(a='test')
         example._fields.a.normalizers = [raises_exception]
-        example.normalize_all()
-        assert example.a == 'test'
+
+        with raises(NormalizationError):
+            example.normalize_all()
 
     def test_normalize_all_bad_normalize(self):
-        # normalize_all() should catch all normalization exceptions.
+        # normalize_all() should raise a NormalizationError that will be mapped
+        # to an InstantiationError.
 
         class Example(Model):
             a = fields.Str()
 
-            def normalize(self):
-                raise ValueError
+        def normalize(self):
+            raise ValueError
 
         example = Example(a='test')
-        example.normalize_all()
-        assert example.a == 'test'
+        setattr(Example, 'normalize', normalize)
+
+        with raises(NormalizationError):
+            example.normalize_all()
 
     def test_validate_all(self):
         # validate_all() should revalidate the Model so that if we have changed
@@ -347,7 +352,7 @@ class TestModel:
             def validate(self):
                 assert self.a != 0
 
-        with raises(ValidationError):
+        with raises(InstantiationError):
             Example(a=0)
 
         example = Example(a=5)
@@ -363,7 +368,7 @@ class TestModel:
 
         try:
             Example(a='not an integer')
-        except ValidationError as e:
+        except InstantiationError as e:
             assert e.model is Example
             assert e.field is Example._fields.a
             assert e.value == 'not an integer'
@@ -376,6 +381,19 @@ class TestModel:
 
         assert Example.from_dict({}) == Example()
 
+    def test_from_dict_consumed(self):
+        # Check that a dictionary is left untouched during deserialization.
+
+        class SubExample(Model):
+            a = fields.Int()
+
+        class Example(Model):
+            sub = fields.Nested(SubExample)
+
+        d = {'sub': {'a': 5}}
+        Example.from_dict(d)
+        assert d == {'sub': {'a': 5}}
+
     def test_from_dict_required(self):
         # Check that required Fields have to be present when deserializing.
 
@@ -384,7 +402,7 @@ class TestModel:
 
         assert Example.from_dict({'a': 5}) == Example(a=5)
 
-        with raises(ValidationError):
+        with raises(DeserializationError):
             Example.from_dict({})
 
     def test_from_dict_optional(self):

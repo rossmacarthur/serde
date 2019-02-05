@@ -5,7 +5,9 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde import Model, validate
-from serde.exceptions import DeserializationError, SerdeError, SkipSerialization, ValidationError
+from serde.exceptions import (
+    DeserializationError, InstantiationError, SerdeError, SkipSerialization, ValidationError
+)
 from serde.fields import (
     Bool, Bytes, Choice, Complex, Date, DateTime, Dict, Field, Float, Instance, Int,
     List, Nested, Optional, Str, Time, Tuple, Uuid, _resolve_to_field_instance, create
@@ -213,7 +215,7 @@ def test_create_validator():
 
     assert Example('notderp').a == 'notderp'
 
-    with raises(ValidationError):
+    with raises(InstantiationError):
         Example('derp')
 
 
