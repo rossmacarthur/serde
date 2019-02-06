@@ -5,7 +5,10 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde import Model, validate
-from serde.exceptions import DeserializationError, SerdeError, SkipSerialization, ValidationError
+from serde.exceptions import (
+    ContextError, DeserializationError, InstantiationError,
+    SerdeError, SkipSerialization, ValidationError
+)
 from serde.fields import (
     Bool, Bytes, Choice, Complex, Date, DateTime, Dict, Field, Float, Instance, Int,
     List, Nested, Optional, Str, Time, Tuple, Uuid, _resolve_to_field_instance, create
@@ -86,7 +89,7 @@ class TestField:
     def test__setattr__(self):
         # The same Field instance should not be able to be used twice.
         field = Field()
-        with raises(SerdeError):
+        with raises(ContextError):
             class Example(Model):
                 a = field
                 b = field
@@ -213,7 +216,7 @@ def test_create_validator():
 
     assert Example('notderp').a == 'notderp'
 
-    with raises(ValidationError):
+    with raises(InstantiationError):
         Example('derp')
 
 

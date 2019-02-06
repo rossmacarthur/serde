@@ -2,9 +2,13 @@
 This module contains Exception classes that are used in Serde.
 """
 
+from collections import namedtuple
+
 
 __all__ = [
+    'ContextError',
     'DeserializationError',
+    'InstantiationError',
     'NormalizationError',
     'SerdeError',
     'SerializationError',
@@ -46,7 +50,7 @@ class BaseSerdeError(Exception):
 
     def __str__(self):
         """
-        Return a string representation of this BaseSerdeError..
+        Return a string representation of this BaseSerdeError.
         """
         return self.message or self.__class__.__name__
 
@@ -63,10 +67,37 @@ class MissingDependency(BaseSerdeError):
     """
 
 
+class ContextError(BaseSerdeError):
+    """
+    Raised when Models or Fields are used in the wrong context.
+    """
+
+
 class SerdeError(BaseSerdeError):
     """
-    Raised when serializing, deserializing, or validating Models fails.
+    Raised when any Model stage fails.
+
+    ::
+
+        >>> try:
+        ...     class User(Model):
+        ...         age = fields.Int(validators=[validate.between(0, 100)])
+        ...
+        ...     User.from_dict({'age': -1})
+        ... except SerdeError as e:
+        ...     error = e
+        ...
+        >>> error.cause
+        <serde.exceptions.ValidationError: expected at least 0 but got -1>
+        >>> error.value
+        -1
+        >>> error.field.name
+        'age'
+        >>> error.model.__name__
+        'User'
     """
+
+    Context = namedtuple('Context', 'cause value field model')
 
     def __init__(self, message, cause=None, value=None, field=None, model=None):
         """
@@ -74,60 +105,193 @@ class SerdeError(BaseSerdeError):
 
         Args:
             message (str): a message describing the error that occurred.
-            cause (Exception): the exception that caused this error.
-            value: the Field value context.
-            field (~serde.fields.Field): the Field context.
-            model (~serde.model.Model): the Model context.
+            cause (Exception): an exception for this context.
+            value: the value which caused this error.
+            field (serde.fields.Field): the Field where this error happened.
+            model (serde.model.Model): the Model where this error happened.
         """
         super(SerdeError, self).__init__(message)
-        self.cause = None
-        self.value = None
-        self.field = None
-        self.model = None
-        self.add_context(cause=cause, value=value, field=field, model=model)
+        self.contexts = []
+
+        if cause or value or field or model:
+            self.add_context(cause, value, field, model)
 
     def add_context(self, cause=None, value=None, field=None, model=None):
         """
-        Add cause/value/field/model context.
+        Add another context to this SerdeError.
 
         Args:
-            cause (Exception): the exception that caused this error.
-            value: the Field value context.
-            field (~serde.fields.Field): the Field context.
-            model (~serde.model.Model): the Model context.
+            cause (Exception): an exception for this context.
+            value: the value which caused this error.
+            field (~serde.fields.Field): the Field where this error happened.
+            model (~serde.model.Model): the Model where this error happened.
         """
-        if cause is not None:
-            self.cause = cause
+        self.contexts.append(SerdeError.Context(cause, value, field, model))
 
-        if value is not None:
-            self.value = value
+    def iter_contexts(self):
+        """
+        Iterate through the contexts in reverse order.
+        """
+        return reversed(self.contexts)
 
-        if field is not None:
-            self.field = field
+    @classmethod
+    def from_exception(cls, exception, value=None, field=None, model=None):
+        """
+        Create a new SerdeError from another Exception.
 
-        if model is not None:
-            self.model = model
+        Args:
+            exception (Exception): the Exception to convert from.
+            value: the value which caused this error.
+            field (~serde.fields.Field): the Field where this error happened.
+            model (~serde.model.Model): the Model where this error happened.
+
+        Returns:
+            SerdeError: an instance of SerdeError.
+        """
+        if isinstance(exception, SerdeError):
+            self = cls(exception.message)
+            exception.contexts, self.contexts = [], exception.contexts
+            self.add_context(exception, value, field, model)
+            return self
+        else:
+            return cls(str(exception) or repr(exception), exception, value, field, model)
+
+    def __getattr__(self, name):
+        """
+        Get an attribute of a SerdeError.
+        """
+        if name in ('cause', 'value', 'field', 'model'):
+            for context in self.contexts:
+                value = getattr(context, name)
+
+                if value is not None:
+                    return value
+
+            return None
+
+        return self.__getattribute__(name)
+
+    @staticmethod
+    def _pretty_context(context, seperator='\n', prefix='Due to => ', indent=4):
+        """
+        Pretty format the given Context.
+
+        Args:
+            seperator (str): the seperator for each context.
+            prefix (str): the prefix for each context. Example: 'Caused by: '.
+            indent (int): the number of spaces to indent each context line.
+
+        Returns:
+            str: the pretty formatted Context.
+        """
+        lines = []
+
+        if context.value or context.field or context.model:
+            s = ''
+
+            if context.value is not None:
+                value = repr(context.value)
+
+                if len(value) > 30:
+                    value = value[:26] + '... '
+
+                s += 'value {} '.format(value)
+
+            if context.field is not None:
+                s += 'for field {!r} of type {!r} '.format(
+                    context.field._name,
+                    context.field.__class__.__name__
+                )
+
+            if context.model is not None:
+                s += 'on model {!r} '.format(context.model.__name__)
+
+            lines.append(s.strip())
+
+        if context.cause is not None:
+            if isinstance(context.cause, SerdeError):
+                lines.append(context.cause.pretty())
+            else:
+                lines.append(repr(context.cause) or str(context.cause))
+
+        return seperator.join(' ' * indent + prefix + s for s in lines)
+
+    def pretty(self, seperator='\n', prefix='Due to => ', indent=4):
+        """
+        Return a pretty string representation of this SerdeError.
+
+        Args:
+            seperator (str): the seperator for each context.
+            prefix (str): the prefix for each context. Example: 'Caused by: '.
+            indent (int): the number of spaces to indent each context line.
+
+        Returns:
+            str: the pretty formatted SerdeError.
+        """
+        lines = [self.__class__.__name__]
+
+        if self.message:
+            lines[0] += ': ' + self.message
+
+        lines.extend([
+            self._pretty_context(
+                context,
+                seperator=seperator,
+                prefix=prefix,
+                indent=indent
+            )
+            for context in self.iter_contexts()
+        ])
+
+        return seperator.join(lines)
 
 
 class SerializationError(SerdeError):
     """
     Raised when field serialization fails.
+
+    This would be experienced when calling a serialization method like
+    `Model.to_dict() <serde.model.Model.to_dict()>`.
     """
 
 
 class DeserializationError(SerdeError):
     """
     Raised when field deserialization fails.
+
+    This would be experienced when calling a deserialization method like
+    `Model.from_dict() <serde.model.Model.from_dict()>`.
+    """
+
+
+class InstantiationError(SerdeError):
+    """
+    Raised when field instantiation fails.
+
+    This would be experienced when instantiating a Model using
+    `Model.__init__() <serde.model.Model.__init__()>`.
     """
 
 
 class NormalizationError(SerdeError):
     """
     Raised when field normalization fails.
+
+    This would be experienced when normalizing a Model using
+    `Model.normalize_all() <serde.model.Model.normalize_all()>`. However, since
+    this method is automatically called when deserializing or instantiating a
+    Model you would not typically catch this exception because it would be
+    converted to an `InstantiationError` or `DeserializationError`.
     """
 
 
 class ValidationError(SerdeError):
     """
     Raised when field validation fails.
+
+    This would be experienced when validating a Model using
+    `Model.validate_all() <serde.model.Model.normalize_all()>`. However, since
+    this method is automatically called when deserializing or instantiating a
+    Model you would not typically catch this exception because it would be
+    converted to an `InstantiationError` or `DeserializationError`.
     """

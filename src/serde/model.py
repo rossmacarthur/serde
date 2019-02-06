@@ -77,7 +77,7 @@ from functools import wraps
 from six import with_metaclass
 
 from serde.exceptions import (
-    DeserializationError, MissingDependency, NormalizationError,
+    DeserializationError, InstantiationError, MissingDependency, NormalizationError,
     SerdeError, SerializationError, SkipSerialization, ValidationError
 )
 from serde.fields import Field
@@ -149,13 +149,19 @@ def map_errors(error, model=None, field=None, value=None):
         e.add_context(value=value, field=field, model=model)
         raise
     except Exception as e:
-        raise error(str(e) or repr(e), cause=e, value=value, field=field, model=model)
+        raise error.from_exception(e, value=value, field=field, model=model)
 
 
 class Fields(OrderedDict):
     """
     An OrderedDict that allows value access with dot notation.
     """
+
+    def names(self):
+        """
+        Provides a view on Field names.
+        """
+        return [field.name for field in self.values()]
 
     def __getattr__(self, name):
         """
@@ -253,15 +259,16 @@ class Model(with_metaclass(ModelType, object)):
             setattr(self, name, kwargs.pop(name, None))
 
         if kwargs:
-            raise SerdeError(
+            raise InstantiationError(
                 'invalid keyword argument{} {}'.format(
                     '' if len(kwargs.keys()) == 1 else 's',
                     ', '.join('{!r}'.format(k) for k in kwargs.keys())
                 )
             )
 
-        self.normalize_all()
-        self.validate_all()
+        with map_errors(InstantiationError):
+            self.normalize_all()
+            self.validate_all()
 
     def __eq__(self, other):
         """
@@ -329,20 +336,12 @@ class Model(with_metaclass(ModelType, object)):
         This is called by the Model constructor and on deserialization, so this
         is only needed if you modify attributes directly and want to renormalize
         the Model.
-
-        Normalization errors are ignored by default.
         """
         for name, field in self._fields.items():
-            try:
-                setattr(self, name, self._normalize_field(field, getattr(self, name)))
-            except NormalizationError:
-                pass
+            setattr(self, name, self._normalize_field(field, getattr(self, name)))
 
-        try:
-            with map_errors(NormalizationError, model=self.__class__):
-                self.normalize()
-        except NormalizationError:
-            pass
+        with map_errors(NormalizationError, model=self.__class__):
+            self.normalize()
 
     def validate_all(self):
         """
@@ -396,14 +395,14 @@ class Model(with_metaclass(ModelType, object)):
             ...     dogs_name = fields.Optional(fields.Str)
             ...
             ...     def validate(self):
-            ...         msg = 'No one is a cat *and* a dog person!'
+            ...         msg = 'No one has both!'
             ...         assert not (self.cats_name and self.dogs_name), msg
             ...
 
             >>> owner = Owner(cats_name='Luna', dogs_name='Max')
             Traceback (most recent call last):
                 ...
-            serde.exceptions.ValidationError: No one is a cat *and* a dog person!
+            serde.exceptions.InstantiationError: No one has both!
         """
         pass
 
@@ -411,8 +410,6 @@ class Model(with_metaclass(ModelType, object)):
     def from_dict(cls, d, strict=True):
         """
         Convert a dictionary to an instance of this Model.
-
-        The given dictionary will be consumed by this operation.
 
         Args:
             d (dict): a serialized version of this Model.
@@ -432,21 +429,25 @@ class Model(with_metaclass(ModelType, object)):
             value = None
 
             if field.name in d:
-                value = self._deserialize_field(field, d.pop(field.name))
+                value = self._deserialize_field(field, d.get(field.name))
 
             setattr(self, name, value)
 
-        if strict and d:
-            raise DeserializationError(
-                'unknown dictionary key{} {}'.format(
-                    '' if len(d.keys()) == 1 else 's',
-                    ', '.join('{!r}'.format(k) for k in d.keys())
-                ),
-                model=cls
-            )
+        if strict:
+            allowed = cls._fields.names()
+            unknown = [key for key in d.keys() if key not in allowed]
 
-        self.normalize_all()
-        self.validate_all()
+            if unknown:
+                raise DeserializationError(
+                    'unknown dictionary key{} {}'.format(
+                        '' if len(unknown) == 1 else 's',
+                        ', '.join('{!r}'.format(k) for k in unknown)
+                    )
+                )
+
+        with map_errors(DeserializationError):
+            self.normalize_all()
+            self.validate_all()
 
         return self
 
