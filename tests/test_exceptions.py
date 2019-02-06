@@ -91,8 +91,8 @@ class TestSerdeError:
 
     def test__pretty_context_generic_exception(self):
         # Test that cause can also work with a generic exception.
-        context = SerdeError.Context(cause=ValueError('test'), value=None, field=None, model=None)
-        assert SerdeError._pretty_context(context) == "    Due to => ValueError('test')"
+        context = SerdeError.Context(cause=ValueError(), value=None, field=None, model=None)
+        assert SerdeError._pretty_context(context) == "    Due to => ValueError()"
 
     def test__pretty_context_long_value(self):
         # Test that a Context object is correctly pretty formatted.
