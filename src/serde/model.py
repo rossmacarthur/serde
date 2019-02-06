@@ -395,14 +395,14 @@ class Model(with_metaclass(ModelType, object)):
             ...     dogs_name = fields.Optional(fields.Str)
             ...
             ...     def validate(self):
-            ...         msg = 'No one is a cat *and* a dog person!'
+            ...         msg = 'No one has both!'
             ...         assert not (self.cats_name and self.dogs_name), msg
             ...
 
             >>> owner = Owner(cats_name='Luna', dogs_name='Max')
             Traceback (most recent call last):
                 ...
-            serde.exceptions.ValidationError: No one is a cat *and* a dog person!
+            serde.exceptions.InstantiationError: No one has both!
         """
         pass
 

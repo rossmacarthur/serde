@@ -6,6 +6,7 @@ from collections import namedtuple
 
 
 __all__ = [
+    'ContextError',
     'DeserializationError',
     'InstantiationError',
     'NormalizationError',
@@ -66,9 +67,34 @@ class MissingDependency(BaseSerdeError):
     """
 
 
+class ContextError(BaseSerdeError):
+    """
+    Raised when Models or Fields are used in the wrong context.
+    """
+
+
 class SerdeError(BaseSerdeError):
     """
-    Raised when serializing, deserializing, or validating Models fails.
+    Raised when any Model stage fails.
+
+    ::
+
+        >>> try:
+        ...     class User(Model):
+        ...         age = fields.Int(validators=[validate.between(0, 100)])
+        ...
+        ...     User.from_dict({'age': -1})
+        ... except SerdeError as e:
+        ...     error = e
+        ...
+        >>> error.cause
+        <serde.exceptions.ValidationError: expected at least 0 but got -1>
+        >>> error.value
+        -1
+        >>> error.field.name
+        'age'
+        >>> error.model.__name__
+        'User'
     """
 
     Context = namedtuple('Context', 'cause value field model')
@@ -223,28 +249,49 @@ class SerdeError(BaseSerdeError):
 class SerializationError(SerdeError):
     """
     Raised when field serialization fails.
+
+    This would be experienced when calling a serialization method like
+    `Model.to_dict() <serde.model.Model.to_dict()>`.
     """
 
 
 class DeserializationError(SerdeError):
     """
     Raised when field deserialization fails.
+
+    This would be experienced when calling a deserialization method like
+    `Model.from_dict() <serde.model.Model.from_dict()>`.
     """
 
 
 class InstantiationError(SerdeError):
     """
     Raised when field instantiation fails.
+
+    This would be experienced when instantiating a Model using
+    `Model.__init__() <serde.model.Model.__init__()>`.
     """
 
 
 class NormalizationError(SerdeError):
     """
     Raised when field normalization fails.
+
+    This would be experienced when normalizing a Model using
+    `Model.normalize_all() <serde.model.Model.normalize_all()>`. However, since
+    this method is automatically called when deserializing or instantiating a
+    Model you would not typically catch this exception because it would be
+    converted to an `InstantiationError` or `DeserializationError`.
     """
 
 
 class ValidationError(SerdeError):
     """
     Raised when field validation fails.
+
+    This would be experienced when validating a Model using
+    `Model.validate_all() <serde.model.Model.normalize_all()>`. However, since
+    this method is automatically called when deserializing or instantiating a
+    Model you would not typically catch this exception because it would be
+    converted to an `InstantiationError` or `DeserializationError`.
     """

@@ -31,7 +31,7 @@ default operations.
     >>> Person.from_dict({'name': 'Beyonce', 'fave_number': 4})
     Traceback (most recent call last):
     ...
-    serde.exceptions.ValidationError: value is not odd!
+    serde.exceptions.DeserializationError: value is not odd!
 
 The `create()` method can be used to generate a new Field class from arbitrary
 functions without having to manually subclass a Field. For example if we wanted
@@ -55,7 +55,7 @@ import uuid
 import isodate
 
 from serde import validate
-from serde.exceptions import SerdeError, SkipSerialization, ValidationError
+from serde.exceptions import ContextError, SerdeError, SkipSerialization, ValidationError
 from serde.utils import try_import_all, zip_equal
 
 
@@ -204,11 +204,11 @@ class Field(object):
         Set a named attribute on a Field.
 
         Raises:
-            `~serde.exceptions.SerdeError`: when the _name attribute is set
+            `~serde.exceptions.ContextError: when the _name attribute is set
                 after it has already been set.
         """
         if name == '_name' and hasattr(self, '_name'):
-            raise SerdeError('Field instance used multiple times')
+            raise ContextError('Field instance used multiple times')
 
         super(Field, self).__setattr__(name, value)
 
@@ -753,12 +753,12 @@ class Dict(Instance):
         >>> Example({'pi': '3.1415927'})
         Traceback (most recent call last):
             ...
-        serde.exceptions.ValidationError: expected 'float' but got 'str'
+        serde.exceptions.InstantiationError: expected 'float' but got 'str'
 
         >>> Example.from_dict({'constants': {100: 3.1415927}})
         Traceback (most recent call last):
             ...
-        serde.exceptions.ValidationError: expected 'str' but got 'int'
+        serde.exceptions.DeserializationError: expected 'str' but got 'int'
     """
 
     def __init__(self, key=None, value=None, **kwargs):
@@ -865,12 +865,12 @@ class List(Instance):
         >>> User(emails=1234)
         Traceback (most recent call last):
             ...
-        serde.exceptions.ValidationError: expected 'list' but got 'int'
+        serde.exceptions.InstantiationError: 'int' object is not iterable
 
         >>> User.from_dict({'emails': [1234]})
         Traceback (most recent call last):
             ...
-        serde.exceptions.ValidationError: expected 'str' but got 'int'
+        serde.exceptions.DeserializationError: expected 'str' but got 'int'
     """
 
     def __init__(self, element=None, **kwargs):
@@ -978,12 +978,12 @@ class Tuple(Instance):
         >>> Person('Beyonce', birthday=(4, 'September'))
         Traceback (most recent call last):
             ...
-        serde.exceptions.ValidationError: iterables have different lengths
+        serde.exceptions.InstantiationError: iterables have different lengths
 
         >>> Person.from_dict({'name': 'Beyonce', 'birthday': (4, 9, 1994)})
         Traceback (most recent call last):
             ...
-        serde.exceptions.ValidationError: expected 'str' but got 'int'
+        serde.exceptions.DeserializationError: expected 'str' but got 'int'
     """
 
     def __init__(self, *elements, **kwargs):
@@ -1124,7 +1124,7 @@ class Choice(Field):
         >>> Car('yellow')
         Traceback (most recent call last):
         ...
-        serde.exceptions.ValidationError: 'yellow' is not a valid choice
+        serde.exceptions.InstantiationError: 'yellow' is not a valid choice
     """
 
     def __init__(self, choices, **kwargs):
@@ -1284,7 +1284,7 @@ class Uuid(Instance):
         >>> User('not a uuid')
         Traceback (most recent call last):
         ...
-        serde.exceptions.ValidationError: expected 'UUID' but got 'str'
+        serde.exceptions.InstantiationError: expected 'UUID' but got 'str'
     """
 
     def __init__(self, **kwargs):
