@@ -92,7 +92,7 @@ class TestSerdeError:
     def test__pretty_context_generic_exception(self):
         # Test that cause can also work with a generic exception.
         context = SerdeError.Context(cause=ValueError(), value=None, field=None, model=None)
-        assert SerdeError._pretty_context(context) == "    Due to => ValueError()"
+        assert SerdeError._pretty_context(context) == '    Due to => ValueError()'
 
     def test__pretty_context_long_value(self):
         # Test that a Context object is correctly pretty formatted.
@@ -104,8 +104,7 @@ class TestSerdeError:
         # Test a better use case for the pretty formatted error.
 
         class SubExample(Model):
-            a = fields.Int()
-            b = fields.Str(validators=[validate.length_between(0, 5)])
+            a = fields.Str(validators=[validate.length_between(0, 5)])
 
         class Example(Model):
             sub = fields.Nested(SubExample)
@@ -113,17 +112,16 @@ class TestSerdeError:
         try:
             Example.from_dict({
                 'sub': {
-                    'a': 5,
-                    'b': 'testing'
+                    'a': 'testing'
                 }
             })
             assert False
         except DeserializationError as e:
             assert e.pretty() == (
                 'DeserializationError: expected at most 5 but got 7\n'
-                "    Due to => value {'a': 5, 'b': 'testing'} for field 'sub' of type 'Nested' on model 'Example'\n"  # noqa: E501
+                "    Due to => value {'a': 'testing'} for field 'sub' of type 'Nested' on model 'Example'\n"  # noqa: E501
                 '    Due to => ValidationError: expected at most 5 but got 7\n'
-                "    Due to => value 'testing' for field 'b' of type 'Str' on model 'SubExample'"
+                "    Due to => value 'testing' for field 'a' of type 'Str' on model 'SubExample'"
             )
 
     def test_pretty_use_case_missing_keys(self):
@@ -146,8 +144,7 @@ class TestSerdeError:
         # Test another use case where there are extra dictionary keys.
 
         class SubExample(Model):
-            a = fields.Int()
-            b = fields.Str(validators=[validate.length_between(0, 5)])
+            pass
 
         class Example(Model):
             sub = fields.Nested(SubExample)
@@ -155,16 +152,14 @@ class TestSerdeError:
         try:
             Example.from_dict({
                 'sub': {
-                    'a': 5,
-                    'b': 'test',
-                    'c': 1234,
+                    'a': 5
                 }
             })
             assert False
         except DeserializationError as e:
             assert e.pretty() == (
-                "DeserializationError: unknown dictionary key 'c'\n"
-                "    Due to => value {'a': 5, 'b': 'test', 'c':...  for field 'sub' of type 'Nested' on model 'Example'"  # noqa: E501
+                "DeserializationError: unknown dictionary key 'a'\n"
+                "    Due to => value {'a': 5} for field 'sub' of type 'Nested' on model 'Example'"
             )
 
     def test_pretty_use_case_extra_keys_flat(self):
