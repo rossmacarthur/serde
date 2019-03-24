@@ -14,7 +14,7 @@ def py2_patch_str_with_basestring(f):
     return decorated_function
 
 
-def py3_only(f):
+def py3(f):
     def decorated_function(*args, **kwargs):
         if six.PY2:
             return
@@ -23,7 +23,7 @@ def py3_only(f):
     return decorated_function
 
 
-def py2_only(f):
+def py2(f):
     def decorated_function(*args, **kwargs):
         if six.PY3:
             return
