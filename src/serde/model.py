@@ -497,7 +497,7 @@ class Model(with_metaclass(ModelType, object)):
         return {k: v for k, v in d.items() if k != cls._meta.tag}
 
     @classmethod
-    def _transform_untagged_data(cls, d):
+    def _transform_untagged_data(cls, d, dict):
         """
         Transform the untagged content into tagged data.
         """
@@ -509,13 +509,15 @@ class Model(with_metaclass(ModelType, object)):
 
                 # Externally tagged submodel
                 if parent._meta.tag is True:
-                    d = {variant_name: d}
+                    d = dict([(variant_name, d)])
                 # Adjacently tagged submodel
                 elif parent._meta.content:
-                    d = {parent._meta.tag: variant_name, parent._meta.content: d}
+                    d = dict([(parent._meta.tag, variant_name), (parent._meta.content, d)])
                 # Internally tagged submodel
                 else:
-                    d = {parent._meta.tag: variant_name, **d}
+                    d_new = dict([(parent._meta.tag, variant_name)])
+                    d_new.update(d)
+                    d = d_new
 
             parent = parent._parent
 
@@ -698,7 +700,7 @@ class Model(with_metaclass(ModelType, object)):
             except SkipSerialization:
                 pass
 
-        d = self._transform_untagged_data(d)
+        d = self._transform_untagged_data(d, dict=dict)
 
         return d
 
