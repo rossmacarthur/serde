@@ -6,8 +6,13 @@ from pytest import raises
 
 from serde import Model, fields, validate
 from serde.exceptions import (
-    DeserializationError, InstantiationError, MissingDependency,
-    NormalizationError, SerdeError, SerializationError, ValidationError
+    DeserializationError,
+    InstantiationError,
+    MissingDependency,
+    NormalizationError,
+    SerdeError,
+    SerializationError,
+    ValidationError
 )
 from tests import py2_only, py3_only
 

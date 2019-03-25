@@ -6,12 +6,34 @@ from pytest import raises
 
 from serde import Model, validate
 from serde.exceptions import (
-    ContextError, DeserializationError, InstantiationError,
-    SerdeError, SkipSerialization, ValidationError
+    ContextError,
+    DeserializationError,
+    InstantiationError,
+    SerdeError,
+    SkipSerialization,
+    ValidationError
 )
 from serde.fields import (
-    Bool, Bytes, Choice, Complex, Date, DateTime, Dict, Field, Float, Instance, Int,
-    List, Nested, Optional, Str, Time, Tuple, Uuid, _resolve_to_field_instance, create
+    Bool,
+    Bytes,
+    Choice,
+    Complex,
+    Date,
+    DateTime,
+    Dict,
+    Field,
+    Float,
+    Instance,
+    Int,
+    List,
+    Nested,
+    Optional,
+    Str,
+    Time,
+    Tuple,
+    Uuid,
+    _resolve_to_field_instance,
+    create
 )
 
 
