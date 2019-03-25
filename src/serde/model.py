@@ -77,8 +77,14 @@ from functools import wraps
 from six import with_metaclass
 
 from serde.exceptions import (
-    DeserializationError, InstantiationError, MissingDependency, NormalizationError,
-    SerdeError, SerializationError, SkipSerialization, ValidationError
+    DeserializationError,
+    InstantiationError,
+    MissingDependency,
+    NormalizationError,
+    SerdeError,
+    SerializationError,
+    SkipSerialization,
+    ValidationError
 )
 from serde.fields import Field
 from serde.utils import dict_partition, try_import, zip_until_right
