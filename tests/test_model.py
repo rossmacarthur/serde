@@ -566,7 +566,7 @@ class TestModel:
             Example.from_dict({'nested': 'not the nested'})
 
     def test_from_dict_untagged_tagged(self):
-        # Check that untagged submodels work correctly.
+        # Check that untagged variants work correctly.
 
         class Example(Model):
             class Meta:
@@ -584,13 +584,13 @@ class TestModel:
         assert Example.from_dict({'a': 5, 'b': 1.0}) == SubExampleA(a=5, b=1.0)
         assert Example.from_dict({'a': 5, 'c': 1.0}) == SubExampleB(a=5, c=1.0)
 
-        # Deserializing untagged data from the submodel (not allowed)
+        # Deserializing untagged data from the variant (not allowed)
         with raises(DeserializationError):
             SubExampleA.from_dict({'a': 5})
         with raises(DeserializationError):
             SubExampleB.from_dict({'a': 5, 'b': 1.0})
 
-        # Deserializing untagged data from the submodel (allowed)
+        # Deserializing untagged data from the variant (allowed)
         assert SubExampleA.from_dict({'a': 5, 'b': 1.0}) == SubExampleA(a=5, b=1.0)
         assert SubExampleB.from_dict({'a': 5, 'c': 1.0}) == SubExampleB(a=5, c=1.0)
 
@@ -598,13 +598,13 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'b': 1.0})
 
-        # Edge case: abstract untagged submodel
+        # Edge case: abstract untagged variant
         Example._meta.abstract = True
         with raises(DeserializationError):
             Example.from_dict({'a': 5})
 
     def test_from_dict_externally_tagged(self):
-        # Check that externally tagged submodels work correctly.
+        # Check that externally tagged variants work correctly.
 
         class Example(Model):
             class Meta:
@@ -622,11 +622,11 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': 1.0})
 
-        # Deserializing tagged data from the submodel (not allowed)
+        # Deserializing tagged data from the variant (not allowed)
         with raises(DeserializationError):
             SubExample.from_dict({'SubExample': {'a': 5, 'b': 1.0}})
 
-        # Deserializing untagged data from the submodel (allowed)
+        # Deserializing untagged data from the variant (allowed)
         assert SubExample.from_dict({'a': 5, 'b': 1.0}) == SubExample(a=5, b=1.0)
 
         # Edge case: empty data no tag
@@ -639,7 +639,7 @@ class TestModel:
             Example.from_dict({'Example': {'a': 5}})
 
     def test_from_dict_internally_tagged(self):
-        # Check that internally tagged submodels work correctly.
+        # Check that internally tagged variants work correctly.
 
         class Example(Model):
             class Meta:
@@ -659,11 +659,11 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': 1.0})
 
-        # Deserializing tagged data from the submodel (not allowed)
+        # Deserializing tagged data from the variant (not allowed)
         with raises(DeserializationError):
             SubExample.from_dict({'kind': 'SubExample', 'a': 5, 'b': 1.0})
 
-        # Deserializing untagged data from the submodel (allowed)
+        # Deserializing untagged data from the variant (allowed)
         assert SubExample.from_dict({'a': 5, 'b': 1.0}) == SubExample(a=5, b=1.0)
 
         # Edge case: abstract externally tagged
@@ -672,7 +672,7 @@ class TestModel:
             Example.from_dict({'kind': 'Example', 'a': 5})
 
     def test_from_dict_adjacently_tagged(self):
-        # Check that adjacently tagged submodels work correctly.
+        # Check that adjacently tagged variants work correctly.
 
         class Example(Model):
             class Meta:
@@ -693,11 +693,11 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': 1.0})
 
-        # Deserializing tagged data from the submodel (not allowed)
+        # Deserializing tagged data from the variant (not allowed)
         with raises(DeserializationError):
             SubExample.from_dict({'kind': 'SubExample', 'data': {'a': 5, 'b': 1.0}})
 
-        # Deserializing untagged data from the submodel (allowed)
+        # Deserializing untagged data from the variant (allowed)
         assert SubExample.from_dict({'a': 5, 'b': 1.0}) == SubExample(a=5, b=1.0)
 
         # Edge case: if the tag is correct but there is no content field
@@ -899,7 +899,7 @@ class TestModel:
         assert Example(nested=NestedExample(a=5)).to_dict() == {'nested': {'a': 5}}
 
     def test_to_dict_untagged_tagged(self):
-        # Check that untagged submodels work correctly.
+        # Check that untagged variants work correctly.
 
         class Example(Model):
             class Meta:
@@ -912,11 +912,11 @@ class TestModel:
         # Serializing data from the parent
         assert Example(a=5).to_dict() == {'a': 5}
 
-        # Serializing data from the submodel
+        # Serializing data from the variant
         assert SubExample(a=5, b=1.0).to_dict() == {'a': 5, 'b': 1.0}
 
     def test_to_dict_externally_tagged(self):
-        # Check that externally tagged submodels work correctly.
+        # Check that externally tagged variants work correctly.
 
         class Example(Model):
             class Meta:
@@ -929,11 +929,11 @@ class TestModel:
         # Serializing data from the parent
         assert Example(a=5).to_dict() == {'Example': {'a': 5}}
 
-        # Serializing data from the submodel
+        # Serializing data from the variant
         assert SubExample(a=5, b=1.0).to_dict() == {'SubExample': {'a': 5, 'b': 1.0}}
 
     def test_to_dict_internally_tagged(self):
-        # Check that internally tagged submodels work correctly.
+        # Check that internally tagged variants work correctly.
 
         class Example(Model):
             class Meta:
@@ -946,11 +946,11 @@ class TestModel:
         # Serializing data from the parent
         # assert Example(a=5).to_dict() == {'kind': 'Example', 'a': 5}
 
-        # Serializing data from the submodel
+        # Serializing data from the variant
         assert SubExample(a=5, b=1.0).to_dict() == {'kind': 'SubExample', 'a': 5, 'b': 1.0}
 
     def test_to_dict_adjacently_tagged(self):
-        # Check that adjacently tagged submodels work correctly.
+        # Check that adjacently tagged variants work correctly.
 
         class Example(Model):
             class Meta:
@@ -964,7 +964,7 @@ class TestModel:
         # Serializing data from the parent
         assert Example(a=5).to_dict() == {'kind': 'Example', 'data': {'a': 5}}
 
-        # Serializing data from the submodel
+        # Serializing data from the variant
         expected = {'kind': 'SubExample', 'data': {'a': 5, 'b': 1.0}}
         assert SubExample(a=5, b=1.0).to_dict() == expected
 

@@ -191,7 +191,7 @@ class Meta(object):
     """
 
     @staticmethod
-    def default_tag_func(cls):
+    def default_tag_map(cls):
         return cls.__name__
 
     def __init__(self, **kwargs):
@@ -199,7 +199,7 @@ class Meta(object):
             'abstract': False,
             'tag': None,
             'content': None,
-            'tag_func': self.default_tag_func
+            'tag_map': self.default_tag_map
         }
 
         for name, default in defaults.items():
@@ -441,10 +441,10 @@ class Model(with_metaclass(ModelType, object)):
         """
         Returns a map of variant identifier to variant class.
         """
-        variants = {cls._meta.tag_func(c): c for c in cls._variants()}
+        variants = {cls._meta.tag_map(c): c for c in cls._variants()}
 
         if not cls._meta.abstract:
-            variants[cls._meta.tag_func(cls)] = cls
+            variants[cls._meta.tag_map(cls)] = cls
 
         return variants
 
@@ -453,13 +453,13 @@ class Model(with_metaclass(ModelType, object)):
         """
         Returns the name of the variant based on serialized data.
         """
-        # Externally tagged submodel
+        # Externally tagged variant
         if cls._meta.tag is True:
             try:
                 return next(iter(d))
             except StopIteration:
                 raise DeserializationError('expected externally tagged data')
-        # Internally/adjacently tagged submodel
+        # Internally/adjacently tagged variant
         try:
             return d[cls._meta.tag]
         except KeyError:
@@ -482,10 +482,10 @@ class Model(with_metaclass(ModelType, object)):
         """
         Transform the tagged content so that it can be deserialized.
         """
-        # Externally tagged submodel
+        # Externally tagged variant
         if cls._meta.tag is True:
             return d[variant_name]
-        # Adjacently tagged submodel
+        # Adjacently tagged variant
         elif cls._meta.content:
             try:
                 return d[cls._meta.content]
@@ -493,7 +493,7 @@ class Model(with_metaclass(ModelType, object)):
                 raise DeserializationError(
                     'expected adjacently tagged data under key {!r}'.format(cls._meta.content)
                 )
-        # Internally tagged submodel
+        # Internally tagged variant
         return {k: v for k, v in d.items() if k != cls._meta.tag}
 
     @classmethod
@@ -505,15 +505,15 @@ class Model(with_metaclass(ModelType, object)):
 
         while parent:
             if parent._meta.tag:
-                variant_name = cls._meta.tag_func(cls)
+                variant_name = cls._meta.tag_map(cls)
 
-                # Externally tagged submodel
+                # Externally tagged variant
                 if parent._meta.tag is True:
                     d = dict([(variant_name, d)])
-                # Adjacently tagged submodel
+                # Adjacently tagged variant
                 elif parent._meta.content:
                     d = dict([(parent._meta.tag, variant_name), (parent._meta.content, d)])
-                # Internally tagged submodel
+                # Internally tagged variant
                 else:
                     d_new = dict([(parent._meta.tag, variant_name)])
                     d_new.update(d)
@@ -565,7 +565,7 @@ class Model(with_metaclass(ModelType, object)):
         Returns:
             Model: an instance of this Model.
         """
-        # Externally/internally/adjacently tagged submodel
+        # Externally/internally/adjacently tagged variant
         if cls._meta.tag:
             variant_name = cls._tagged_variant_name(d)
             variant = cls._tagged_variant(variant_name)
@@ -573,7 +573,7 @@ class Model(with_metaclass(ModelType, object)):
 
             if variant != cls:
                 return variant.from_dict(d, strict=strict)
-        # Untagged submodel
+        # Untagged variant
         elif cls._meta.tag is False:
             if not cls._meta.abstract:
                 try:
