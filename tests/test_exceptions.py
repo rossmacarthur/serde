@@ -135,8 +135,8 @@ class TestSerdeError:
             assert False
         except DeserializationError as e:
             assert e.pretty() == (
-                'DeserializationError: None is not a valid Field value\n'
-                '    Due to => ValidationError: None is not a valid Field value\n'
+                'DeserializationError: Int value is not allowed to be None\n'
+                '    Due to => ValidationError: Int value is not allowed to be None\n'
                 "    Due to => for field 'a' of type 'Int' on model 'Example'"
             )
 

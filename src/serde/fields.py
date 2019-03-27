@@ -209,7 +209,9 @@ class Field(object):
                 after it has already been set.
         """
         if name == '_name' and hasattr(self, '_name'):
-            raise ContextError('Field instance used multiple times')
+            raise ContextError(
+                '{name} instance used multiple times'.format(name=self.__class__.__name__)
+            )
 
         super(Field, self).__setattr__(name, value)
 
@@ -296,7 +298,7 @@ class Field(object):
         try:
             name = self._name
         except AttributeError:
-            raise SerdeError('Field is not on a Model')
+            raise SerdeError('{name} is not on a Model'.format(name=self.__class__.__name__))
 
         if self.rename is not None:
             return self.rename
@@ -347,7 +349,9 @@ class Field(object):
             value: the value to validate.
         """
         if value is None:
-            raise ValidationError('None is not a valid Field value')
+            raise ValidationError(
+                '{name} value is not allowed to be None'.format(name=self.__class__.__name__)
+            )
 
 
 def _create_serialize(cls, serializers):
