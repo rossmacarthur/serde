@@ -1,4 +1,6 @@
 language: python
+cache: pip
+
 matrix:
   include:
     - python: 2.7
@@ -10,16 +12,21 @@ matrix:
     - python: pypy
     - python: pypy3
 
+before_script:
+  - pip install ci==0.1.0
+
 # command to install dependencies
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then make install-dev; else make install-plain; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then pip install codecov; fi
+  - ci --only 3.7 make install-dev
+  - ci --skip 3.7 make install-plain
+  - ci --only 3.7 pip install codecov
 
 # command to run tests
 script:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then make lint; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then make test-all; else make test; fi
+  - ci --only 3.7 make lint
+  - ci --only 3.7 make test-all
+  - ci --skip 3.7 make test
 
 # command to upload coverage
 after_success:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.7 ]]; then codecov; fi
+  - ci --only 3.7 codecov
