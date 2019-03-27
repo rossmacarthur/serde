@@ -18,6 +18,7 @@ from serde.fields import (
     Bytes,
     Choice,
     Complex,
+    Constant,
     Date,
     DateTime,
     Dict,
@@ -324,6 +325,41 @@ class TestNested:
 
         example = Nested(Example, strict=False)
         assert example.deserialize({'a': 0, 'b': 1}) == Example(a=0)
+
+
+class TestConstant:
+
+    def test___init___basic(self):
+        # Construct a basic Constant and check values are set correctly.
+        example = Constant(1)
+        assert example.value == 1
+        assert example.validators == []
+
+    def test___init___options(self):
+        # Construct a Constant with extra options and make sure values are
+        # passed to Field.
+        example = Constant(-1234, validators=[None])
+        assert example.value == -1234
+        assert example.validators == [None]
+
+    def test_normalize_none(self):
+        # Check that None values are normalized to the constant value.
+        example = Constant(123)
+        assert example.normalize(None) == 123
+
+    def test_normalize_something(self):
+        # Check that other values are normalized to themselves.
+        example = Constant(123)
+        other = object()
+        assert example.normalize(other) is other
+
+    def test_validate(self):
+        # Check that values must be equal to the constant value.
+        example = Constant(True)
+        example.validate(True)
+
+        with raises(ValidationError):
+            assert example.validate(False)
 
 
 class TestOptional:
