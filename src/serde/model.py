@@ -79,9 +79,9 @@ from six import with_metaclass
 from serde.exceptions import (
     DeserializationError,
     InstantiationError,
+    MetaError,
     MissingDependency,
     NormalizationError,
-    SerdeError,
     SerializationError,
     SkipSerialization,
     ValidationError
@@ -185,6 +185,35 @@ class Fields(OrderedDict):
             return super(Fields, self).__getattribute__(name)
 
 
+class Meta(object):
+    """
+    A Meta class for a Model that carries extra configuration.
+    """
+
+    @staticmethod
+    def default_tag_map(cls):
+        return cls.__name__
+
+    def __init__(self, **kwargs):
+        defaults = {
+            'abstract': False,
+            'tag': None,
+            'content': None,
+            'tag_map': self.default_tag_map
+        }
+
+        for name, default in defaults.items():
+            setattr(self, name, kwargs.pop(name, default))
+
+        if kwargs:
+            raise MetaError(
+                'invalid Meta field{} {}'.format(
+                    '' if len(kwargs.keys()) == 1 else 's',
+                    ', '.join('{!r}'.format(k) for k in kwargs.keys())
+                )
+            )
+
+
 class ModelType(type):
     """
     A metaclass for Models.
@@ -207,6 +236,15 @@ class ModelType(type):
         Returns:
             Model: a new Model class.
         """
+        # Handle the Meta class.
+        if 'Meta' in attrs:
+            meta = Meta(**{
+                k: v for k, v in attrs.pop('Meta').__dict__.items()
+                if not k.startswith('_')
+            })
+        else:
+            meta = Meta()
+
         def is_field(key, value):
             if isinstance(value, Field):
                 value._name = key
@@ -227,6 +265,13 @@ class ModelType(type):
         # Order the fields by the Field identifier. This gets the order that
         # they were defined on the Models. We add these to the Model.
         final_attrs['_fields'] = Fields(sorted(fields.items(), key=lambda x: x[1].id))
+        final_attrs['_meta'] = meta
+
+        # Figure out the parent.
+        if not (bases == (object,) and cname == 'Model'):
+            final_attrs['_parent'] = next(iter(b for b in bases if issubclass(b, Model)))
+        else:
+            final_attrs['_parent'] = None
 
         return super(ModelType, cls).__new__(cls, cname, bases, final_attrs)
 
@@ -246,17 +291,21 @@ class Model(with_metaclass(ModelType, object)):
                 Fields in the order the Fields are defined on the Model.
             **kwargs: keyword argument values for each Field on the Model.
         """
+        if self._meta.abstract:
+            raise InstantiationError(
+                'unable to instantiate abstract Model {!r}'.format(self.__class__.__name__)
+            )
+
         try:
             for name, value in zip_until_right(self._fields.keys(), args):
                 if name in kwargs:
-                    raise SerdeError(
+                    raise InstantiationError(
                         '__init__() got multiple values for keyword argument {!r}'
                         .format(name)
                     )
-
                 kwargs[name] = value
         except ValueError:
-            raise SerdeError(
+            raise InstantiationError(
                 '__init__() takes a maximum of {!r} positional arguments but {!r} were given'
                 .format(len(self._fields) + 1, len(args) + 1)
             )
@@ -367,23 +416,7 @@ class Model(with_metaclass(ModelType, object)):
         Normalize this Model.
 
         Override this method to add any additional normalization to the Model.
-        This will be called after each Field has been normalized.
-
-        ::
-
-            >>> class Fruit(Model):
-            ...     name = fields.Str()
-            ...     family = fields.Str()
-            ...
-            ...     def normalize(self):
-            ...         self.name = self.name.strip()
-            ...         self.family = self.family.strip()
-
-            >>> fruit = Fruit(name='Tangerine ', family=' Citrus fruit')
-            >>> fruit.name
-            'Tangerine'
-            >>> fruit.family
-            'Citrus fruit'
+        This will be called after all Fields have been normalized.
         """
         pass
 
@@ -392,51 +425,113 @@ class Model(with_metaclass(ModelType, object)):
         Validate this Model.
 
         Override this method to add any additional validation to the Model. This
-        will be called after each Field has been validated.
-
-        ::
-
-            >>> class Owner(Model):
-            ...     cats_name = fields.Optional(fields.Str)
-            ...     dogs_name = fields.Optional(fields.Str)
-            ...
-            ...     def validate(self):
-            ...         msg = 'No one has both!'
-            ...         assert not (self.cats_name and self.dogs_name), msg
-            ...
-
-            >>> owner = Owner(cats_name='Luna', dogs_name='Max')
-            Traceback (most recent call last):
-                ...
-            serde.exceptions.InstantiationError: No one has both!
+        will be called after all Fields have been validated.
         """
         pass
 
     @classmethod
-    def from_dict(cls, d, strict=True):
+    def _variants(cls):
+        """
+        Returns a list of variants of this Model.
+        """
+        return cls.__subclasses__()
+
+    @classmethod
+    def _variant_map(cls):
+        """
+        Returns a map of variant identifier to variant class.
+        """
+        variants = {cls._meta.tag_map(c): c for c in cls._variants()}
+
+        if not cls._meta.abstract:
+            variants[cls._meta.tag_map(cls)] = cls
+
+        return variants
+
+    @classmethod
+    def _tagged_variant_name(cls, d):
+        """
+        Returns the name of the variant based on serialized data.
+        """
+        # Externally tagged variant
+        if cls._meta.tag is True:
+            try:
+                return next(iter(d))
+            except StopIteration:
+                raise DeserializationError('expected externally tagged data')
+        # Internally/adjacently tagged variant
+        try:
+            return d[cls._meta.tag]
+        except KeyError:
+            raise DeserializationError('expected tag {!r}'.format(cls._meta.tag))
+
+    @classmethod
+    def _tagged_variant(cls, variant_name):
+        """
+        Returns the variant class corresponding to the given name.
+        """
+        try:
+            return cls._variant_map()[variant_name]
+        except KeyError:
+            raise DeserializationError(
+                'no variant found for tag {!r}'.format(variant_name)
+            )
+
+    @classmethod
+    def _transform_tagged_data(cls, d, variant_name):
+        """
+        Transform the tagged content so that it can be deserialized.
+        """
+        # Externally tagged variant
+        if cls._meta.tag is True:
+            return d[variant_name]
+        # Adjacently tagged variant
+        elif cls._meta.content:
+            try:
+                return d[cls._meta.content]
+            except KeyError:
+                raise DeserializationError(
+                    'expected adjacently tagged data under key {!r}'.format(cls._meta.content)
+                )
+        # Internally tagged variant
+        return {k: v for k, v in d.items() if k != cls._meta.tag}
+
+    @classmethod
+    def _transform_untagged_data(cls, d, dict):
+        """
+        Transform the untagged content into tagged data.
+        """
+        parent = cls
+
+        while parent:
+            if parent._meta.tag:
+                variant_name = cls._meta.tag_map(cls)
+
+                # Externally tagged variant
+                if parent._meta.tag is True:
+                    d = dict([(variant_name, d)])
+                # Adjacently tagged variant
+                elif parent._meta.content:
+                    d = dict([(parent._meta.tag, variant_name), (parent._meta.content, d)])
+                # Internally tagged variant
+                else:
+                    d_new = dict([(parent._meta.tag, variant_name)])
+                    d_new.update(d)
+                    d = d_new
+
+            parent = parent._parent
+
+        return d
+
+    @classmethod
+    def _from_dict(cls, d, strict=True):
         """
         Convert a dictionary to an instance of this Model.
-
-        Args:
-            d (dict): a serialized version of this Model.
-            strict (bool): if set to False then no exception will be raised when
-                unknown dictionary keys are present.
-
-        Returns:
-            Model: an instance of this Model.
-
-        Raises:
-            `~serde.exceptions.DeserializationError`: when a Field value can not
-                be deserialized or there are unknown dictionary keys.
         """
         self = cls.__new__(cls)
 
         for name, field in cls._fields.items():
-            value = None
-
-            if field.name in d:
-                value = self._deserialize_field(field, d.get(field.name))
-
+            value = self._deserialize_field(field, d[field.name]) if field.name in d else None
             setattr(self, name, value)
 
         if strict:
@@ -456,6 +551,46 @@ class Model(with_metaclass(ModelType, object)):
             self.validate_all()
 
         return self
+
+    @classmethod
+    def from_dict(cls, d, strict=True):
+        """
+        Convert a dictionary to an instance of this Model.
+
+        Args:
+            d (dict): a serialized version of this Model.
+            strict (bool): if set to False then no exception will be raised when
+                unknown dictionary keys are present.
+
+        Returns:
+            Model: an instance of this Model.
+        """
+        # Externally/internally/adjacently tagged variant
+        if cls._meta.tag:
+            variant_name = cls._tagged_variant_name(d)
+            variant = cls._tagged_variant(variant_name)
+            d = cls._transform_tagged_data(d, variant_name)
+
+            if variant != cls:
+                return variant.from_dict(d, strict=strict)
+        # Untagged variant
+        elif cls._meta.tag is False:
+            if not cls._meta.abstract:
+                try:
+                    return cls._from_dict(d, strict=strict)
+                except DeserializationError:
+                    pass
+
+            # Try each variant in turn until one succeeds
+            for variant in cls._variants():
+                try:
+                    return variant.from_dict(d, strict=strict)
+                except DeserializationError:
+                    pass
+
+            raise DeserializationError('no variant succeeded deserialization')
+
+        return cls._from_dict(d, strict=strict)
 
     @classmethod
     @requires_module('cbor', package='cbor2')
@@ -553,23 +688,21 @@ class Model(with_metaclass(ModelType, object)):
 
         Returns:
             dict: the Model serialized as a dictionary.
-
-        Raises:
-            `~serde.exceptions.SerializationError`: when a Field value cannot be
-                serialized.
         """
         if dict is None:
             dict = OrderedDict
 
-        result = dict()
+        d = dict()
 
         for name, field in self._fields.items():
             try:
-                result[field.name] = self._serialize_field(field, getattr(self, name))
+                d[field.name] = self._serialize_field(field, getattr(self, name))
             except SkipSerialization:
                 pass
 
-        return result
+        d = self._transform_untagged_data(d, dict=dict)
+
+        return d
 
     @requires_module('cbor', package='cbor2')
     def to_cbor(self, dict=None, **kwargs):

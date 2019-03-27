@@ -4,17 +4,19 @@ from collections import OrderedDict
 import mock
 from pytest import raises
 
+import serde.model
 from serde import Model, fields, validate
 from serde.exceptions import (
     DeserializationError,
     InstantiationError,
+    MetaError,
     MissingDependency,
     NormalizationError,
     SerdeError,
     SerializationError,
     ValidationError
 )
-from tests import py2_only, py3_only
+from tests import py2, py3
 
 
 class TestModel:
@@ -118,6 +120,24 @@ class TestModel:
         assert isinstance(Example2._fields.a, fields.Int)
         assert Example2().a == 5
 
+    def test___new___meta_class(self):
+        # Check that a basic Model Meta class works.
+
+        class Example(Model):
+            class Meta:
+                tag = 'kind'
+
+        assert isinstance(Example._meta, serde.model.Meta)
+        assert Example._meta.tag == 'kind'
+
+    def test___new___meta_class_bad(self):
+        # Check that you can't supply unknown fields for the Meta class.
+
+        with raises(MetaError):
+            class Example(Model):
+                class Meta:
+                    test = 5
+
     def test___init___empty(self):
         # An empty Model with no Fields should work just fine.
 
@@ -126,10 +146,10 @@ class TestModel:
 
         assert Example().__dict__ == {}
 
-        with raises(SerdeError):
+        with raises(InstantiationError):
             Example(a=None)
 
-        with raises(SerdeError):
+        with raises(InstantiationError):
             Example(a=None)
 
     def test___init___normal(self):
@@ -140,7 +160,17 @@ class TestModel:
 
         assert Example(a=5).a == 5
 
-        with raises(SerdeError):
+        with raises(InstantiationError):
+            Example()
+
+    def test___init___abstract(self):
+        # Check that you can't instantiate an abstract Model.
+
+        class Example(Model):
+            class Meta:
+                abstract = True
+
+        with raises(InstantiationError):
             Example()
 
     def test___init___optional(self):
@@ -230,15 +260,15 @@ class TestModel:
     def test___init___nested(self):
         # Check that nested Model construction works.
 
-        class SubExample(Model):
+        class NestedExample(Model):
             a = fields.Int()
 
         class Example(Model):
-            sub = fields.Nested(SubExample)
+            nested = fields.Nested(NestedExample)
 
-        example = Example(sub=SubExample(a=5))
-        assert example.sub == SubExample(a=5)
-        assert example.sub.a == 5
+        example = Example(nested=NestedExample(a=5))
+        assert example.nested == NestedExample(a=5)
+        assert example.nested.a == 5
 
     def test___eq__(self):
         # Check that the Model equals method works.
@@ -250,6 +280,21 @@ class TestModel:
         assert Example(a=5) != Example(a=6)
         assert Example(a=5) != Example(a=6, b=True)
         assert Example(a=5) == Example(a=5)
+
+    def test___eq___subclass(self):
+        # Check that the Model equals method works with subclasses.
+
+        class Example(Model):
+            a = fields.Int()
+            b = fields.Optional(fields.Bool)
+
+        class SubExample(Example):
+            pass
+
+        assert SubExample(a=5, b=True) != Example(a=5, b=True)
+        assert Example(a=5, b=True) != SubExample(a=5, b=True)
+        assert Example(a=5, b=True) == Example(a=5, b=True)
+        assert SubExample(a=5, b=True) == SubExample(a=5, b=True)
 
     def test___hash___basic(self):
         # Check that a basic Model hash works.
@@ -263,14 +308,14 @@ class TestModel:
     def test___hash___nested(self):
         # Check that a nested Model hash works.
 
-        class SubExample(Model):
+        class NestedExample(Model):
             a = fields.Int()
 
         class Example(Model):
-            sub = fields.Nested(SubExample)
+            nested = fields.Nested(NestedExample)
 
-        assert hash(Example(SubExample(5))) == hash(Example(sub=SubExample(a=5)))
-        assert hash(Example(SubExample(5))) != hash(Example(sub=SubExample(a=4)))
+        assert hash(Example(NestedExample(5))) == hash(Example(nested=NestedExample(a=5)))
+        assert hash(Example(NestedExample(5))) != hash(Example(nested=NestedExample(a=4)))
 
     def test___repr___basic(self):
         # Check that a basic Model __repr__ works.
@@ -284,13 +329,13 @@ class TestModel:
     def test___repr___nested(self):
         # Check that a nested Model __repr__ works.
 
-        class SubExample(Model):
+        class NestedExample(Model):
             a = fields.Int()
 
         class Example(Model):
-            sub = fields.Nested(SubExample)
+            nested = fields.Nested(NestedExample)
 
-        assert repr(Example(sub=SubExample(a=5))) == 'Example(sub=SubExample(a=5))'
+        assert repr(Example(nested=NestedExample(a=5))) == 'Example(nested=NestedExample(a=5))'
 
     def test_normalize_all_good(self):
         # normalize_all() should renormalize the Model so that if we have
@@ -389,15 +434,67 @@ class TestModel:
     def test_from_dict_consumed(self):
         # Check that a dictionary is left untouched during deserialization.
 
-        class SubExample(Model):
+        class NestedExample(Model):
             a = fields.Int()
 
         class Example(Model):
-            sub = fields.Nested(SubExample)
+            nested = fields.Nested(NestedExample)
 
-        d = {'sub': {'a': 5}}
+        d = {'nested': {'a': 5}}
         Example.from_dict(d)
-        assert d == {'sub': {'a': 5}}
+        assert d == {'nested': {'a': 5}}
+
+    def test_from_dict_consumed_externally_tagged(self):
+        # Check that a dictionary is left untouched during deserialization of an
+        # externally tagged Model.
+
+        class NestedExample(Model):
+            a = fields.Int()
+
+        class Example(Model):
+            class Meta:
+                tag = True
+
+            nested = fields.Nested(NestedExample)
+
+        d = {'Example': {'nested': {'a': 5}}}
+        Example.from_dict(d)
+        assert d == {'Example': {'nested': {'a': 5}}}
+
+    def test_from_dict_consumed_internally_tagged(self):
+        # Check that a dictionary is left untouched during deserialization of an
+        # internally tagged Model.
+
+        class NestedExample(Model):
+            a = fields.Int()
+
+        class Example(Model):
+            class Meta:
+                tag = 'kind'
+
+            nested = fields.Nested(NestedExample)
+
+        d = {'kind': 'Example', 'nested': {'a': 5}}
+        Example.from_dict(d)
+        assert d == {'kind': 'Example', 'nested': {'a': 5}}
+
+    def test_from_dict_consumed_adjacently_tagged(self):
+        # Check that a dictionary is left untouched during deserialization of an
+        # adjacently tagged Model.
+
+        class NestedExample(Model):
+            a = fields.Int()
+
+        class Example(Model):
+            class Meta:
+                tag = 'kind'
+                content = 'data'
+
+            nested = fields.Nested(NestedExample)
+
+        d = {'kind': 'Example', 'data': {'nested': {'a': 5}}}
+        Example.from_dict(d)
+        assert d == {'kind': 'Example', 'data': {'nested': {'a': 5}}}
 
     def test_from_dict_required(self):
         # Check that required Fields have to be present when deserializing.
@@ -457,16 +554,160 @@ class TestModel:
     def test_from_dict_nested(self):
         # Check that nested Models are parsed correctly.
 
-        class SubExample(Model):
+        class NestedExample(Model):
             a = fields.Int()
 
         class Example(Model):
-            sub = fields.Nested(SubExample)
+            nested = fields.Nested(NestedExample)
 
-        assert Example.from_dict({'sub': {'a': 5}}) == Example(sub=SubExample(a=5))
+        assert Example.from_dict({'nested': {'a': 5}}) == Example(nested=NestedExample(a=5))
 
         with raises(DeserializationError):
-            Example.from_dict({'sub': 'not the nested'})
+            Example.from_dict({'nested': 'not the nested'})
+
+    def test_from_dict_untagged_tagged(self):
+        # Check that untagged variants work correctly.
+
+        class Example(Model):
+            class Meta:
+                tag = False
+            a = fields.Int()
+
+        class SubExampleA(Example):
+            b = fields.Float()
+
+        class SubExampleB(Example):
+            c = fields.Float()
+
+        # Deserializing untagged data from the parent (allowed)
+        assert Example.from_dict({'a': 5}) == Example(a=5)
+        assert Example.from_dict({'a': 5, 'b': 1.0}) == SubExampleA(a=5, b=1.0)
+        assert Example.from_dict({'a': 5, 'c': 1.0}) == SubExampleB(a=5, c=1.0)
+
+        # Deserializing untagged data from the variant (not allowed)
+        with raises(DeserializationError):
+            SubExampleA.from_dict({'a': 5})
+        with raises(DeserializationError):
+            SubExampleB.from_dict({'a': 5, 'b': 1.0})
+
+        # Deserializing untagged data from the variant (allowed)
+        assert SubExampleA.from_dict({'a': 5, 'b': 1.0}) == SubExampleA(a=5, b=1.0)
+        assert SubExampleB.from_dict({'a': 5, 'c': 1.0}) == SubExampleB(a=5, c=1.0)
+
+        # Edge case: bad data, all variants tried
+        with raises(DeserializationError):
+            Example.from_dict({'b': 1.0})
+
+        # Edge case: abstract untagged variant
+        Example._meta.abstract = True
+        with raises(DeserializationError):
+            Example.from_dict({'a': 5})
+
+    def test_from_dict_externally_tagged(self):
+        # Check that externally tagged variants work correctly.
+
+        class Example(Model):
+            class Meta:
+                tag = True
+            a = fields.Int()
+
+        class SubExample(Example):
+            b = fields.Float()
+
+        # Deserializing tagged data from the parent (allowed)
+        assert Example.from_dict({'Example': {'a': 5}}) == Example(a=5)
+        assert Example.from_dict({'SubExample': {'a': 5, 'b': 1.0}}) == SubExample(a=5, b=1.0)
+
+        # Deserializing untagged data from the parent (not allowed)
+        with raises(DeserializationError):
+            Example.from_dict({'a': 5, 'b': 1.0})
+
+        # Deserializing tagged data from the variant (not allowed)
+        with raises(DeserializationError):
+            SubExample.from_dict({'SubExample': {'a': 5, 'b': 1.0}})
+
+        # Deserializing untagged data from the variant (allowed)
+        assert SubExample.from_dict({'a': 5, 'b': 1.0}) == SubExample(a=5, b=1.0)
+
+        # Edge case: empty data no tag
+        with raises(DeserializationError):
+            Example.from_dict({})
+
+        # Edge case: abstract externally tagged
+        Example._meta.abstract = True
+        with raises(DeserializationError):
+            Example.from_dict({'Example': {'a': 5}})
+
+    def test_from_dict_internally_tagged(self):
+        # Check that internally tagged variants work correctly.
+
+        class Example(Model):
+            class Meta:
+                tag = 'kind'
+            a = fields.Int()
+
+        class SubExample(Example):
+            b = fields.Float()
+
+        # Deserializing tagged data from the parent (allowed)
+        serialized = {'kind': 'Example', 'a': 5}
+        assert Example.from_dict(serialized) == Example(a=5)
+        serialized = {'kind': 'SubExample', 'a': 5, 'b': 1.0}
+        assert Example.from_dict(serialized) == SubExample(a=5, b=1.0)
+
+        # Deserializing untagged data from the parent (not allowed)
+        with raises(DeserializationError):
+            Example.from_dict({'a': 5, 'b': 1.0})
+
+        # Deserializing tagged data from the variant (not allowed)
+        with raises(DeserializationError):
+            SubExample.from_dict({'kind': 'SubExample', 'a': 5, 'b': 1.0})
+
+        # Deserializing untagged data from the variant (allowed)
+        assert SubExample.from_dict({'a': 5, 'b': 1.0}) == SubExample(a=5, b=1.0)
+
+        # Edge case: abstract externally tagged
+        Example._meta.abstract = True
+        with raises(DeserializationError):
+            Example.from_dict({'kind': 'Example', 'a': 5})
+
+    def test_from_dict_adjacently_tagged(self):
+        # Check that adjacently tagged variants work correctly.
+
+        class Example(Model):
+            class Meta:
+                tag = 'kind'
+                content = 'data'
+            a = fields.Int()
+
+        class SubExample(Example):
+            b = fields.Float()
+
+        # Deserializing tagged data from the parent (allowed)
+        serialized = {'kind': 'Example', 'data': {'a': 5}}
+        assert Example.from_dict(serialized) == Example(a=5)
+        serialized = {'kind': 'SubExample', 'data': {'a': 5, 'b': 1.0}}
+        assert Example.from_dict(serialized) == SubExample(a=5, b=1.0)
+
+        # Deserializing untagged data from the parent (not allowed)
+        with raises(DeserializationError):
+            Example.from_dict({'a': 5, 'b': 1.0})
+
+        # Deserializing tagged data from the variant (not allowed)
+        with raises(DeserializationError):
+            SubExample.from_dict({'kind': 'SubExample', 'data': {'a': 5, 'b': 1.0}})
+
+        # Deserializing untagged data from the variant (allowed)
+        assert SubExample.from_dict({'a': 5, 'b': 1.0}) == SubExample(a=5, b=1.0)
+
+        # Edge case: if the tag is correct but there is no content field
+        with raises(DeserializationError):
+            Example.from_dict({'kind': 'SubExample', 'content': {'a': 5, 'b': 1.0}})
+
+        # Edge case: abstract adjacently tagged
+        Example._meta.abstract = True
+        with raises(DeserializationError):
+            Example.from_dict({'kind': 'Example', 'data': {'a': 5}})
 
     def test_from_dict_errors(self):
         # Check that all exceptions are mapped to DeserializationErrors.
@@ -560,7 +801,7 @@ class TestModel:
 
         assert Example.from_json('{"a": 5}', object_hook=OrderedDict) == Example(a=5)
 
-    @py3_only
+    @py3
     def test_from_pickle(self):
         # Check that you can deserialize from Pickle.
 
@@ -569,7 +810,7 @@ class TestModel:
 
         assert Example.from_pickle(b'\x80\x03}q\x00X\x01\x00\x00\x00aq\x01K\x05s.') == Example(a=5)
 
-    @py2_only
+    @py2
     def test_from_pickle_py2(self):
         # Check that you can deserialize from Pickle.
 
@@ -649,13 +890,83 @@ class TestModel:
     def test_to_dict_nested(self):
         # Check that nested Models are serialized correctly.
 
-        class SubExample(Model):
+        class NestedExample(Model):
             a = fields.Int()
 
         class Example(Model):
-            sub = fields.Nested(SubExample)
+            nested = fields.Nested(NestedExample)
 
-        assert Example(sub=SubExample(a=5)).to_dict() == {'sub': {'a': 5}}
+        assert Example(nested=NestedExample(a=5)).to_dict() == {'nested': {'a': 5}}
+
+    def test_to_dict_untagged_tagged(self):
+        # Check that untagged variants work correctly.
+
+        class Example(Model):
+            class Meta:
+                tag = False
+            a = fields.Int()
+
+        class SubExample(Example):
+            b = fields.Float()
+
+        # Serializing data from the parent
+        assert Example(a=5).to_dict() == {'a': 5}
+
+        # Serializing data from the variant
+        assert SubExample(a=5, b=1.0).to_dict() == {'a': 5, 'b': 1.0}
+
+    def test_to_dict_externally_tagged(self):
+        # Check that externally tagged variants work correctly.
+
+        class Example(Model):
+            class Meta:
+                tag = True
+            a = fields.Int()
+
+        class SubExample(Example):
+            b = fields.Float()
+
+        # Serializing data from the parent
+        assert Example(a=5).to_dict() == {'Example': {'a': 5}}
+
+        # Serializing data from the variant
+        assert SubExample(a=5, b=1.0).to_dict() == {'SubExample': {'a': 5, 'b': 1.0}}
+
+    def test_to_dict_internally_tagged(self):
+        # Check that internally tagged variants work correctly.
+
+        class Example(Model):
+            class Meta:
+                tag = 'kind'
+            a = fields.Int()
+
+        class SubExample(Example):
+            b = fields.Float()
+
+        # Serializing data from the parent
+        # assert Example(a=5).to_dict() == {'kind': 'Example', 'a': 5}
+
+        # Serializing data from the variant
+        assert SubExample(a=5, b=1.0).to_dict() == {'kind': 'SubExample', 'a': 5, 'b': 1.0}
+
+    def test_to_dict_adjacently_tagged(self):
+        # Check that adjacently tagged variants work correctly.
+
+        class Example(Model):
+            class Meta:
+                tag = 'kind'
+                content = 'data'
+            a = fields.Int()
+
+        class SubExample(Example):
+            b = fields.Float()
+
+        # Serializing data from the parent
+        assert Example(a=5).to_dict() == {'kind': 'Example', 'data': {'a': 5}}
+
+        # Serializing data from the variant
+        expected = {'kind': 'SubExample', 'data': {'a': 5, 'b': 1.0}}
+        assert SubExample(a=5, b=1.0).to_dict() == expected
 
     def test_to_dict_errors(self):
         # Check that all exceptions are mapped to SerializationErrors.
@@ -732,7 +1043,7 @@ class TestModel:
 
         assert Example(a=5, b='test').to_json(sort_keys=True) == '{"a": 5, "b": "test"}'
 
-    @py3_only
+    @py3
     def test_to_pickle(self):
         # Check that you can serialize to Pickle.
 
@@ -741,7 +1052,7 @@ class TestModel:
 
         assert Example(a=5).to_pickle(dict=dict) == b'\x80\x03}q\x00X\x01\x00\x00\x00aq\x01K\x05s.'
 
-    @py2_only
+    @py2
     def test_to_pickle_py2(self):
         # Check that you can serialize to Pickle.
 
