@@ -65,6 +65,7 @@ __all__ = [
     'Bytes',
     'Choice',
     'Complex',
+    'Constant',
     'Date',
     'DateTime',
     'Dict',
@@ -591,6 +592,54 @@ class Nested(Instance):
         """
         value = self.type.from_dict(value, strict=self.strict)
         return super(Nested, self).deserialize(value)
+
+
+class Constant(Field):
+    """
+    A constant Field.
+
+    A Constant is a Field that always has to be the given value. It does not
+    have to be given, but if it is present it must be equal to the given value.
+    """
+
+    def __init__(self, value, **kwargs):
+        """
+        Create a new Constant.
+
+        Args:
+            value: the constant value that this Constant wraps.
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super(Constant, self).__init__(**kwargs)
+        self.value = value
+
+    def normalize(self, value):
+        """
+        Normalize the given value.
+
+        If the value is None then it will normalized to the constant value.
+        Otherwise, the given value is returned.
+
+        Args:
+            value: the value to normalize.
+
+        Returns:
+            the normalized value.
+        """
+        if value is None:
+            value = self.value
+
+        return value
+
+    def validate(self, value):
+        """
+        Validate that the given value is equal to the constant value.
+
+        Args:
+            value: the value to validate.
+        """
+        super(Constant, self).validate(value)
+        validate.equal(self.value)(value)
 
 
 class Optional(Field):
