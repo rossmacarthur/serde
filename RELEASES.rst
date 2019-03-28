@@ -1,6 +1,27 @@
 Releases
 ========
 
+0.6.0
+-----
+
+*Unreleased*
+
+- Improve base Field exception messages. (`#86`_)
+- Add Constant Field. (`#58`_, `#85`_)
+- Model tagging when serializing and deserializing. (`#81`_, `#83`_)
+- Streamline sdist. (`#82`_)
+- Better error context and handling. (`#38`_, `#80`_)
+
+.. _#86: https://github.com/rossmacarthur/serde/pull/86
+.. _#85: https://github.com/rossmacarthur/serde/pull/85
+.. _#83: https://github.com/rossmacarthur/serde/pull/83
+.. _#82: https://github.com/rossmacarthur/serde/pull/82
+.. _#80: https://github.com/rossmacarthur/serde/pull/80
+
+.. _#81: https://github.com/rossmacarthur/serde/issues/81
+.. _#58: https://github.com/rossmacarthur/serde/issues/58
+.. _#38: https://github.com/rossmacarthur/serde/issues/38
+
 0.5.2
 -----
 
@@ -185,3 +206,10 @@ Releases
 *Released on October 27th, 2018*
 
 - Initial release
+
+0.1.0
+-----
+
+*Released on October 27th, 2018*
+
+This release is broken and was yanked.
