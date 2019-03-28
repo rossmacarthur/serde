@@ -12,7 +12,7 @@ matrix:
     - python: pypy
     - python: pypy3
 
-before_script:
+before_install:
   - pip install ci==0.1.0
 
 # command to install dependencies
