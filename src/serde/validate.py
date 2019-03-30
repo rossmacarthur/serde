@@ -1,5 +1,5 @@
 """
-Validator functions for use with `Fields <serde.fields.Field>`.
+This module contains validators for use with `Fields <serde.fields.Field>`.
 """
 
 from serde.exceptions import ValidationError

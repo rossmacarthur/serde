@@ -41,7 +41,7 @@ test: ## Run tests excluding doctests.
 .PHONY: test-all
 test-all: ## Run all tests.
 	$(VIRTUAL_ENV)/bin/pytest -vv --cov=serde --cov-report term-missing --cov-fail-under 100 \
-								  --doctest-modules --doctest-import "*<serde"
+								  --doctest-modules --doctest-import "*<serde" "datetime"
 
 .PHONY: dist
 dist: clean ## Build source and wheel package.
@@ -63,7 +63,3 @@ docs-clean: ## Clean docs.
 .PHONY: docs-open
 docs-open: docs ## Compile and open the docs.
 	open docs/_build/html/index.html
-
-.PHONY: docs-test
-docs-test: ## Run doc tests.
-	$(MAKE) -C docs doctest
