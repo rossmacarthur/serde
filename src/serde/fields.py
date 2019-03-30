@@ -22,7 +22,7 @@ would still be instantiated using ``Album(released=...)``.
     ...     title = fields.Str(normalizers=[str.strip])
     ...     released = fields.Date(
     ...         rename='release_date',
-    ...         validators=[validator.min(datetime.date(1912, 4, 15))]
+    ...         validators=[validate.min(datetime.date(1912, 4, 15))]
     ...     )
 
 Furthermore, the `create()` method can be used to generate a new `Field` class

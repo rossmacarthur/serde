@@ -126,7 +126,7 @@ structure, and create instances of all the submodels.
     ... })
 
     >>> group.name
-    'Lone Wolf'
+    'One-man Wolf Pack'
     >>> group.lead
     Person(name='Alan Garner')
     >>> group.members
