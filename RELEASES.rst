@@ -8,7 +8,7 @@ Releases
 
 - Improve base Field exception messages. (`#86`_)
 - Add Constant Field. (`#58`_, `#85`_)
-- Model tagging when serializing and deserializing. (`#81`_, `#83`_)
+- Model tagging when serializing and deserializing. (`#64`_, `#81`_, `#83`_)
 - Streamline sdist. (`#82`_)
 - Better error context and handling. (`#38`_, `#80`_)
 
@@ -19,6 +19,7 @@ Releases
 .. _#80: https://github.com/rossmacarthur/serde/pull/80
 
 .. _#81: https://github.com/rossmacarthur/serde/issues/81
+.. _#64: https://github.com/rossmacarthur/serde/issues/64
 .. _#58: https://github.com/rossmacarthur/serde/issues/58
 .. _#38: https://github.com/rossmacarthur/serde/issues/38
 

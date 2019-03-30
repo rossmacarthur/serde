@@ -1,5 +1,5 @@
 """
-Utility functions for Serde.
+This module defines some utility functions.
 """
 
 import importlib

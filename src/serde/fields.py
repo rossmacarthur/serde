@@ -1,41 +1,33 @@
 """
 This module contains Field classes for `Models <serde.model.Model>`.
 
-Fields handle serializing, deserializing, normalizing, and validation of input
-values for Model objects. They are instantiated when assigned to the Model.
-Fields support extra serialization, deserialization, normalization, and
+While the `~serde.model.Model` class might do some magical metaclass stuff, its
+the Fields that actually do the work of serializing, deserializing, normalizing,
+and validating the input values. Fields are always assigned to a
+`~serde.model.Model` as *instances*. And although it is easy enough to subclass
+`Field`, they support extra serialization, deserialization, normalization, and
 validation of values without having to subclass `Field`.
 
-Note: Extra serializers are called prior to the default field serialization,
-while extra deserializers, normalizers, and validators are called after the
-default operations.
+In the following example we define an ``Album`` class. The ``title`` field is
+of type `str`, and we apply the `str.strip` normalizer to automatically strip
+the input value when instantiating or deserializing the ``Album``. The
+``released`` field is of type `datetime.date` and we apply an extra validator to
+only accept dates after the given one. Note that the ``rename`` argument only
+applies to the serializing and deserializing of the data, the ``Album`` class
+would still be instantiated using ``Album(released=...)``.
 
 ::
 
-    >>> def assert_is_odd(value):
-    ...     assert value % 2 != 0, 'value is not odd!'
+    >>> class Album(Model):
+    ...     title = fields.Str(normalizers=[str.strip])
+    ...     released = fields.Date(
+    ...         rename='release_date',
+    ...         validators=[validator.min(datetime.date(1912, 4, 15))]
+    ...     )
 
-    >>> class Person(Model):
-    ...     name = Str(deserializers=[lambda s: s.strip()])
-    ...     fave_number = Optional(Int, validators=[assert_is_odd])
-    ...     fave_color = Optional(Choice(['black', 'pink']), default='pink')
-
-    >>> person = Person('William Shakespeare', fave_number=455)
-    >>> person.name
-    'William Shakespeare'
-    >>> person.fave_number
-    455
-    >>> person.fave_color
-    'pink'
-
-    >>> Person.from_dict({'name': 'Beyonce', 'fave_number': 4})
-    Traceback (most recent call last):
-    ...
-    serde.exceptions.DeserializationError: value is not odd!
-
-The `create()` method can be used to generate a new Field class from arbitrary
-functions without having to manually subclass a Field. For example if we wanted
-a `Percent` field we would do the following.
+Furthermore, the `create()` method can be used to generate a new `Field` class
+from arbitrary functions without having to manually subclass a `Field`. For
+example if we wanted a ``Percent`` field we would do the following.
 
 ::
 
@@ -47,6 +39,17 @@ a `Percent` field we would do the following.
 
     >>> issubclass(Percent, Float)
     True
+
+If these methods of creating custom `Field` classes are not satisfactory, you
+can always subclass a `Field` and override the relevant methods.
+
+::
+
+    >>> class Percent(Float):
+    ...     def validate(self, value):
+    ...         super(Percent, self).validate(value)
+    ...         validate.between(0.0, 100.0)
+
 """
 
 import datetime
