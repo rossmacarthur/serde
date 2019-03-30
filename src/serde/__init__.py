@@ -250,7 +250,7 @@ from serde.model import Model
 
 __all__ = ['Model', 'exceptions', 'fields', 'validate']
 __title__ = 'serde'
-__version__ = '0.5.2'
+__version__ = '0.6.0'
 __url__ = 'https://github.com/rossmacarthur/serde'
 __author__ = 'Ross MacArthur'
 __author_email__ = 'ross@macarthur.io'

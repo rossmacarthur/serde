@@ -4,7 +4,7 @@ Releases
 0.6.0
 -----
 
-*Unreleased*
+*Released on March 30th, 2019*
 
 - Improve base Field exception messages. (`#86`_)
 - Add Constant Field. (`#58`_, `#85`_)
@@ -213,4 +213,4 @@ Releases
 
 *Released on October 27th, 2018*
 
-This release is broken and was yanked.
+- This release is broken and was yanked.
