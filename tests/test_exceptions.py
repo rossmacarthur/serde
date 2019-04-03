@@ -158,7 +158,7 @@ class TestSerdeError:
             assert False
         except DeserializationError as e:
             assert e.pretty() == (
-                "DeserializationError: unknown dictionary key 'a'\n"
+                "DeserializationError: unexpected dictionary key 'a'\n"
                 "    Due to => value {'a': 5} for field 'sub' of type 'Nested' on model 'Example'"
             )
 
@@ -172,4 +172,4 @@ class TestSerdeError:
             Example.from_dict({'a': 5, 'b': 'test'})
             assert False
         except DeserializationError as e:
-            assert e.pretty() == "DeserializationError: unknown dictionary key 'b'"
+            assert e.pretty() == "DeserializationError: unexpected dictionary key 'b'"

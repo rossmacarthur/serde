@@ -174,3 +174,48 @@ def test_base_2():
     assert package.version.major == 7
     assert package.version.minor == 0
     assert package.version.patch == 0
+
+
+def test_base_3():
+
+    class Secret(Model):
+        class Meta:
+            abstract = True
+            tag = 'kind'
+            recurse_variants = True
+
+            def variants(self):
+                variants = self.model.__subclasses_recursed__()
+
+                if not self.abstract:
+                    variants = [self.model] + variants
+
+                return variants
+
+            def tag_for(self, variant):
+                segments = ()
+
+                while variant and variant != self.model:
+                    segments = (variant.__name__.lower(),) + segments
+                    variant = variant._parent
+
+                return '.'.join(segments)
+
+        a = fields.Int()
+
+    class Generatable(Secret):
+        b = fields.Int()
+
+    class Login(Generatable):
+        c = fields.Int()
+
+    class Encrypted(Secret):
+        d = fields.Int()
+
+    for instance, data in [
+        (Generatable(a=1, b=2), {'kind': 'generatable', 'a': 1, 'b': 2}),
+        (Login(a=1, b=2, c=3), {'kind': 'generatable.login', 'a': 1, 'b': 2, 'c': 3}),
+        (Encrypted(a=1, d=2), {'kind': 'encrypted', 'a': 1, 'd': 2})
+    ]:
+        assert instance.to_dict() == data
+        assert Secret.from_dict(data) == instance
