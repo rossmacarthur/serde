@@ -194,7 +194,7 @@ We refer to the ``Person`` subclass as a *variant* of a ``User``.
 Customizing Subclassed Models
 -----------------------------
 
-There are 4 types of `Model <serde.model.Model>` tagging and they are each
+There are four types of `Model <serde.model.Model>` tagging and they are each
 described below. These examples only show deserialization, but the tagging does
 work for serialization as well.
 
