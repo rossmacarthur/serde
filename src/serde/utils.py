@@ -34,6 +34,25 @@ def dict_partition(d, keyfunc, dict=OrderedDict):
     return left, right
 
 
+def subclasses(cls):
+    """
+    Returns the recursed subclasses.
+
+    Args:
+        cls (class): the class whose subclasses we should recurse.
+
+    Returns:
+        list: the subclasses.
+    """
+    subs = cls.__subclasses__()
+    variants = []
+
+    for sub in subs:
+        variants.extend(subclasses(sub))
+
+    return subs + variants
+
+
 def try_import(name, package=None):
     """
     Try import the given library, ignoring ImportErrors.

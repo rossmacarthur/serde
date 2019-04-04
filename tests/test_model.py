@@ -9,7 +9,6 @@ from serde import Model, fields, validate
 from serde.exceptions import (
     DeserializationError,
     InstantiationError,
-    MetaError,
     MissingDependency,
     NormalizationError,
     SerdeError,
@@ -129,14 +128,6 @@ class TestModel:
 
         assert isinstance(Example._meta, serde.model.Meta)
         assert Example._meta.tag == 'kind'
-
-    def test___new___meta_class_bad(self):
-        # Check that you can't supply unknown fields for the Meta class.
-
-        with raises(MetaError):
-            class Example(Model):
-                class Meta:
-                    test = 5
 
     def test___init___empty(self):
         # An empty Model with no Fields should work just fine.
@@ -709,6 +700,24 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'kind': 'Example', 'data': {'a': 5}})
 
+    def test_from_dict_override_tag_for(self):
+        # Check that from_dict() works when you modify the Meta.tag_for() method
+
+        class Example(Model):
+            class Meta:
+                tag = 'kind'
+
+                def tag_for(self, variant):
+                    return variant.__name__.lower()
+
+            a = fields.Int()
+
+        class SubExample(Example):
+            b = fields.Float()
+
+        serialized = {'kind': 'subexample', 'a': 5, 'b': 1.0}
+        assert Example.from_dict(serialized) == SubExample(a=5, b=1.0)
+
     def test_from_dict_errors(self):
         # Check that all exceptions are mapped to DeserializationErrors.
 
@@ -944,7 +953,7 @@ class TestModel:
             b = fields.Float()
 
         # Serializing data from the parent
-        # assert Example(a=5).to_dict() == {'kind': 'Example', 'a': 5}
+        assert Example(a=5).to_dict() == {'kind': 'Example', 'a': 5}
 
         # Serializing data from the variant
         assert SubExample(a=5, b=1.0).to_dict() == {'kind': 'SubExample', 'a': 5, 'b': 1.0}
@@ -967,6 +976,23 @@ class TestModel:
         # Serializing data from the variant
         expected = {'kind': 'SubExample', 'data': {'a': 5, 'b': 1.0}}
         assert SubExample(a=5, b=1.0).to_dict() == expected
+
+    def test_to_dict_override_tag_for(self):
+        # Check that to_dict() works when you modify the Meta.tag_for() method
+
+        class Example(Model):
+            class Meta:
+                tag = 'kind'
+
+                def tag_for(self, variant):
+                    return variant.__name__.lower()
+
+            a = fields.Int()
+
+        class SubExample(Example):
+            b = fields.Float()
+
+        assert SubExample(a=5, b=1.0).to_dict() == {'kind': 'subexample', 'a': 5, 'b': 1.0}
 
     def test_to_dict_errors(self):
         # Check that all exceptions are mapped to SerializationErrors.

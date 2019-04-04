@@ -12,7 +12,6 @@ from six import with_metaclass
 from serde.exceptions import (
     DeserializationError,
     InstantiationError,
-    MetaError,
     MissingDependency,
     NormalizationError,
     SerializationError,
@@ -20,7 +19,7 @@ from serde.exceptions import (
     ValidationError
 )
 from serde.fields import Field
-from serde.utils import dict_partition, try_import, zip_until_right
+from serde.utils import dict_partition, subclasses, try_import, zip_until_right
 
 
 try:
@@ -120,31 +119,52 @@ class Fields(OrderedDict):
 
 class Meta(object):
     """
-    A Meta class for a Model that carries extra configuration.
+    Extra configuration for a `Model`.
+
+    Warning:
+        You should not instantiate or subclass this class directly. Instead you
+        should use the Meta paradigm by adding a inner ``Meta`` class to your
+        Model classes.
     """
 
-    @staticmethod
-    def default_tag_map(cls):
-        return cls.__name__
+    #: Whether the Model is allowed to be instantiated.
+    abstract = False
+    #: The key to use when tagging this Model.
+    tag = None
+    #: The content key to use when tagging this Model.
+    content = None
 
-    def __init__(self, **kwargs):
-        defaults = {
-            'abstract': False,
-            'tag': None,
-            'content': None,
-            'tag_map': self.default_tag_map
-        }
+    def is_owner(self, cls_or_instance):
+        """
+        Check whether the given Model or Model instance is the Meta owner.
+        """
+        cls = cls_or_instance.__class__ if isinstance(cls_or_instance, Model) else cls_or_instance
+        return cls == self.model
 
-        for name, default in defaults.items():
-            setattr(self, name, kwargs.pop(name, default))
+    def variants(self):
+        """
+        Return a list of variants.
+        """
+        variants = self.model.__subclasses__()
 
-        if kwargs:
-            raise MetaError(
-                'invalid Meta field{} {}'.format(
-                    '' if len(kwargs.keys()) == 1 else 's',
-                    ', '.join('{!r}'.format(k) for k in kwargs.keys())
-                )
-            )
+        if not self.abstract:
+            variants = [self.model] + variants
+
+        return variants
+
+    def tag_for(self, variant):
+        """
+        Return the tag for the given variant.
+        """
+        return variant.__name__
+
+    def variant_for(self, tag):
+        """
+        Return the variant for the given tag.
+        """
+        for variant in self.variants():
+            if self.tag_for(variant) == tag:
+                return variant
 
 
 class ModelType(type):
@@ -171,12 +191,18 @@ class ModelType(type):
         """
         # Handle the Meta class.
         if 'Meta' in attrs:
-            meta = Meta(**{
+            meta_attrs = {
                 k: v for k, v in attrs.pop('Meta').__dict__.items()
                 if not k.startswith('_')
-            })
+            }
+            meta = type('Meta', (Meta,), meta_attrs)()
         else:
-            meta = Meta()
+            for base in bases:
+                if hasattr(base, '_meta'):
+                    meta = base._meta
+                    break
+            else:
+                meta = Meta()
 
         def is_field(key, value):
             if isinstance(value, Field):
@@ -206,7 +232,13 @@ class ModelType(type):
         else:
             final_attrs['_parent'] = None
 
-        return super(ModelType, cls).__new__(cls, cname, bases, final_attrs)
+        cls = super(ModelType, cls).__new__(cls, cname, bases, final_attrs)
+
+        # So that the Meta object knows its Model.
+        if not hasattr(cls._meta, 'model'):
+            cls._meta.model = cls
+
+        return cls
 
 
 class Model(with_metaclass(ModelType, object)):
@@ -224,7 +256,7 @@ class Model(with_metaclass(ModelType, object)):
                 Fields in the order the Fields are defined on the Model.
             **kwargs: keyword argument values for each Field on the Model.
         """
-        if self._meta.abstract:
+        if self._meta.is_owner(self) and self._meta.abstract:
             raise InstantiationError(
                 'unable to instantiate abstract Model {!r}'.format(self.__class__.__name__)
             )
@@ -287,6 +319,13 @@ class Model(with_metaclass(ModelType, object)):
         )
         return '{name}({values})'.format(name=self.__class__.__name__, values=values)
 
+    @classmethod
+    def __subclasses_recursed__(cls):
+        """
+        Returns the recursed subclasses.
+        """
+        return subclasses(cls)
+
     def _serialize_field(self, field, value):
         """
         Serialize a single Field and map all errors to `SerializationError`.
@@ -302,12 +341,11 @@ class Model(with_metaclass(ModelType, object)):
         with map_errors(DeserializationError, model=cls, field=field, value=value):
             return field._deserialize(value)
 
-    @classmethod
-    def _normalize_field(cls, field, value):
+    def _normalize_field(self, field, value):
         """
         Normalize a single Field and map all errors to `NormalizationError`.
         """
-        with map_errors(NormalizationError, model=cls, field=field, value=value):
+        with map_errors(NormalizationError, model=self.__class__, field=field, value=value):
             return field._normalize(value)
 
     def _validate_field(self, field, value):
@@ -363,29 +401,7 @@ class Model(with_metaclass(ModelType, object)):
         pass
 
     @classmethod
-    def _variants(cls):
-        """
-        Returns a list of variants of this Model.
-        """
-        return cls.__subclasses__()
-
-    @classmethod
-    def _variant_map(cls):
-        """
-        Returns a map of variant identifier to variant class.
-        """
-        variants = {cls._meta.tag_map(c): c for c in cls._variants()}
-
-        if not cls._meta.abstract:
-            variants[cls._meta.tag_map(cls)] = cls
-
-        return variants
-
-    @classmethod
-    def _tagged_variant_name(cls, d):
-        """
-        Returns the name of the variant based on serialized data.
-        """
+    def _from_dict_transform_get_tag(cls, d):
         # Externally tagged variant
         if cls._meta.tag is True:
             try:
@@ -399,25 +415,10 @@ class Model(with_metaclass(ModelType, object)):
             raise DeserializationError('expected tag {!r}'.format(cls._meta.tag))
 
     @classmethod
-    def _tagged_variant(cls, variant_name):
-        """
-        Returns the variant class corresponding to the given name.
-        """
-        try:
-            return cls._variant_map()[variant_name]
-        except KeyError:
-            raise DeserializationError(
-                'no variant found for tag {!r}'.format(variant_name)
-            )
-
-    @classmethod
-    def _transform_tagged_data(cls, d, variant_name):
-        """
-        Transform the tagged content so that it can be deserialized.
-        """
+    def _from_dict_transform_data(cls, d, tag):
         # Externally tagged variant
         if cls._meta.tag is True:
-            return d[variant_name]
+            return d[tag]
         # Adjacently tagged variant
         elif cls._meta.content:
             try:
@@ -430,29 +431,37 @@ class Model(with_metaclass(ModelType, object)):
         return {k: v for k, v in d.items() if k != cls._meta.tag}
 
     @classmethod
-    def _transform_untagged_data(cls, d, dict):
+    def _from_dict_transform(cls, d):
+        """
+        Transform the tagged content so that it can be deserialized.
+        """
+        tag = cls._from_dict_transform_get_tag(d)
+        variant = cls._meta.variant_for(tag)
+
+        if not variant:
+            raise DeserializationError('no variant found for tag {!r}'.format(tag))
+
+        return variant, cls._from_dict_transform_data(d, tag)
+
+    @classmethod
+    def _to_dict_transform(cls, d, dict):
         """
         Transform the untagged content into tagged data.
         """
-        parent = cls
+        if cls._meta.tag:
+            variant_tag = cls._meta.tag_for(cls)
 
-        while parent:
-            if parent._meta.tag:
-                variant_name = cls._meta.tag_map(cls)
-
-                # Externally tagged variant
-                if parent._meta.tag is True:
-                    d = dict([(variant_name, d)])
-                # Adjacently tagged variant
-                elif parent._meta.content:
-                    d = dict([(parent._meta.tag, variant_name), (parent._meta.content, d)])
-                # Internally tagged variant
-                else:
-                    d_new = dict([(parent._meta.tag, variant_name)])
-                    d_new.update(d)
-                    d = d_new
-
-            parent = parent._parent
+            # Externally tagged variant
+            if cls._meta.tag is True:
+                d = dict([(variant_tag, d)])
+            # Adjacently tagged variant
+            elif cls._meta.content:
+                d = dict([(cls._meta.tag, variant_tag), (cls._meta.content, d)])
+            # Internally tagged variant
+            else:
+                d_new = dict([(cls._meta.tag, variant_tag)])
+                d_new.update(d)
+                d = d_new
 
         return d
 
@@ -473,7 +482,7 @@ class Model(with_metaclass(ModelType, object)):
 
             if unknown:
                 raise DeserializationError(
-                    'unknown dictionary key{} {}'.format(
+                    'unexpected dictionary key{} {}'.format(
                         '' if len(unknown) == 1 else 's',
                         ', '.join('{!r}'.format(k) for k in unknown)
                     )
@@ -498,30 +507,29 @@ class Model(with_metaclass(ModelType, object)):
         Returns:
             Model: an instance of this Model.
         """
-        # Externally/internally/adjacently tagged variant
-        if cls._meta.tag:
-            variant_name = cls._tagged_variant_name(d)
-            variant = cls._tagged_variant(variant_name)
-            d = cls._transform_tagged_data(d, variant_name)
+        if cls._meta.is_owner(cls):
+            # Externally/internally/adjacently tagged variant
+            if cls._meta.tag:
+                variant, d = cls._from_dict_transform(d)
 
-            if variant != cls:
-                return variant.from_dict(d, strict=strict)
-        # Untagged variant
-        elif cls._meta.tag is False:
-            if not cls._meta.abstract:
-                try:
-                    return cls._from_dict(d, strict=strict)
-                except DeserializationError:
-                    pass
-
-            # Try each variant in turn until one succeeds
-            for variant in cls._variants():
-                try:
+                if variant != cls:
                     return variant.from_dict(d, strict=strict)
-                except DeserializationError:
-                    pass
+                else:
+                    return cls._from_dict(d, strict=strict)
 
-            raise DeserializationError('no variant succeeded deserialization')
+            # Untagged variant
+            elif cls._meta.tag is False:
+                # Try each variant in turn until one succeeds
+                for variant in cls._meta.variants():
+                    try:
+                        if variant != cls:
+                            return variant.from_dict(d, strict=strict)
+                        else:
+                            return cls._from_dict(d, strict=strict)
+                    except DeserializationError:
+                        pass
+
+                raise DeserializationError('no variant succeeded deserialization')
 
         return cls._from_dict(d, strict=strict)
 
@@ -633,7 +641,7 @@ class Model(with_metaclass(ModelType, object)):
             except SkipSerialization:
                 pass
 
-        d = self._transform_untagged_data(d, dict=dict)
+        d = self._to_dict_transform(d, dict=dict)
 
         return d
 

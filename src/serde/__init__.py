@@ -191,6 +191,117 @@ deserializing.
 
 We refer to the ``Person`` subclass as a *variant* of a ``User``.
 
+Customizing Subclassed Models
+-----------------------------
+
+There are four types of `Model <serde.model.Model>` tagging and they are each
+described below. These examples only show deserialization, but the tagging does
+work for serialization as well.
+
+Externally tagged
+~~~~~~~~~~~~~~~~~
+
+Externally tagged data uses the tag value as a key and nests the content
+underneath that key. You can enable *external tagging* by setting the ``tag``
+field to ``True``.
+
+::
+
+    >>> class Pet(Model):
+    ...     class Meta:
+    ...         tag = True
+    ...
+    ...     name = fields.Str()
+
+    >>> class Dog(Pet):
+    ...     hates_cats = fields.Bool()
+
+    >>> Pet.from_dict({'Dog': {'name': 'Max', 'hates_cats': True}})
+    Dog(name='Max', hates_cats=True)
+
+Internally tagged
+~~~~~~~~~~~~~~~~~
+
+Internally tagged data stores the tag value at a key of value ``tag``, inside
+the serialized data.  You can enable *internal tagging* by setting the ``tag``
+field to a string value.
+
+::
+
+    >>> class Pet(Model):
+    ...     class Meta:
+    ...         tag = 'species'
+    ...
+    ...     name = fields.Str()
+
+    >>> class Dog(Pet):
+    ...     hates_cats = fields.Bool()
+
+    >>> Pet.from_dict({'species': 'Dog', 'name': 'Max', 'hates_cats': True})
+    Dog(name='Max', hates_cats=True)
+
+Adjacently tagged
+~~~~~~~~~~~~~~~~~
+
+Adjacently tagged data data stores the tag value and the content underneath two
+separate keys.  You can enable *adjacent tagging* by setting the ``tag`` *and*
+content field to string values.
+
+::
+
+    >>> class Pet(Model):
+    ...     class Meta:
+    ...         tag = 'species'
+    ...         content = 'data'
+    ...
+    ...     name = fields.Str()
+
+    >>> class Dog(Pet):
+    ...     hates_cats = fields.Bool()
+
+    >>> Pet.from_dict({'species': 'Dog', 'data': {'name': 'Max', 'hates_cats': True}})
+    Dog(name='Max', hates_cats=True)
+
+Untagged
+~~~~~~~~
+
+Untagged data will try to deserialize each variant in turn. The first variant
+that succeeds deserialization will be returned. You can enable this by setting
+the ``tag`` field to ``False``.
+
+::
+
+    >>> class Pet(Model):
+    ...     class Meta:
+    ...         tag = False
+    ...
+    ...     name = fields.Str()
+
+    >>> class Dog(Pet):
+    ...     hates_cats = fields.Bool()
+
+    >>> Pet.from_dict({'name': 'Max', 'hates_cats': True})
+    Dog(name='Max', hates_cats=True)
+
+Abstract Models
+~~~~~~~~~~~~~~~
+
+All of the above methods allow deserialization of the base Model. It is common
+to have this Model be abstract. You can do this by setting the ``abstract``
+Meta field to ``True``. This will make it uninstantiatable and it won't be
+included in the variant list during deserialization.
+
+::
+
+    >>> class Fruit(Model):
+    ...     class Meta:
+    ...         abstract = True
+
+    >>> Fruit()
+    Traceback (most recent call last):
+        ...
+    serde.exceptions.InstantiationError: unable to instantiate abstract Model 'Fruit'
+
 Model states and processes
 --------------------------
 

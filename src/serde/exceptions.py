@@ -9,7 +9,6 @@ __all__ = [
     'ContextError',
     'DeserializationError',
     'InstantiationError',
-    'MetaError',
     'NormalizationError',
     'SerdeError',
     'SerializationError',
@@ -71,12 +70,6 @@ class MissingDependency(BaseSerdeError):
 class ContextError(BaseSerdeError):
     """
     Raised when Models or Fields are used in the wrong context.
-    """
-
-
-class MetaError(BaseSerdeError):
-    """
-    Raised when there is a problem with the Model's Meta class.
     """
 
 
