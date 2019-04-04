@@ -1,6 +1,15 @@
 Releases
 ========
 
+0.6.1
+-----
+
+*Released on April 4th, 2019*
+
+- Fix some bugs in Model tagging (`#92`_)
+
+.. _#92: https://github.com/rossmacarthur/serde/pull/92
+
 0.6.0
 -----
 
