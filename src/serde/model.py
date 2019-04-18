@@ -275,7 +275,7 @@ class Model(with_metaclass(ModelType, object)):
                 .format(len(self._fields) + 1, len(args) + 1)
             )
 
-        for name, field in self._fields.items():
+        for name in self._fields.keys():
             setattr(self, name, kwargs.pop(name, None))
 
         if kwargs:
@@ -453,13 +453,13 @@ class Model(with_metaclass(ModelType, object)):
 
             # Externally tagged variant
             if cls._meta.tag is True:
-                d = dict([(variant_tag, d)])
+                d = dict(((variant_tag, d),))
             # Adjacently tagged variant
             elif cls._meta.content:
-                d = dict([(cls._meta.tag, variant_tag), (cls._meta.content, d)])
+                d = dict(((cls._meta.tag, variant_tag), (cls._meta.content, d)))
             # Internally tagged variant
             else:
-                d_new = dict([(cls._meta.tag, variant_tag)])
+                d_new = dict(((cls._meta.tag, variant_tag),))
                 d_new.update(d)
                 d = d_new
 

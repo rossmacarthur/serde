@@ -463,19 +463,19 @@ def create(
             'Args:\n'
             '    **kwargs: keyword arguments for the `{}` constructor.'
         ).format(name, base.__name__)
-        setattr(cls, '__init__', __init__)
+        cls.__init__ = __init__
 
     if serializers:
-        setattr(cls, 'serialize', _create_serialize(cls, serializers))
+        cls.serialize = _create_serialize(cls, serializers)
 
     if deserializers:
-        setattr(cls, 'deserialize', _create_deserialize(cls, deserializers))
+        cls.deserialize = _create_deserialize(cls, deserializers)
 
     if normalizers:
-        setattr(cls, 'normalize', _create_normalize(cls, normalizers))
+        cls.normalize = _create_normalize(cls, normalizers)
 
     if validators:
-        setattr(cls, 'validate', _create_validate(cls, validators))
+        cls.validate = _create_validate(cls, validators)
 
     return cls
 

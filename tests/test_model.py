@@ -366,7 +366,7 @@ class TestModel:
             raise ValueError
 
         example = Example(a='test')
-        setattr(Example, 'normalize', normalize)
+        Example.normalize = normalize
 
         with raises(NormalizationError):
             example.normalize_all()
