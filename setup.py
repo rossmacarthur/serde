@@ -58,8 +58,12 @@ yaml_requires = [
 # Development requirements
 lint_requires = [
     'flake8 >=3.7.0',
+    'flake8-bugbear',
+    'flake8-comprehensions',
     'flake8-docstrings',
     'flake8-isort',
+    'flake8-mutable',
+    'flake8-pep3101',
     'flake8-quotes',
     'pep8-naming'
 ]
