@@ -172,12 +172,12 @@ class SerdeError(BaseSerdeError):
         return self.__getattribute__(name)
 
     @staticmethod
-    def _pretty_context(context, seperator='\n', prefix='Due to => ', indent=4):
+    def _pretty_context(context, separator='\n', prefix='Due to => ', indent=4):
         """
         Pretty format the given Context.
 
         Args:
-            seperator (str): the seperator for each context.
+            separator (str): the separator for each context.
             prefix (str): the prefix for each context. Example: 'Caused by: '.
             indent (int): the number of spaces to indent each context line.
 
@@ -214,14 +214,14 @@ class SerdeError(BaseSerdeError):
             else:
                 lines.append(repr(context.cause) or str(context.cause))
 
-        return seperator.join(' ' * indent + prefix + s for s in lines)
+        return separator.join(' ' * indent + prefix + s for s in lines)
 
-    def pretty(self, seperator='\n', prefix='Due to => ', indent=4):
+    def pretty(self, separator='\n', prefix='Due to => ', indent=4):
         """
         Return a pretty string representation of this SerdeError.
 
         Args:
-            seperator (str): the seperator for each context.
+            separator (str): the separator for each context.
             prefix (str): the prefix for each context. Example: 'Caused by: '.
             indent (int): the number of spaces to indent each context line.
 
@@ -236,14 +236,14 @@ class SerdeError(BaseSerdeError):
         lines.extend([
             self._pretty_context(
                 context,
-                seperator=seperator,
+                separator=separator,
                 prefix=prefix,
                 indent=indent
             )
             for context in self.iter_contexts()
         ])
 
-        return seperator.join(lines)
+        return separator.join(lines)
 
 
 class SerializationError(SerdeError):

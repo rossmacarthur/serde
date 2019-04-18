@@ -84,7 +84,7 @@ class TestSerdeError:
             model=Example
         )
 
-        assert SerdeError._pretty_context(context, seperator='; ', prefix=':: ', indent=0) == (
+        assert SerdeError._pretty_context(context, separator='; ', prefix=':: ', indent=0) == (
             ":: value 'test' for field 'a' of type 'Int' on model 'Example'; "
             ':: ValidationError: something failed'
         )
