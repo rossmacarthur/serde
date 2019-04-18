@@ -826,7 +826,7 @@ class TestModel:
         class Example(Model):
             a = fields.Int()
 
-        assert Example.from_pickle(b'(dp0\nS\'a\'\np1\nI5\ns.') == Example(a=5)
+        assert Example.from_pickle(b"(dp0\nS'a'\np1\nI5\ns.") == Example(a=5)
 
     def test_from_toml(self):
         # Check that you can deserialize from TOML, if its installed.
@@ -1085,7 +1085,7 @@ class TestModel:
         class Example(Model):
             a = fields.Int()
 
-        assert Example(a=5).to_pickle(dict=dict) == b'(dp0\nS\'a\'\np1\nI5\ns.'
+        assert Example(a=5).to_pickle(dict=dict) == b"(dp0\nS'a'\np1\nI5\ns."
 
     def test_to_toml(self):
         # Check that you can serialize to TOML, if its installed.
