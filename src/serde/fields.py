@@ -1160,6 +1160,32 @@ Integer = Int
 String = Str
 
 
+class Regex(Str):
+
+    def __init__(self, pattern, flags=0, **kwargs):
+        """
+        Create a new Regex.
+
+        Args:
+            pattern (str): the regex pattern that the value must match.
+            flags (int): the regex flags passed directly to `re.compile`.
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super(Regex, self).__init__(**kwargs)
+        self.pattern = pattern
+        self.flags = flags
+
+    def validate(self, value):
+        """
+        Validate the given string matches the specified regex.
+
+        Args:
+            value (str): the value to validate.
+        """
+        super(Regex, self).validate(value)
+        validate.regex(self.pattern, flags=self.flags)(value)
+
+
 class Choice(Field):
     """
     One of a given selection of values.

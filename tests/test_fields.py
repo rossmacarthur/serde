@@ -1,4 +1,5 @@
 import datetime
+import re
 import uuid
 from collections import OrderedDict
 
@@ -29,6 +30,7 @@ from serde.fields import (
     List,
     Nested,
     Optional,
+    Regex,
     Str,
     Time,
     Tuple,
@@ -621,6 +623,24 @@ class TestTuple:
 
         with raises(ValidationError):
             example.validate((20, 11))
+
+
+class TestRegex:
+
+    def test___init__(self):
+        # Construct a basic Regex and check values are set correctly.
+        example = Regex(r'[est]{4}', flags=re.DOTALL, validators=[None])
+        assert example.pattern == r'[est]{4}'
+        assert example.flags == re.DOTALL
+        assert example.validators == [None]
+
+    def test_validate(self):
+        # A Regex simply validates the given value matches the regex.
+        example = Regex(r'[est]{4}')
+        example.validate('test')
+        example.validate('tset')
+        with raises(ValidationError):
+            example.validate('btesttest')
 
 
 class TestChoice:

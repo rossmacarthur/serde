@@ -2,6 +2,8 @@
 This module contains validators for use with `Fields <serde.fields.Field>`.
 """
 
+import re
+
 from serde.exceptions import ValidationError
 from serde.utils import try_import_all
 
@@ -316,6 +318,33 @@ def contains(allowed):
             raise ValidationError('{!r} is not a valid choice'.format(value))
 
     return contains_
+
+
+def regex(pattern, flags=0):
+    """
+    Validate that the given string matches the given regex.
+
+    Args:
+        pattern (str): the regex string to match with.
+        flags (int): regex flags passed directly to `re.compile`.
+
+    Returns:
+        function: the validator function.
+    """
+    compiled = re.compile(pattern, flags=flags)
+
+    def regex_(value):
+        """
+        Validate that the given string matches the regex.
+
+        Raises:
+            `serde.exceptions.ValidationError`: when the value does not match
+                the regex.
+        """
+        if not compiled.match(value):
+            raise ValidationError('{!r} does not match regex {!r}'.format(value, pattern))
+
+    return regex_
 
 
 try_import_all('serde_ext.validate', globals())

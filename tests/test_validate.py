@@ -1,3 +1,5 @@
+import re
+
 from pytest import raises
 
 from serde import validate
@@ -113,3 +115,18 @@ def test_contains():
 
     with raises(ValidationError):
         validate.contains([0, 1, 2, 3, 4])(-1)
+
+
+def test_regex():
+    validate.regex(r'[A-Z]+')('TEST')
+
+    validate.regex(r'TE.ST', re.DOTALL)('TE\nST')
+
+    with raises(ValidationError):
+        validate.regex(r'TE.ST')('TE\nST')
+
+    with raises(ValidationError):
+        validate.regex(r'[A-Z]+')('test')
+
+    with raises(ValidationError):
+        validate.regex(r'test')('a sentence with test inside')
