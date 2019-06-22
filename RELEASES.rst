@@ -7,7 +7,7 @@ Releases
 *Unreleased*
 
 - Add Regex Field. (`#95`_)
-- Drop Python 3.4 support (#94)
+- Drop Python 3.4 support (`#94`_)
 
 .. _#95: https://github.com/rossmacarthur/serde/pull/95
 .. _#94: https://github.com/rossmacarthur/serde/pull/94
