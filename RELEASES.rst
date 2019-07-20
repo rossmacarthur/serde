@@ -4,7 +4,7 @@ Releases
 0.6.2
 -----
 
-*Unreleased*
+*Released on July 20th, 2019*
 
 - Add Regex Field. (`#95`_)
 - Drop Python 3.4 support (`#94`_)
