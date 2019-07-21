@@ -104,12 +104,6 @@ class Fields(OrderedDict):
     def __getattr__(self, name):
         """
         Return values in the dictionary using attribute access with keys.
-
-        Args:
-            name (str): the dictionary key.
-
-        Returns:
-            Field: the field value in the dictionary.
         """
         try:
             return self[name]
