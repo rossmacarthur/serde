@@ -43,34 +43,11 @@ ext_requires = [
     'serde-ext >=0.1.0, <0.2.0'
 ]
 
-# Development requirements
-lint_requires = [
-    'flake8 >=3.7.0',
-    'flake8-bugbear',
-    'flake8-comprehensions',
-    'flake8-docstrings',
-    'flake8-isort',
-    'flake8-mutable',
-    'flake8-pep3101',
-    'flake8-quotes',
-    'pep8-naming',
-
-    'pydocstyle <4.0.0'
-]
-test_requires = [
-    'mock',
-    'pytest >=3.6.0',
-    'pytest-cov >= 2.6.1',
-    'pytest-doctest-import'
-]
-
 setup(
     # Options
     install_requires=install_requires,
     extras_require={
-        'ext': ext_requires,
-        'dev.lint': lint_requires,
-        'dev.test': test_requires
+        'ext': ext_requires
     },
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     packages=find_packages('src'),
