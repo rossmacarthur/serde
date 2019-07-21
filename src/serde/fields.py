@@ -206,14 +206,11 @@ class Field(object):
     def __setattr__(self, name, value):
         """
         Set a named attribute on a Field.
-
-        Raises:
-            `~serde.exceptions.ContextError: when the _name attribute is set
-                after it has already been set.
         """
         if name == '_name' and hasattr(self, '_name'):
             raise ContextError(
-                '{name} instance used multiple times'.format(name=self.__class__.__name__)
+                '{name} instance used multiple times'
+                .format(name=self.__class__.__name__)
             )
 
         super(Field, self).__setattr__(name, value)
@@ -223,12 +220,6 @@ class Field(object):
         Serialize the given value according to this Field's specification.
 
         This method is called by the Model.
-
-        Args:
-            value: the value to serialize.
-
-        Returns:
-            the serialized value.
         """
         for serializer in self.serializers:
             value = serializer(value)
@@ -242,12 +233,6 @@ class Field(object):
         Deserialize the given value according to this Field's specification.
 
         This method is called by the Model.
-
-        Args:
-            value: the value to deserialize.
-
-        Returns:
-            the deserialized value.
         """
         value = self.deserialize(value)
 
@@ -262,12 +247,6 @@ class Field(object):
 
         This is called after deserialization and on initialization, both before
         validation.
-
-        Args:
-            value: the value to normalize.
-
-        Returns:
-            the normalized value.
         """
         value = self.normalize(value)
 
@@ -281,9 +260,6 @@ class Field(object):
         Validate the given value according to this Field's specification.
 
         This method is called by the Model.
-
-        Args:
-            value: the value to validate.
         """
         self.validate(value)
 
@@ -305,51 +281,30 @@ class Field(object):
 
         if self.rename is not None:
             return self.rename
-
-        return name
+        else:
+            return name
 
     def serialize(self, value):
         """
         Serialize the given value according to this Field's specification.
-
-        Args:
-            value: the value to serialize.
-
-        Returns:
-            the serialized value.
         """
         return value
 
     def deserialize(self, value):
         """
         Deserialize the given value according to this Field's specification.
-
-        Args:
-            value: the value to deserialize.
-
-        Returns:
-            the deserialized value.
         """
         return value
 
     def normalize(self, value):
         """
         Normalize the given value according to this Field's specification.
-
-        Args:
-            value: the value to normalize.
-
-        Returns:
-            the normalized value.
         """
         return value
 
     def validate(self, value):
         """
         Validate the given value according to this Field's specification.
-
-        Args:
-            value: the value to validate.
         """
         if value is None:
             raise ValidationError(
@@ -499,9 +454,6 @@ class Instance(Field):
     def validate(self, value):
         """
         Validate the given value is an instance of the specified type.
-
-        Args:
-            value: the value to validate.
         """
         super(Instance, self).validate(value)
         validate.instance(self.type)(value)
@@ -576,26 +528,14 @@ class Nested(Instance):
 
     def serialize(self, value):
         """
-        Serialize the given `Model` instance as a dictionary.
-
-        Args:
-            value (Model): the model to serialize.
-
-        Returns:
-            dict: the serialized dictionary.
+        Serialize the given `~serde.model.Model` instance as a dictionary.
         """
         value = value.to_dict(dict=self.dict)
         return super(Nested, self).serialize(value)
 
     def deserialize(self, value):
         """
-        Deserialize the given dictionary to a `Model` instance.
-
-        Args:
-            value (dict): the dictionary to deserialize.
-
-        Returns:
-            Model: the deserialized model.
+        Deserialize the given dictionary to a `~serde.model.Model` instance.
         """
         value = self.type.from_dict(value, strict=self.strict)
         return super(Nested, self).deserialize(value)
@@ -626,12 +566,6 @@ class Constant(Field):
 
         If the value is None then it will normalized to the constant value.
         Otherwise, the given value is returned.
-
-        Args:
-            value: the value to normalize.
-
-        Returns:
-            the normalized value.
         """
         if value is None:
             value = self.value
@@ -641,9 +575,6 @@ class Constant(Field):
     def validate(self, value):
         """
         Validate that the given value is equal to the constant value.
-
-        Args:
-            value: the value to validate.
         """
         super(Constant, self).validate(value)
         validate.equal(self.value)(value)
@@ -710,12 +641,6 @@ class Optional(Field):
         Serialize the given value according to the inner Field's specification.
 
         Serialization will only be called if the value is not None.
-
-        Args:
-            value: the value to serialize.
-
-        Returns:
-            the serialized value.
         """
         if value is None:
             raise SkipSerialization()
@@ -727,12 +652,6 @@ class Optional(Field):
         Deserialize the given value according to the inner Field's specification.
 
         Deserialization will only be called if the value is not None.
-
-        Args:
-            value: the value to deserialize.
-
-        Returns:
-            the deserialized value or None.
         """
         if value is not None:
             return self.inner._deserialize(value)
@@ -745,12 +664,6 @@ class Optional(Field):
         validation. If a default is defined, this method will set the value to
         the default if the value is None. Otherwise it will call the inner
         Field's normalize method.
-
-        Args:
-            value: the value to normalize.
-
-        Returns:
-            the normalized value.
         """
         if value is None:
             if self.default is not None:
@@ -768,9 +681,6 @@ class Optional(Field):
         Validate the given value according to the inner Field's specification.
 
         Validation will only be called if the value is not None.
-
-        Args:
-            value: the value to validate.
         """
         if value is not None:
             self.inner._validate(value)
@@ -836,12 +746,6 @@ class Dict(Instance):
 
         Each key and value in the dictionary will be serialized with the
         specified key and value Field instances.
-
-        Args:
-            value (dict): the dictionary to serialize.
-
-        Returns:
-            dict: the serialized dictionary.
         """
         value = {self.key._serialize(k): self.value._serialize(v) for k, v in value.items()}
         return super(Dict, self).serialize(value)
@@ -852,12 +756,6 @@ class Dict(Instance):
 
         Each key and value in the dictionary will be deserialized with the
         specified key and value Field instances.
-
-        Args:
-            value (dict): the dictionary to deserialize.
-
-        Returns:
-            dict: the deserialized dictionary.
         """
         value = super(Dict, self).deserialize(value)
         return {self.key._deserialize(k): self.value._deserialize(v) for k, v in value.items()}
@@ -868,12 +766,6 @@ class Dict(Instance):
 
         Each key and value in the dictionary will be normalized with the
         specified key and value Field instances.
-
-        Args:
-            value (dict): the dictionary to normalize.
-
-        Returns:
-            dict: the normalized dictionary.
         """
         value = super(Dict, self).normalize(value)
         return {self.key._normalize(k): self.value._normalize(v) for k, v in value.items()}
@@ -884,9 +776,6 @@ class Dict(Instance):
 
         Each key and value in the dictionary will be validated with the
         specified key and value Field instances.
-
-        Args:
-            value (dict): the dictionary to validate.
         """
         super(Dict, self).validate(value)
 
@@ -946,12 +835,6 @@ class List(Instance):
 
         Each element in the list will be serialized with the specified element
         Field instance.
-
-        Args:
-            value (list): the list to serialize.
-
-        Returns:
-            list: the serialized list.
         """
         value = [self.element._serialize(v) for v in value]
         return super(List, self).serialize(value)
@@ -962,12 +845,6 @@ class List(Instance):
 
         Each element in the list will be deserialized with the specified element
         Field instance.
-
-        Args:
-            value (list): the list to deserialize.
-
-        Returns:
-            list: the deserialized list.
         """
         value = super(List, self).deserialize(value)
         return [self.element._deserialize(v) for v in value]
@@ -978,12 +855,6 @@ class List(Instance):
 
         Each element in the list will be normalized with the specified element
         Field instance.
-
-        Args:
-            value (list): the list to normalize.
-
-        Returns:
-            list: the normalized list.
         """
         value = super(List, self).normalize(value)
         return [self.element._normalize(v) for v in value]
@@ -994,9 +865,6 @@ class List(Instance):
 
         Each element in the list will be validated with the specified element
         Field instance.
-
-        Args:
-            value (list): the list to validate.
         """
         super(List, self).validate(value)
 
@@ -1060,12 +928,6 @@ class Tuple(Instance):
 
         Each element in the tuple will be serialized with the specified element
         Field instance.
-
-        Args:
-            value (tuple): the tuple to serialize.
-
-        Returns:
-            tuple: the serialized tuple.
         """
         return tuple(e._serialize(v) for e, v in zip_equal(self.elements, value))
 
@@ -1075,12 +937,6 @@ class Tuple(Instance):
 
         Each element in the tuple will be deserialized with the specified
         element Field instance.
-
-        Args:
-            value (tuple): the tuple to deserialize.
-
-        Returns:
-            tuple: the deserialized tuple.
         """
         value = super(Tuple, self).deserialize(value)
         return tuple(e._deserialize(v) for e, v in zip_equal(self.elements, value))
@@ -1091,12 +947,6 @@ class Tuple(Instance):
 
         Each element in the tuple will be normalized with the specified element
         Field instance.
-
-        Args:
-            value (tuple): the tuple to normalize.
-
-        Returns:
-            tuple: the normalized tuple.
         """
         value = super(Tuple, self).normalize(value)
         return tuple(e._normalize(v) for e, v in zip_equal(self.elements, value))
@@ -1107,9 +957,6 @@ class Tuple(Instance):
 
         Each element in the tuple will be validated with the specified element
         Field instance.
-
-        Args:
-            value (tuple): the tuple to validate.
         """
         super(Tuple, self).validate(value)
 
@@ -1178,9 +1025,6 @@ class Regex(Str):
     def validate(self, value):
         """
         Validate the given string matches the specified regex.
-
-        Args:
-            value (str): the value to validate.
         """
         super(Regex, self).validate(value)
         validate.regex(self.pattern, flags=self.flags)(value)
@@ -1223,9 +1067,6 @@ class Choice(Field):
     def validate(self, value):
         """
         Validate that the given value is one of the choices.
-
-        Args:
-            value: the value to validate.
         """
         super(Choice, self).validate(value)
         validate.contains(self.choices)(value)
@@ -1268,12 +1109,6 @@ class DateTime(Instance):
     def serialize(self, value):
         """
         Serialize the given `~datetime.datetime` as a string.
-
-        Args:
-            value (~datetime.datetime): the datetime object to serialize.
-
-        Returns:
-            str: a string representation of the datetime.
         """
         if self.format == 'iso8601':
             return value.isoformat()
@@ -1283,12 +1118,6 @@ class DateTime(Instance):
     def deserialize(self, value):
         """
         Deserialize the given string as a `~datetime.datetime`.
-
-        Args:
-            value (str): the string to deserialize.
-
-        Returns:
-            ~datetime.datetime: the deserialized datetime.
         """
         if self.format == 'iso8601':
             return isodate.parse_datetime(value)
@@ -1308,12 +1137,6 @@ class Date(DateTime):
     def deserialize(self, value):
         """
         Deserialize the given string as a `~datetime.date`.
-
-        Args:
-            value (str): the string to deserialize.
-
-        Returns:
-            ~datetime.date: the deserialized date.
         """
         if self.format == 'iso8601':
             return isodate.parse_date(value)
@@ -1333,12 +1156,6 @@ class Time(DateTime):
     def deserialize(self, value):
         """
         Deserialize the given string as a `~datetime.time`.
-
-        Args:
-            value (str): the string to deserialize.
-
-        Returns:
-            ~datetime.time: the deserialized date.
         """
         if self.format == 'iso8601':
             return isodate.parse_time(value)
@@ -1380,25 +1197,13 @@ class Uuid(Instance):
 
     def serialize(self, value):
         """
-        Serialize the given UUID.
-
-        Args:
-            value (~uuid.UUID): the UUID to serialize.
-
-        Returns:
-            str: a string representation of the Uuid.
+        Serialize the given `~uuid.UUID` as a string.
         """
         return str(value)
 
     def deserialize(self, value):
         """
-        Deserialize the given string.
-
-        Args:
-            value (str): the string to deserialize.
-
-        Returns:
-            ~uuid.UUID: the deserialized Uuid.
+        Deserialize the given string as a `~uuid.UUID`.
         """
         return uuid.UUID(value)
 

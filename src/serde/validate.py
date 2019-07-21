@@ -3,6 +3,7 @@ This module contains validators for use with `Fields <serde.fields.Field>`.
 """
 
 import re
+from functools import wraps
 
 from serde.exceptions import ValidationError
 from serde.utils import try_import_all
@@ -24,86 +25,40 @@ __all__ = [
 
 def instance(type):
     """
-    Validate that the given value is an instance of a type.
-
-    Args:
-        type (type): the type to check for.
-
-    Returns:
-        function: the validator function.
+    Returns a validator that asserts the value is an instance of a type.
     """
-    def instance_(value):
-        """
-        Validate that the given value is an instance of a type.
-
-        Args:
-            value: the value to validate.
-
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value is not an
-                instance of the type.
-        """
+    @wraps(instance)
+    def validator(value):
         if not isinstance(value, type):
             raise ValidationError(
                 'expected {!r} but got {!r}'
                 .format(type.__name__, value.__class__.__name__)
             )
 
-    return instance_
+    return validator
 
 
 def equal(to):
     """
-    Validate that a value is equal to something.
-
-    Args:
-        to: the value to check against.
-
-    Returns:
-        function: the validator function.
+    Returns a validator that asserts the value is equal to a specific value.
     """
-    def equal_(value):
-        """
-        Validate that the given value is equal to the specified value.
-
-        Args:
-            value: the value to validate.
-
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value is not equal to
-                the expected value.
-        """
+    @wraps(equal)
+    def validator(value):
         if value != to:
             raise ValidationError(
                 'expected {!r} but got {!r}'
                 .format(to, value)
             )
 
-    return equal_
+    return validator
 
 
 def min(endpoint, inclusive=True):
     """
-    Validate that a value is greater than and/or equal to the given endpoint.
-
-    Args:
-        endpoint: the minimum value allowed.
-        inclusive (bool): whether the minimum value is allowed.
-
-    Returns:
-        function: the validator function.
+    Returns a validator that asserts the  value is greater than a minimum.
     """
-    def min_(value):
-        """
-        Validate that the given value is greater than and/or equal to a minimum.
-
-        Args:
-            value: the value to validate.
-
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value is greater than
-                and/or equal to the maximum.
-        """
+    @wraps(min)
+    def validator(value):
         if inclusive:
             if value < endpoint:
                 raise ValidationError(
@@ -117,31 +72,15 @@ def min(endpoint, inclusive=True):
                     .format(endpoint, value)
                 )
 
-    return min_
+    return validator
 
 
 def max(endpoint, inclusive=True):
     """
-    Validate that a value is less than and/or equal to the given endpoint.
-
-    Args:
-        endpoint: the maximum value allowed.
-        inclusive (bool): whether the maximum value is allowed.
-
-    Returns:
-        function: the validator function.
+    Returns a validator that asserts the value is less than a maximum.
     """
-    def max_(value):
-        """
-        Validate that the given value is less than and/or equal to the maximum.
-
-        Args:
-            value: the value to validate.
-
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value is not less than
-                and/or equal to the maximum.
-        """
+    @wraps(max)
+    def validator(value):
         if inclusive:
             if value > endpoint:
                 raise ValidationError(
@@ -155,196 +94,103 @@ def max(endpoint, inclusive=True):
                     .format(endpoint, value)
                 )
 
-    return max_
+    return validator
 
 
 def between(min_endpoint, max_endpoint, inclusive=True):
     """
-    Validate that the given number is between a minimum and maximum.
-
-    Args:
-        min_endpoint: the minimum value allowed.
-        max_endpoint: the maximum value allowed.
-        inclusive (bool): whether the endpoint values are allowed.
-
-    Returns:
-        function: the validator function.
+    Returns a validator that asserts the value is between two endpoints.
     """
-    def between_(value):
-        """
-        Validate that the given number is between a minimum and maximum.
+    min_validator = min(min_endpoint, inclusive=inclusive)
+    max_validator = max(max_endpoint, inclusive=inclusive)
 
-        Args:
-            value: the value to validate.
+    @wraps(between)
+    def validator(value):
+        min_validator(value)
+        max_validator(value)
 
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value is not between
-                the minimum and maximum.
-        """
-        min(min_endpoint, inclusive=inclusive)(value)
-        max(max_endpoint, inclusive=inclusive)(value)
-
-    return between_
+    return validator
 
 
-def length(length):
+def length(equal_to):
     """
-    Validate that the given value has a particular length.
-
-    Args:
-        length (int): the length allowed.
-
-    Returns:
-        function: the validator function.
+    Returns a validator that asserts the value's length is a specific value.
     """
-    def length_(value):
-        """
-        Validate that the given value has the expected length.
+    equal_validator = equal(equal_to)
 
-        Args:
-            value: the value to validate.
+    @wraps(length)
+    def validator(value):
+        equal_validator(len(value))
 
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value does not have
-                the expected length.
-        """
-        equal(length)(len(value))
-
-    return length_
+    return validator
 
 
 def length_min(endpoint, inclusive=True):
     """
-    Validate that a value's length is greater than/or equal to a minimum.
-
-    Args:
-        endpoint: the minimum length allowed.
-        inclusive (bool): whether the minimum length value itself allowed.
-
-    Returns:
-        function: the validator function.
+    Returns a validator that asserts the value's length is greater than a minimum.
     """
-    def length_min_(value):
-        """
-        Validate that a value's length is greater than/or equal to a minimum.
+    min_validator = min(endpoint, inclusive=inclusive)
 
-        Args:
-            value: the value to validate.
+    @wraps(length_min)
+    def validator(value):
+        min_validator(len(value))
 
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value's length is
-                greater than and/or equal to the maximum.
-        """
-        min(endpoint, inclusive=inclusive)(len(value))
-
-    return length_min_
+    return validator
 
 
 def length_max(endpoint, inclusive=True):
     """
-    Validate that a value's length is less than/or equal to a maximum.
-
-    Args:
-        endpoint: the maximum length allowed.
-        inclusive (bool): whether the maximum length value itself allowed.
-
-    Returns:
-        function: the validator function.
+    Returns a validator that asserts the value's length is less than a maximum.
     """
-    def length_max_(value):
-        """
-        Validate that a value's length is less than/or equal to a maximum.
+    max_validator = max(endpoint, inclusive=inclusive)
 
-        Args:
-            value: the value to validate.
+    @wraps(length_max)
+    def validator(value):
+        max_validator(len(value))
 
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value's length is
-                less than and/or equal to the maximum.
-        """
-        max(endpoint, inclusive=inclusive)(len(value))
-
-    return length_max_
+    return validator
 
 
 def length_between(min_endpoint, max_endpoint, inclusive=True):
     """
-    Validate that the given value's length is between a minimum and maximum.
-
-    Args:
-        min_endpoint: the minimum length allowed.
-        max_endpoint: the maximum length allowed.
-        inclusive (bool): whether the endpoint length values are allowed.
-
-    Returns:
-        function: the validator function.
+    Returns a validator that asserts the value's length is between two endpoints.
     """
-    def length_between_(value):
-        """
-        Validate that the given value's length is between a minimum and maximum.
+    min_validator = min(min_endpoint, inclusive=inclusive)
+    max_validator = max(max_endpoint, inclusive=inclusive)
 
-        Args:
-            value: the value to validate.
+    @wraps(length_between)
+    def validator(value):
+        length = len(value)
+        min_validator(length)
+        max_validator(length)
 
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value's length is not
-                between the minimum and maximum.
-        """
-        min(min_endpoint, inclusive=inclusive)(len(value))
-        max(max_endpoint, inclusive=inclusive)(len(value))
-
-    return length_between_
+    return validator
 
 
 def contains(allowed):
     """
-    Validate that the given list/range/tuple contains the given value.
-
-    Args:
-        allowed (list/range/tuple): the allowed values.
-
-    Returns:
-        function: the validator function.
+    Returns validator that asserts the list/range/tuple contains a value.
     """
-    def contains_(value):
-        """
-        Validate that the given list/range/tuple contains the given value.
-
-        Raises:
-            `~serde.exceptions.ValidationError`: when the value is not one of
-                the allowed values.
-        """
+    @wraps(contains)
+    def validator(value):
         if value not in allowed:
             raise ValidationError('{!r} is not a valid choice'.format(value))
 
-    return contains_
+    return validator
 
 
 def regex(pattern, flags=0):
     """
-    Validate that the given string matches the given regex.
-
-    Args:
-        pattern (str): the regex string to match with.
-        flags (int): regex flags passed directly to `re.compile`.
-
-    Returns:
-        function: the validator function.
+    Returns validator that asserts a string matches a regex.
     """
     compiled = re.compile(pattern, flags=flags)
 
-    def regex_(value):
-        """
-        Validate that the given string matches the regex.
-
-        Raises:
-            `serde.exceptions.ValidationError`: when the value does not match
-                the regex.
-        """
+    @wraps(regex)
+    def validator(value):
         if not compiled.match(value):
             raise ValidationError('{!r} does not match regex {!r}'.format(value, pattern))
 
-    return regex_
+    return validator
 
 
 try_import_all('serde_ext.validate', globals())

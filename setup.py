@@ -65,7 +65,9 @@ lint_requires = [
     'flake8-mutable',
     'flake8-pep3101',
     'flake8-quotes',
-    'pep8-naming'
+    'pep8-naming',
+
+    'pydocstyle <4.0.0'
 ]
 test_requires = [
     'mock',
