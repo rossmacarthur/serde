@@ -12,15 +12,15 @@ clean: docs-clean ## Remove all build artifacts.
 
 .PHONY: install
 install: ## Install package and all features.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[ext,cbor,toml,yaml]"
+	$(VIRTUAL_ENV)/bin/pip install -e ".[ext]"
 
 .PHONY: install-plain
 install-plain: ## Install package, all features, and testing dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[ext,cbor,toml,yaml,dev.test]"
+	$(VIRTUAL_ENV)/bin/pip install -e ".[ext,dev.test]"
 
 .PHONY: install-dev
 install-dev: ## Install package, all features, and linting and testing dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[ext,cbor,toml,yaml,dev.lint,dev.test]"
+	$(VIRTUAL_ENV)/bin/pip install -e ".[ext,dev.lint,dev.test]"
 
 .PHONY: install-all
 install-all: install-dev ## Install package, all features, and all development dependencies.

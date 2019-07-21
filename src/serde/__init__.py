@@ -64,9 +64,7 @@ deserialize a ``Person`` from a dictionary we use the
     >>> person.birthday
     datetime.date(1972, 9, 6)
 
-Other supported data formats include `JSON <serde.model.Model.to_json()>`,
-`Pickle <serde.model.Model.to_pickle()>`, `CBOR <serde.model.Model.to_cbor()>`,
-`TOML <serde.model.Model.to_toml()>`, and `YAML <serde.model.Model.to_yaml()>`.
+Other supported data formats include `JSON <serde.model.Model.to_json()>`.
 
 Nested Models
 -------------

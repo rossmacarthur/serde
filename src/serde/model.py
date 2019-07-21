@@ -2,24 +2,21 @@
 This module defines the core Model class.
 """
 
-import pickle
 from collections import OrderedDict
 from contextlib import contextmanager
-from functools import wraps
 
 from six import with_metaclass
 
 from serde.exceptions import (
     DeserializationError,
     InstantiationError,
-    MissingDependency,
     NormalizationError,
     SerializationError,
     SkipSerialization,
     ValidationError
 )
 from serde.fields import Field
-from serde.utils import dict_partition, subclasses, try_import, zip_until_right
+from serde.utils import dict_partition, subclasses, zip_until_right
 
 
 try:
@@ -27,41 +24,8 @@ try:
 except ImportError:
     import json
 
-cbor = try_import('cbor2')
-toml = try_import('toml')
-yaml = try_import('ruamel.yaml')
-
 
 __all__ = ['Model']
-
-
-def requires_module(module, package=None):
-    """
-    Returns a decorator that handles missing optional modules.
-
-    Args:
-        module (str): the module to check is imported.
-        package (str): the PyPI package name. This is only used for the
-            exception message.
-
-    Returns:
-        function: the real decorator.
-    """
-    def real_decorator(f):
-
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if not globals()[module]:
-                raise MissingDependency(
-                    'this feature requires the {!r} package to be installed'
-                    .format(package or module)
-                )
-
-            return f(*args, **kwargs)
-
-        return decorated_function
-
-    return real_decorator
 
 
 @contextmanager
@@ -528,23 +492,6 @@ class Model(with_metaclass(ModelType, object)):
         return cls._from_dict(d, strict=strict)
 
     @classmethod
-    @requires_module('cbor', package='cbor2')
-    def from_cbor(cls, b, strict=True, **kwargs):
-        """
-        Load the Model from a CBOR bytestring.
-
-        Args:
-            b (bytes): the CBOR byte string.
-            strict (bool): if set to False then no exception will be raised when
-                unknown dictionary keys are present.
-            **kwargs: extra keyword arguments to pass directly to `cbor.loads`.
-
-        Returns:
-            Model: an instance of this Model.
-        """
-        return cls.from_dict(cbor.loads(b, **kwargs), strict=strict)
-
-    @classmethod
     def from_json(cls, s, strict=True, **kwargs):
         """
         Load the Model from a JSON string.
@@ -559,58 +506,6 @@ class Model(with_metaclass(ModelType, object)):
             Model: an instance of this Model.
         """
         return cls.from_dict(json.loads(s, **kwargs), strict=strict)
-
-    @classmethod
-    def from_pickle(cls, b, strict=True, **kwargs):
-        """
-        Load the Model from a Pickle byte string.
-
-        Args:
-            b (bytes): the Pickle byte string.
-            strict (bool): if set to False then no exception will be raised when
-                unknown dictionary keys are present.
-            **kwargs: extra keyword arguments to pass directly to
-                `pickle.loads`.
-
-        Returns:
-            Model: an instance of this Model.
-        """
-        return cls.from_dict(pickle.loads(b, **kwargs), strict=strict)
-
-    @classmethod
-    @requires_module('toml')
-    def from_toml(cls, s, strict=True, **kwargs):
-        """
-        Load the Model from a TOML string.
-
-        Args:
-            s (str): the TOML string.
-            strict (bool): if set to False then no exception will be raised when
-                unknown dictionary keys are present.
-            **kwargs: extra keyword arguments to pass directly to `toml.loads`.
-
-        Returns:
-            Model: an instance of this Model.
-        """
-        return cls.from_dict(toml.loads(s, **kwargs), strict=strict)
-
-    @classmethod
-    @requires_module('yaml', package='ruamel.yaml')
-    def from_yaml(cls, s, strict=True, **kwargs):
-        """
-        Load the Model from a YAML string.
-
-        Args:
-            s (str): the YAML string.
-            strict (bool): if set to False then no exception will be raised when
-                unknown dictionary keys are present.
-            **kwargs: extra keyword arguments to pass directly to
-                `yaml.safe_load`.
-
-        Returns:
-            Model: an instance of this Model.
-        """
-        return cls.from_dict(yaml.safe_load(s, **kwargs), strict=strict)
 
     def to_dict(self, dict=None):
         """
@@ -639,21 +534,6 @@ class Model(with_metaclass(ModelType, object)):
 
         return d
 
-    @requires_module('cbor', package='cbor2')
-    def to_cbor(self, dict=None, **kwargs):
-        """
-        Dump the Model as a CBOR byte string.
-
-        Args:
-            dict (type): the class of the deserialized dictionary that is passed
-                to `cbor.dumps`.
-            **kwargs: extra keyword arguments to pass directly to `cbor.dumps`.
-
-        Returns:
-            bytes: a CBOR representation of this Model.
-        """
-        return cbor.dumps(self.to_dict(dict=dict), **kwargs)
-
     def to_json(self, dict=None, **kwargs):
         """
         Dump the Model as a JSON string.
@@ -667,45 +547,3 @@ class Model(with_metaclass(ModelType, object)):
             str: a JSON representation of this Model.
         """
         return json.dumps(self.to_dict(dict=dict), **kwargs)
-
-    def to_pickle(self, dict=None, **kwargs):
-        """
-        Dump the Model as a Pickle byte string.
-
-        Args:
-            dict (type): the class of the deserialized dictionary that is passed
-                to `pickle.dumps`.
-            **kwargs: extra keyword arguments to pass directly to
-                `pickle.dumps`.
-        """
-        return pickle.dumps(self.to_dict(dict=dict), **kwargs)
-
-    @requires_module('toml')
-    def to_toml(self, dict=None, **kwargs):
-        """
-        Dump the Model as a TOML string.
-
-        Args:
-            dict (type): the class of the deserialized dictionary that is passed
-                to `toml.dumps`.
-            **kwargs: extra keyword arguments to pass directly to `toml.dumps`.
-
-        Returns:
-            str: a TOML representation of this Model.
-        """
-        return toml.dumps(self.to_dict(dict=dict), **kwargs)
-
-    @requires_module('yaml', package='ruamel.yaml')
-    def to_yaml(self, dict=None, **kwargs):
-        """
-        Dump the Model as a YAML string.
-
-        Args:
-            dict (type): the class of the deserialized dictionary that is passed
-                to `yaml.dump`.
-            **kwargs: extra keyword arguments to pass directly to `yaml.dump`.
-
-        Returns:
-            str: a YAML representation of this Model.
-        """
-        return yaml.dump(self.to_dict(dict=dict), **kwargs)
