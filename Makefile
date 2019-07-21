@@ -16,11 +16,11 @@ install: ## Install package and all features.
 
 .PHONY: install-plain
 install-plain: ## Install package, all features, and testing dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[ext,dev.test]"
+	$(VIRTUAL_ENV)/bin/pip install -r requirements/test.txt -e ".[ext]"
 
 .PHONY: install-dev
 install-dev: ## Install package, all features, and linting and testing dependencies.
-	$(VIRTUAL_ENV)/bin/pip install -e ".[ext,dev.lint,dev.test]"
+	$(VIRTUAL_ENV)/bin/pip install -r requirements/lint.txt -r requirements/test.txt -e ".[ext]"
 
 .PHONY: install-all
 install-all: install-dev ## Install package, all features, and all development dependencies.
