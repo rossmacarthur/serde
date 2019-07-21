@@ -42,18 +42,6 @@ install_requires = [
 ext_requires = [
     'serde-ext >=0.1.0, <0.2.0'
 ]
-cbor_requires = [
-    'cbor2 >=4.0.0, <5.0.0'
-]
-json_requires = [
-    'simplejson >=3.0.0, <4.0.0'
-]
-toml_requires = [
-    'toml >=0.10.0, <0.11.0'
-]
-yaml_requires = [
-    'ruamel.yaml >=0.15.0, <0.16.0'
-]
 
 # Development requirements
 lint_requires = [
@@ -81,10 +69,6 @@ setup(
     install_requires=install_requires,
     extras_require={
         'ext': ext_requires,
-        'cbor': cbor_requires,
-        'json': json_requires,
-        'toml': toml_requires,
-        'yaml': yaml_requires,
         'dev.lint': lint_requires,
         'dev.test': test_requires
     },

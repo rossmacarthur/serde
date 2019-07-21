@@ -61,12 +61,6 @@ class SkipSerialization(BaseSerdeError):
     """
 
 
-class MissingDependency(BaseSerdeError):
-    """
-    Raised when there is a missing dependency.
-    """
-
-
 class ContextError(BaseSerdeError):
     """
     Raised when Models or Fields are used in the wrong context.

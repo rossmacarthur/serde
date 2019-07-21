@@ -21,12 +21,3 @@ def py3(f):
         return f(*args, **kwargs)
 
     return decorated_function
-
-
-def py2(f):
-    def decorated_function(*args, **kwargs):
-        if six.PY3:
-            return
-        return f(*args, **kwargs)
-
-    return decorated_function

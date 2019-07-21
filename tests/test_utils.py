@@ -12,7 +12,7 @@ def test_dict_partition():
 
 def test_try_import():
     # Check that the returned value is a module.
-    assert isinstance(utils.try_import('toml'), types.ModuleType)
+    assert isinstance(utils.try_import('json'), types.ModuleType)
 
     # Check that the returned value is None.
     assert utils.try_import('not_a_real_package_i_hope') is None

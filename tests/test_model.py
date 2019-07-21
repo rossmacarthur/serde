@@ -1,7 +1,6 @@
 import datetime
 from collections import OrderedDict
 
-import mock
 from pytest import raises
 
 import serde.model
@@ -9,13 +8,11 @@ from serde import Model, fields, validate
 from serde.exceptions import (
     DeserializationError,
     InstantiationError,
-    MissingDependency,
     NormalizationError,
     SerdeError,
     SerializationError,
     ValidationError
 )
-from tests import py2, py3
 
 
 class TestModel:
@@ -771,18 +768,6 @@ class TestModel:
         example = Example.from_dict({'a': 'test'})
         assert example.a == 'tset'
 
-    def test_from_cbor(self):
-        # Check that you can deserialize from CBOR.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example.from_cbor(b'\xa1aa\x05') == Example(a=5)
-
-        with mock.patch('serde.model.cbor', None):
-            with raises(MissingDependency):
-                Example(a=5).from_cbor(b'\xa1aa\x05')
-
     def test_from_json_basic(self):
         # Check that you can deserialize from JSON.
 
@@ -809,48 +794,6 @@ class TestModel:
             a = fields.Int()
 
         assert Example.from_json('{"a": 5}', object_hook=OrderedDict) == Example(a=5)
-
-    @py3
-    def test_from_pickle(self):
-        # Check that you can deserialize from Pickle.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example.from_pickle(b'\x80\x03}q\x00X\x01\x00\x00\x00aq\x01K\x05s.') == Example(a=5)
-
-    @py2
-    def test_from_pickle_py2(self):
-        # Check that you can deserialize from Pickle.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example.from_pickle(b"(dp0\nS'a'\np1\nI5\ns.") == Example(a=5)
-
-    def test_from_toml(self):
-        # Check that you can deserialize from TOML, if its installed.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example.from_toml('a = 5') == Example(a=5)
-
-        with mock.patch('serde.model.toml', None):
-            with raises(MissingDependency):
-                Example.from_toml('a = 50')
-
-    def test_from_yaml(self):
-        # Check that you can deserialize from YAML, if its installed.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example.from_yaml('a: 5') == Example(a=5)
-
-        with mock.patch('serde.model.yaml', None):
-            with raises(MissingDependency):
-                Example.from_yaml('a: 5')
 
     def test_to_dict_empty(self):
         # Check that an empty Model serializes to an empty dictionary.
@@ -1039,19 +982,6 @@ class TestModel:
 
         assert Example(a='tset').to_dict() == {'a': 'test'}
 
-    def test_to_cbor(self):
-        # Check that you can serialize to CBOR.
-
-        class Example(Model):
-            a = fields.Int()
-
-        Example.to_dict = mock.Mock(return_value={u'a': 5})
-        assert Example(a=5).to_cbor() == b'\xa1aa\x05'
-
-        with mock.patch('serde.model.cbor', None):
-            with raises(MissingDependency):
-                Example(a=5).to_cbor()
-
     def test_to_json_basic(self):
         # Check that you can serialize to JSON.
 
@@ -1068,45 +998,3 @@ class TestModel:
             a = fields.Int()
 
         assert Example(a=5, b='test').to_json(sort_keys=True) == '{"a": 5, "b": "test"}'
-
-    @py3
-    def test_to_pickle(self):
-        # Check that you can serialize to Pickle.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example(a=5).to_pickle(dict=dict) == b'\x80\x03}q\x00X\x01\x00\x00\x00aq\x01K\x05s.'
-
-    @py2
-    def test_to_pickle_py2(self):
-        # Check that you can serialize to Pickle.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example(a=5).to_pickle(dict=dict) == b"(dp0\nS'a'\np1\nI5\ns."
-
-    def test_to_toml(self):
-        # Check that you can serialize to TOML, if its installed.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example(a=5).to_toml() == 'a = 5\n'
-
-        with mock.patch('serde.model.toml', None):
-            with raises(MissingDependency):
-                Example(a=5).to_toml()
-
-    def test_to_yaml(self):
-        # Check that you can serialize to YAML, if its installed.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example(a=5).to_yaml(dict=dict, default_flow_style=False) == 'a: 5\n'
-
-        with mock.patch('serde.model.yaml', None):
-            with raises(MissingDependency):
-                Example(a=5).to_yaml()
