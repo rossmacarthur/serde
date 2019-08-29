@@ -8,6 +8,35 @@ from collections import OrderedDict
 from six.moves import zip_longest
 
 
+def chained(funcs, value):
+    """
+    Chain multiple function calls, passing each result to the next function.
+
+    Arps:
+        funcs (iterable): the functions to chain.
+        value: the value to chain the functions on.
+
+    Returns:
+        the result of the chaining.
+    """
+    for func in funcs:
+        value = func(value)
+
+    return value
+
+
+def applied(funcs, value):
+    """
+    Call multiple functions on a single value.
+
+    Args:
+        funcs (iterable): the functions to apply.
+        value: the value to apply the functions to.
+    """
+    for func in funcs:
+        func(value)
+
+
 def dict_partition(d, keyfunc, dict=OrderedDict):
     """
     Partition a dictionary.

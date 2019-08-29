@@ -62,8 +62,10 @@ Easily serialize and deserialize arbitrary data to and from Python objects.
     'Paris Hilton'
     >>> owner.birthday
     datetime.date(1981, 2, 17)
-    >>> owner.dog
-    Dog(name='Tinkerbell', hates_cats=True)
+    >>> owner.dog.name
+    'Tinkerbell'
+    >>> owner.dog.hates_cats
+    True
 
 View the latest usage and API documentation
 `here <https://ross.macarthur.io/project/serde/api.html>`_.

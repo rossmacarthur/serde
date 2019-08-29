@@ -1,14 +1,71 @@
 from pytest import raises
 
-from serde import Model, fields, validate
-from serde.exceptions import BaseSerdeError, DeserializationError, SerdeError, ValidationError
+from serde import Model, fields, tags, validate
+from serde.exceptions import BaseError, Context, DeserializationError, SerdeError, ValidationError
 
 
-def test_base_error():
-    error = BaseSerdeError('something failed')
+class TestBaseError:
+    def test___init__(self):
+        assert BaseError('testing...').args == ('testing...',)
 
-    assert repr(error) == '<serde.exceptions.BaseSerdeError: something failed>'
-    assert str(error) == 'something failed'
+    def test_message(self):
+        assert BaseError('testing...').message == 'testing...'
+
+    def test___repr__(self):
+        assert repr(BaseError('testing...')) == '<serde.exceptions.BaseError: testing...>'
+
+    def test___str__(self):
+        assert str(BaseError('testing...')) == 'testing...'
+
+
+class TestContext:
+
+    def test_pretty_basic(self):
+        # Test that a Context object is correctly pretty formatted.
+        class Example(Model):
+            a = fields.Int()
+
+        context = Context(
+            cause=ValidationError('something failed'),
+            value='test',
+            field=Example.__fields__.a,
+            model_cls=Example
+        )
+
+        assert context.pretty(separator='; ', prefix=':: ', indent=0) == (
+            ":: value 'test' for field 'a' of type 'Int' on model 'Example'; "
+            ':: ValidationError: something failed'
+        )
+
+    def test_pretty_tag(self):
+        # Test that a Context object behaves correctl with a Tag.
+        class Example(Model):
+            class Meta:
+                tag = tags.Internal(tag='kind')
+
+            a = fields.Int()
+
+        context = Context(
+            cause=ValidationError('something failed'),
+            value='test',
+            field=Example.__tag__,
+            model_cls=Example
+        )
+
+        assert context.pretty(separator=';', prefix='> ', indent=0) == (
+            "> value 'test' for tag 'Internal' on model 'Example';"
+            '> ValidationError: something failed'
+        )
+
+    def test_pretty_generic_exception(self):
+        # Test that cause can also work with a generic exception.
+        context = Context(cause=ValueError(), value=None, field=None, model_cls=None)
+        assert context.pretty() == '    Due to => ValueError()'
+
+    def test_pretty_context_long_value(self):
+        # Test that a Context object is correctly pretty formatted.
+        context = Context(cause=None, value='a' * 40, field=None, model_cls=None)
+        assert context.pretty() == "    Due to => value 'aaaaaaaaaaaaaaaaaaaaaaaaa... "
 
 
 class TestSerdeError:
@@ -62,43 +119,15 @@ class TestSerdeError:
         # Test that cause, value, field, and model attributes are accessible.
         error = SerdeError('something failed', value=1)
         error.add_context(field=2)
-        error.add_context(model=3)
+        error.add_context(model_cls=3)
 
         assert error.cause is None
         assert error.value == 1
         assert error.field == 2
-        assert error.model == 3
+        assert error.model_cls == 3
 
         with raises(AttributeError):
             assert error.not_a_real_attribute_i_hope
-
-    def test__pretty_context_basic(self):
-        # Test that a Context object is correctly pretty formatted.
-        class Example(Model):
-            a = fields.Int()
-
-        context = SerdeError.Context(
-            cause=ValidationError('something failed'),
-            value='test',
-            field=Example._fields.a,
-            model=Example
-        )
-
-        assert SerdeError._pretty_context(context, separator='; ', prefix=':: ', indent=0) == (
-            ":: value 'test' for field 'a' of type 'Int' on model 'Example'; "
-            ':: ValidationError: something failed'
-        )
-
-    def test__pretty_context_generic_exception(self):
-        # Test that cause can also work with a generic exception.
-        context = SerdeError.Context(cause=ValueError(), value=None, field=None, model=None)
-        assert SerdeError._pretty_context(context) == '    Due to => ValueError()'
-
-    def test__pretty_context_long_value(self):
-        # Test that a Context object is correctly pretty formatted.
-        context = SerdeError.Context(cause=None, value='a' * 40, field=None, model=None)
-        expected = "    Due to => value 'aaaaaaaaaaaaaaaaaaaaaaaaa..."
-        assert SerdeError._pretty_context(context) == expected
 
     def test_pretty_use_case_nested(self):
         # Test a better use case for the pretty formatted error.
@@ -109,20 +138,15 @@ class TestSerdeError:
         class Example(Model):
             sub = fields.Nested(SubExample)
 
-        try:
-            Example.from_dict({
-                'sub': {
-                    'a': 'testing'
-                }
-            })
-            assert False
-        except DeserializationError as e:
-            assert e.pretty() == (
-                'DeserializationError: expected at most 5 but got 7\n'
-                "    Due to => value {'a': 'testing'} for field 'sub' of type 'Nested' on model 'Example'\n"  # noqa: E501
-                '    Due to => ValidationError: expected at most 5 but got 7\n'
-                "    Due to => value 'testing' for field 'a' of type 'Str' on model 'SubExample'"
-            )
+        with raises(DeserializationError) as e:
+            Example.from_dict({'sub': {'a': 'testing'}})
+
+        assert e.value.pretty() == (
+            'DeserializationError: expected at most 5 but got 7\n'
+            "    Due to => value {'a': 'testing'} for field 'sub' of type 'Nested' on model 'Example'\n"  # noqa: E501
+            '    Due to => ValidationError: expected at most 5 but got 7\n'
+            "    Due to => value 'testing' for field 'a' of type 'Str' on model 'SubExample'"
+        )
 
     def test_pretty_use_case_missing_keys(self):
         # Test another use case where dictionary keys are missing.
@@ -130,46 +154,27 @@ class TestSerdeError:
         class Example(Model):
             a = fields.Int()
 
-        try:
+        with raises(DeserializationError) as e:
             Example.from_dict({})
-            assert False
-        except DeserializationError as e:
-            assert e.pretty() == (
-                'DeserializationError: Int value is not allowed to be None\n'
-                '    Due to => ValidationError: Int value is not allowed to be None\n'
-                "    Due to => for field 'a' of type 'Int' on model 'Example'"
-            )
+
+        assert e.value.pretty() == (
+            "DeserializationError: expected field 'a'\n"
+            "    Due to => field 'a' of type 'Int' on model 'Example'"
+        )
 
     def test_pretty_use_case_extra_keys(self):
-        # Test another use case where there are extra dictionary keys.
-
         class SubExample(Model):
-            pass
+            a = fields.Str()
 
         class Example(Model):
             sub = fields.Nested(SubExample)
 
-        try:
-            Example.from_dict({
-                'sub': {
-                    'a': 5
-                }
-            })
-            assert False
-        except DeserializationError as e:
-            assert e.pretty() == (
-                "DeserializationError: unexpected dictionary key 'a'\n"
-                "    Due to => value {'a': 5} for field 'sub' of type 'Nested' on model 'Example'"
-            )
+        with raises(DeserializationError) as e:
+            Example.from_dict({'sub': {'a': 5}})
 
-    def test_pretty_use_case_extra_keys_flat(self):
-        # Test another use case where there are extra dictionary keys.
-
-        class Example(Model):
-            a = fields.Int()
-
-        try:
-            Example.from_dict({'a': 5, 'b': 'test'})
-            assert False
-        except DeserializationError as e:
-            assert e.pretty() == "DeserializationError: unexpected dictionary key 'b'"
+        assert e.value.pretty() == (
+            "DeserializationError: expected 'str' but got 'int'\n"
+            "    Due to => value {'a': 5} for field 'sub' of type 'Nested' on model 'Example'\n"
+            "    Due to => ValidationError: expected 'str' but got 'int'\n"
+            "    Due to => value 5 for field 'a' of type 'Str' on model 'SubExample'"
+        )

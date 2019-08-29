@@ -5,16 +5,17 @@ from collections import OrderedDict
 
 from pytest import raises
 
-from serde import Model, validate
+from serde import Model, fields, validate
 from serde.exceptions import (
     ContextError,
     DeserializationError,
     InstantiationError,
-    SerdeError,
-    SkipSerialization,
+    NormalizationError,
+    SerializationError,
     ValidationError
 )
 from serde.fields import (
+    BaseField,
     Bool,
     Bytes,
     Choice,
@@ -91,6 +92,101 @@ def test__resolve_to_field_instance_builtin_types():
     assert _resolve_to_field_instance(str) == Str()
     assert _resolve_to_field_instance(tuple) == Tuple()
 
+    try:
+        assert _resolve_to_field_instance(basestring) == fields.BaseString()
+    except NameError:
+        pass
+
+    try:
+        assert _resolve_to_field_instance(long) == fields.Long()
+    except NameError:
+        pass
+
+    try:
+        assert _resolve_to_field_instance(unicode) == fields.Unicode()
+    except NameError:
+        pass
+
+
+class TestBaseField:
+
+    def test___init___basic(self):
+        # Construct a basic Base and check values are set correctly.
+        base = BaseField()
+        assert base.id >= 0
+        assert base.serializers == []
+        assert base.deserializers == []
+
+        # A second Base instantiated should have a higher counter.
+        base2 = BaseField()
+        assert base2.id - base.id == 1
+
+    def test___init___options(self):
+        # A Base with extra options set.
+        base = BaseField(serializers=[None], deserializers=[1, 2, 3])
+        assert base.serializers == [None]
+        assert base.deserializers == [1, 2, 3]
+
+    def test___eq__(self):
+        # Bases with equal values should be equal.
+        assert BaseField() == BaseField()
+        assert BaseField(serializers=[None]) == BaseField(serializers=[None])
+        assert BaseField(deserializers=[None]) == BaseField(deserializers=[None])
+
+    def test___model__(self):
+        # Base.__model__ simply returns the _model_cls value.
+        obj = object()
+        base = BaseField()
+        base._model_cls = obj
+        assert base.__model__ is obj
+
+    def test__attrs(self):
+        # Returns a filtered dictionary of filtered attributes.
+        base = BaseField(serializers=[None], deserializers=[1, 2, 3])
+        assert base._attrs() == {'deserializers': [1, 2, 3], 'serializers': [None]}
+
+    def test__bind(self):
+        # Make sure _bind can't be called twice.
+        obj = object()
+        base = BaseField()
+        base._bind(obj)
+        assert base._model_cls is obj
+
+        with raises(ContextError) as e:
+            base._bind(object())
+
+        assert e.value.message == "'BaseField' instance used multiple times"
+
+    def test__serialize_with(self):
+        # Check that the Base field doesn't implement this method.
+        with raises(NotImplementedError):
+            BaseField()._serialize_with(object(), {})
+
+    def test__deserialize_with(self):
+        # Check that the Base field doesn't implement this method.
+        with raises(NotImplementedError):
+            BaseField()._deserialize_with(object(), {})
+
+    def test__serialize(self):
+        # Check that custom serializers are applied.
+        base = BaseField(serializers=[lambda x: x[::-1]])
+        assert base._serialize('testing') == 'gnitset'
+
+    def test__deserialize(self):
+        # Check that custom deserializers are applied.
+        base = BaseField(deserializers=[lambda x: x[::-1]])
+        assert base._deserialize('gnitset') == 'testing'
+
+    def test_serialize(self):
+        # Check that serialize simply passes a value through.
+        obj = object()
+        assert BaseField().serialize(obj) is obj
+
+    def test_deserialize(self):
+        # Check that deserialize simply passes a value through.
+        obj = object()
+        assert BaseField().deserialize(obj) is obj
+
 
 class TestField:
 
@@ -99,6 +195,9 @@ class TestField:
         field = Field()
         assert field.id >= 0
         assert field.rename is None
+        assert field.serializers == []
+        assert field.deserializers == []
+        assert field.normalizers == []
         assert field.validators == []
 
         # A second Field instantiated should have a higher counter.
@@ -107,53 +206,124 @@ class TestField:
 
     def test___init___options(self):
         # A Field with extra options set.
-        field = Field(rename='test', validators=[None])
+        field = Field(
+            rename='test',
+            serializers=[1, 2, 3],
+            deserializers=[0.5],
+            validators=[None]
+        )
         assert field.rename == 'test'
+        assert field.serializers == [1, 2, 3]
+        assert field.deserializers == [0.5]
         assert field.validators == [None]
 
-    def test__setattr__(self):
-        # The same Field instance should not be able to be used twice.
+    def test__bind(self):
+        # Make sure _bind can't be called twice.
+        obj = object()
         field = Field()
-        with raises(ContextError):
-            class Example(Model):
-                a = field
-                b = field
+        field._bind(obj, 'test')
+        assert field._model_cls is obj
+        assert field._attr_name == 'test'
+        assert field._serde_name == 'test'
 
-    def test_name_unused(self):
-        # The Field name should not exist until added to a Model.
-        field = Field()
-        with raises(SerdeError):
-            field.name
+        with raises(ContextError) as e:
+            field._bind(object(), 'test')
 
-    def test_name_used(self):
-        # The Field name is set when it is added to a Model.
-        field = Field()
+        assert e.value.message == "'Field' instance used multiple times"
 
-        class Example(Model):
-            a = field
+    def test__bind_with_rename(self):
+        # Make sure _bind rename overrides the passed in name.
+        obj = object()
+        field = Field(rename='hello')
+        field._bind(obj, 'test')
+        assert field._attr_name == 'test'
+        assert field._serde_name == 'hello'
 
-        assert field.name == 'a'
+    def test__serialize_with(self):
+        # Check a basic Field simply serializes the attribute value.
+        model = Model()
+        model.test = 'testing...'
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
+        assert field._serialize_with(model, {}) == {'hello': 'testing...'}
 
-    def test_name_overridden(self):
-        # The Field name should be able to be overridden.
-        field = Field(rename='not_a')
+    def test__serialize_with_attribute_error(self):
+        # Check that the appropriate error is raised when the attr is missing.
+        model = Model()
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
 
-        class Example(Model):
-            a = field
+        with raises(SerializationError) as e:
+            field._serialize_with(model, {})
 
-        assert field.name == 'not_a'
+        assert e.value.pretty() == """\
+SerializationError: expected attribute 'test'
+    Due to => field 'test' of type 'Field' on model 'Model'"""
 
-    def test_serialize(self):
-        # The base Field simply passes things through.
-        field = Field()
-        value = object()
-        assert field.serialize(value) == value
+    def test__deserialize_with(self):
+        # Check a basic Field simply deserializes the dictionary value.
+        model = Model()
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
 
-    def test_deserialize(self):
-        # The base Field simply passes things through.
-        field = Field()
-        value = object()
-        assert field.deserialize(value) == value
+        result = field._deserialize_with(model, {'hello': 'testing...'})
+        assert result == (model, {'hello': 'testing...'})
+        assert model.test == 'testing...'
+
+    def test__deserialize_with_index_error(self):
+        # Check that the appropriate error is raised when the key is missing.
+        model = Model()
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
+
+        with raises(DeserializationError) as e:
+            field._deserialize_with(model, {})
+
+        assert e.value.pretty() == """\
+DeserializationError: expected field 'hello'
+    Due to => field 'test' of type 'Field' on model 'Model'"""
+
+    def test__normalize_with(self):
+        # Check a basic Field simply serializes the attribute value.
+        model = Model()
+        model.test = 'testing...'
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
+        field._normalize_with(model)
+
+    def test__normalize_with_attribute_error(self):
+        # Check that the appropriate error is raised when the attr is missing.
+        model = Model()
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
+
+        with raises(NormalizationError) as e:
+            field._normalize_with(model)
+
+        assert e.value.pretty() == """\
+NormalizationError: expected attribute 'test'
+    Due to => field 'test' of type 'Field' on model 'Model'"""
+
+    def test__validate_with(self):
+        # Check a basic Field simply serializes the attribute value.
+        model = Model()
+        model.test = 'testing...'
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
+        field._validate_with(model)
+
+    def test__validate_with_attribute_error(self):
+        # Check that the appropriate error is raised when the attr is missing.
+        model = Model()
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
+
+        with raises(ValidationError) as e:
+            field._validate_with(model)
+
+        assert e.value.pretty() == """\
+ValidationError: expected attribute 'test'
+    Due to => field 'test' of type 'Field' on model 'Model'"""
 
     def test_normalize(self):
         # The base Field simply passes things through.
@@ -164,12 +334,8 @@ class TestField:
     def test_validate(self):
         # Any value is allowed on the base Field except None.
         field = Field()
-        for value in (0, 'string', object(), type):
+        for value in (None, 0, 'string', object(), type):
             field.validate(value)
-
-        # None should not be allowed.
-        with raises(ValidationError):
-            field.validate(None)
 
 
 def test_create_base():
@@ -216,12 +382,12 @@ def test_create_serializer_and_normalizer_and_deserializer():
     class Example(Model):
         a = Reversed()
 
-    example = Example(a='test')
-    assert example.a == 'tset'
+    field = Example(a='test')
+    assert field.a == 'tset'
 
-    example = Example.from_dict({'a': 'test'})
-    assert example.a == 'test'
-    assert example.to_dict() == {'a': 'tset'}
+    field = Example.from_dict({'a': 'test'})
+    assert field.a == 'test'
+    assert field.to_dict() == {'a': 'tset'}
 
 
 def test_create_validator():
@@ -245,68 +411,201 @@ def test_create_validator():
         Example('derp')
 
 
+class TestOptional:
+
+    def test___init___basic(self):
+        # Construct a basic Optional and check values are set correctly.
+        field = Optional()
+        assert field.inner == Field()
+        assert field.default is None
+        assert field.validators == []
+
+    def test___init___options(self):
+        # Construct an Optional with extra options and make sure values are
+        # passed to Field.
+        field = Optional(Str, default='test', validators=[None])
+        assert field.inner == Str()
+        assert field.default == 'test'
+        assert field.validators == [None]
+
+    def test__serialize_with(self):
+        # Check an Optional serializes using the inner Field.
+        model = Model()
+        model.test = 'testing...'
+        field = Optional(inner=Str, rename='hello')
+        field._bind(model.__class__, 'test')
+        assert field._serialize_with(model, {}) == {'hello': 'testing...'}
+        model.test = None
+        assert field._serialize_with(model, {}) == {}
+
+    def test__serialize_with_attribute_error(self):
+        # Check that the appropriate error is raised when the attr is missing.
+        model = Model()
+        field = Optional(rename='hello')
+        field._bind(model.__class__, 'test')
+
+        with raises(SerializationError) as e:
+            field._serialize_with(model, {})
+
+        assert e.value.pretty() == """\
+SerializationError: expected attribute 'test'
+    Due to => field 'test' of type 'Optional' on model 'Model'"""
+
+    def test__deserialize_with(self):
+        # Check an Optional deserializes using the inner Field.
+        model = Model()
+        field = Optional(rename='hello', default='testing...')
+        field._bind(model.__class__, 'test')
+        result = field._deserialize_with(model, {'hello': 'hmmmm'})
+        assert result == (model, {'hello': 'hmmmm'})
+        assert model.test == 'hmmmm'
+        del model.test
+        assert field._deserialize_with(model, {}) == (model, {})
+        assert not hasattr(model, 'test')
+
+    def test__normalize_with(self):
+        # Check an Optional simply normalizes the attribute value.
+        model = Model()
+        model.test = 'testing...'
+        field = Optional(rename='hello')
+        field._bind(model.__class__, 'test')
+        field._normalize_with(model)
+
+    def test__normalize_with_none(self):
+        # Check an Optional simply allows None.
+        model = Model()
+        field = Optional(rename='hello')
+        field._bind(model.__class__, 'test')
+        field._normalize_with(model)
+        assert model.test is None
+
+    def test__normalize_with_none_default(self):
+        # Check an Optional sets a default, if set.
+        model = Model()
+        field = Optional(rename='hello', default='testing...')
+        field._bind(model.__class__, 'test')
+        field._normalize_with(model)
+        assert model.test == 'testing...'
+
+    def test__normalize_with_none_default_callbable(self):
+        # Check an Optional sets a callable default, if set.
+        def test():
+            return 'testing...'
+
+        model = Model()
+        field = Optional(rename='hello', default=test)
+        field._bind(model.__class__, 'test')
+        field._normalize_with(model)
+        assert model.test == 'testing...'
+
+    def test__validate_with(self):
+        # Check a basic Field simply serializes the attribute value.
+        model = Model()
+        model.test = 'testing...'
+        field = Optional(rename='hello')
+        field._bind(model.__class__, 'test')
+        field._validate_with(model)
+
+    def test__validate_with_attribute_error(self):
+        # Check that the appropriate error is raised when the attr is missing.
+        model = Model()
+        field = Optional(rename='hello')
+        field._bind(model.__class__, 'test')
+
+        with raises(ValidationError) as e:
+            field._validate_with(model)
+
+        assert e.value.pretty() == """\
+ValidationError: expected attribute 'test'
+    Due to => field 'test' of type 'Optional' on model 'Model'"""
+
+    def test_serialize(self):
+        # An Optional should call the wrapped Field's _serialize method.
+        field = Optional(Reversed)
+        assert field.serialize('test') == 'tset'
+
+    def test_serialize_extra(self):
+        # An Optional should call the wrapped Field's _serialize method.
+        field = Optional(Reversed(serializers=[lambda x: x.strip()]))
+        assert field.serialize('test ') == 'tset'
+
+    def test_deserialize(self):
+        # An Optional should call the wrapped Field's _deserialize method.
+        field = Optional(Reversed)
+        assert field.deserialize('test') == 'tset'
+
+    def test_deserialize_extra(self):
+        # An Optional should call the wrapped Field's _deserialize method.
+        field = Optional(Field(deserializers=[lambda x: x.strip()]))
+        assert field.deserialize('test ') == 'test'
+
+    def test_normalize(self):
+        # An Optional should call the wrapped Field's _normalize method.
+        field = Optional(Reversed)
+        assert field.normalize('test') == 'test'
+
+    def test_validate(self):
+        # An Optional should call the wrapped Field's _validate method.
+        field = Optional(Reversed)
+        with raises(ValidationError):
+            assert field.validate(5)
+
+    def test_validate_extra(self):
+        # An Optional should call the wrapped Field's _validate method.
+        field = Optional(Field(validators=[validate.equal(10)]))
+        with raises(ValidationError):
+            assert field.validate(5)
+
+
 class TestInstance:
 
     def test___init___basic(self):
         # Construct a basic Instance and check values are set correctly.
-        example = Instance(int)
-        assert example.type == int
-        assert example.validators == []
+        field = Instance(int)
+        assert field.type == int
+        assert field.validators == []
 
     def test___init___options(self):
         # Construct an Instance and make sure values are passed to Field.
-        example = Instance(int, validators=[None])
-        assert example.type == int
-        assert example.validators == [None]
+        field = Instance(int, validators=[None])
+        assert field.type == int
+        assert field.validators == [None]
 
     def test_validate(self):
         # Check that it validates that the values are an instance of the
         # specified type.
-        example = Instance(int)
+        field = Instance(int)
 
         for value in (-1000, 0, 1000):
-            assert example.validate(value) is None
+            assert field.validate(value) is None
 
         for value in (None, 20.0, 'string', object, type):
             with raises(ValidationError):
-                example.validate(value)
+                field.validate(value)
 
 
 class TestNested:
 
     def test___init___basic(self):
         # Construct a basic Nested and check values are set correctly.
-        example = Nested(Model)
-        assert example.type == Model
-        assert example.dict is None
-        assert example.validators == []
+        field = Nested(Model)
+        assert field.type == Model
+        assert field.validators == []
 
     def test___init___options(self):
         # Construct a Nested with extra options and make sure values are passed
         # to Field.
-        example = Nested(Model, dict=dict, strict=False, validators=[None])
-        assert example.type == Model
-        assert example.dict is dict
-        assert example.strict is False
-        assert example.validators == [None]
+        field = Nested(Model, validators=[None])
+        assert field.type == Model
+        assert field.validators == [None]
 
     def test_serialize(self):
         # A Nested should serialize as a dictionary representation of the Model.
         class Example(Model):
             a = Field()
 
-        example = Nested(Example)
-        assert example.serialize(Example(a=0)) == OrderedDict([('a', 0)])
-
-    def test_serialize_dict(self):
-        # You should be able to set the dictionary type when serializing.
-        class Example(Model):
-            a = Field()
-
-        example = Nested(Example, dict=dict)
-        result = example.serialize(Example(a=0))
-        assert result == {'a': 0}
-        assert not isinstance(result, OrderedDict)
+        field = Nested(Example)
+        assert field.serialize(Example(a=0)) == OrderedDict([('a', 0)])
 
     def test_deserialize(self):
         # A Nested should deserialize as a dictionary representation of the
@@ -314,452 +613,383 @@ class TestNested:
         class Example(Model):
             a = Field()
 
-        example = Nested(Example)
-        assert example.deserialize({'a': 0}) == Example(a=0)
+        field = Nested(Example)
+        assert field.deserialize({'a': 0}) == Example(a=0)
 
         with raises(DeserializationError):
-            example.deserialize({'a': 0, 'b': 1})
-
-    def test_deserialize_strict(self):
-        # You should be able to unset strict deserializing.
-        class Example(Model):
-            a = Field()
-
-        example = Nested(Example, strict=False)
-        assert example.deserialize({'a': 0, 'b': 1}) == Example(a=0)
+            field.deserialize({'b': 0, 'c': 1})
 
 
 class TestConstant:
 
     def test___init___basic(self):
         # Construct a basic Constant and check values are set correctly.
-        example = Constant(1)
-        assert example.value == 1
-        assert example.validators == []
+        field = Constant(1)
+        assert field.value == 1
+        assert field.validators == []
 
     def test___init___options(self):
         # Construct a Constant with extra options and make sure values are
         # passed to Field.
-        example = Constant(-1234, validators=[None])
-        assert example.value == -1234
-        assert example.validators == [None]
+        field = Constant(-1234, validators=[None])
+        assert field.value == -1234
+        assert field.validators == [None]
 
     def test_normalize_none(self):
         # Check that None values are normalized to the constant value.
-        example = Constant(123)
-        assert example.normalize(None) == 123
+        field = Constant(123)
+        assert field.normalize(None) == 123
 
     def test_normalize_something(self):
         # Check that other values are normalized to themselves.
-        example = Constant(123)
+        field = Constant(123)
         other = object()
-        assert example.normalize(other) is other
+        assert field.normalize(other) is other
 
     def test_validate(self):
         # Check that values must be equal to the constant value.
-        example = Constant(True)
-        example.validate(True)
+        field = Constant(True)
+        field.validate(True)
 
         with raises(ValidationError):
-            assert example.validate(False)
-
-
-class TestOptional:
-
-    def test___init___basic(self):
-        # Construct a basic Optional and check values are set correctly.
-        example = Optional()
-        assert example.inner == Field()
-        assert example.default is None
-        assert example.validators == []
-
-    def test___init___options(self):
-        # Construct an Optional with extra options and make sure values are
-        # passed to Field.
-        example = Optional(Str, default='test', validators=[None])
-        assert example.inner == Str()
-        assert example.default == 'test'
-        assert example.validators == [None]
-
-    def test_normalize_default(self):
-        # When default is set, the Optional should return that value when the
-        # input is None.
-        example = Optional(default='test')
-        assert example.normalize(None) == 'test'
-
-    def test_normalize_callable_default(self):
-        # When a callable default is set, the Optional should call that function
-        # and return that value.
-        example = Optional(default=dict)
-        assert example.normalize(None) == {}
-
-    def test_normalize_something(self):
-        # An Optional should call the wrapped Field's normalize method.
-        class Test(Field):
-            def normalize(self, value):
-                return value[::-1]
-
-        example = Optional(Test)
-        assert example.normalize('test') == 'tset'
-
-    def test_normalize_none(self):
-        # An Optional always normalizes None to None.
-        class Test(Field):
-            def normalize(self, value):
-                return value[::-1]
-
-        example = Optional(Test)
-        assert example.normalize(None) is None
-
-    def test_serialize_something(self):
-        # An Optional should call the wrapped Field's _serialize method.
-        example = Optional(Reversed)
-        assert example.serialize('test') == 'tset'
-
-    def test_serialize_something_extra(self):
-        # An Optional should call the wrapped Field's _serialize method.
-        example = Optional(Field(serializers=[lambda x: x.strip()]))
-        assert example.serialize('test ') == 'test'
-
-    def test_serialize_none(self):
-        # An Optional should raise SkipSerialization if the value is None.
-        example = Optional(Reversed)
-
-        with raises(SkipSerialization):
-            assert example.serialize(None)
-
-    def test_deserialize_something(self):
-        # An Optional should call the wrapped Field's _deserialize method.
-        example = Optional(Reversed)
-        assert example.deserialize('test') == 'tset'
-
-    def test_deserialize_something_extra(self):
-        # An Optional should call the wrapped Field's _deserialize method.
-        example = Optional(Field(deserializers=[lambda x: x.strip()]))
-        assert example.deserialize('test ') == 'test'
-
-    def test_deserialize_none(self):
-        # An Optional deserialize None as None.
-        example = Optional(Reversed)
-        assert example.deserialize(None) is None
-
-    def test_validate_something(self):
-        # An Optional should call the wrapped Field's _validate method.
-        example = Optional(Reversed)
-
-        with raises(ValidationError):
-            assert example.validate(5)
-
-    def test_validate_something_extra(self):
-        # An Optional should call the wrapped Field's _validate method.
-        example = Optional(Field(validators=[validate.equal(10)]))
-
-        with raises(ValidationError):
-            assert example.validate(5)
-
-    def test_validate_none(self):
-        # An Optional should not do any validation for None.
-        example = Optional(Reversed)
-        assert example.validate(None) is None
+            assert field.validate(False)
 
 
 class TestDict:
 
     def test___init___basic(self):
         # Construct a basic Dict and check values are set correctly.
-        example = Dict()
-        assert example.key == Field()
-        assert example.value == Field()
-        assert example.validators == []
+        field = Dict()
+        assert field.key == Field()
+        assert field.value == Field()
+        assert field.validators == []
 
     def test___init___options(self):
         # Construct a Dict with extra options and make sure values are passed to
         # Field.
-        example = Dict(key=Str, value=Int, validators=[None])
-        assert example.key == Str()
-        assert example.value == Int()
-        assert example.validators == [None]
+        field = Dict(key=Str, value=Int, validators=[None])
+        assert field.key == Str()
+        assert field.value == Int()
+        assert field.validators == [None]
 
     def test_serialize(self):
         # A Dict should serialize values based on the key and value Fields.
-        example = Dict(key=Reversed, value=Reversed)
-        assert example.serialize({'ab': 'test', 'cd': 'hello'}) == {'ba': 'tset', 'dc': 'olleh'}
+        field = Dict(key=Reversed, value=Reversed)
+        assert field.serialize({'ab': 'test', 'cd': 'hello'}) == {'ba': 'tset', 'dc': 'olleh'}
 
     def test_serialize_extra(self):
         # A Dict should serialize values based on the key and value Fields.
-        example = Dict(key=Field(serializers=[lambda x: x[::-1]]))
-        assert example.serialize({'ab': 'test', 'cd': 'hello'}) == {'ba': 'test', 'dc': 'hello'}
+        field = Dict(key=Field(serializers=[lambda x: x[::-1]]))
+        assert field.serialize({'ab': 'test', 'cd': 'hello'}) == {'ba': 'test', 'dc': 'hello'}
 
     def test_deserialize(self):
         # A Dict should deserialize values based on the key and value Fields.
-        example = Dict(key=Reversed, value=Reversed)
-        assert example.deserialize({'ba': 'tset', 'dc': 'olleh'}) == {'ab': 'test', 'cd': 'hello'}
+        field = Dict(key=Reversed, value=Reversed)
+        assert field.deserialize({'ba': 'tset', 'dc': 'olleh'}) == {'ab': 'test', 'cd': 'hello'}
 
     def test_deserialize_extra(self):
         # A Dict should serialize values based on the key and value Fields.
-        example = Dict(key=Field(deserializers=[lambda x: x[::-1]]))
-        assert example.deserialize({'ba': 'test', 'dc': 'hello'}) == {'ab': 'test', 'cd': 'hello'}
+        field = Dict(key=Field(deserializers=[lambda x: x[::-1]]))
+        assert field.deserialize({'ba': 'test', 'dc': 'hello'}) == {'ab': 'test', 'cd': 'hello'}
+
+    def test_normalize(self):
+        # A Dict should normalize values based on the key and value Fields.
+        field = Dict(key=Str, value=Str)
+        assert field.normalize({'ab': 'test', 'cd': 'hello'}) == {'ab': 'test', 'cd': 'hello'}
+
+    def test_normalize_extra(self):
+        # A Dict should normalize values based on the key and value Fields.
+        field = Dict(key=Field(normalizers=[lambda x: x[::-1]]))
+        assert field.normalize({'ba': 'test', 'dc': 'hello'}) == {'ab': 'test', 'cd': 'hello'}
 
     def test_validate(self):
         # A Dict should validate values based on the key and value Fields.
-        example = Dict(key=Int, value=Str)
-        example.validate({0: 'test', 1: 'hello'})
+        field = Dict(key=Int, value=Str)
+        field.validate({0: 'test', 1: 'hello'})
 
         with raises(ValidationError):
-            example.validate({'test': 0})
+            field.validate({'test': 0})
 
     def test_validate_extra(self):
         # A Dict should validate values based on the key and value Fields.
-        example = Dict(value=Field(validators=[validate.equal(10)]))
-        example.validate({'test': 10, 'hello': 10})
+        field = Dict(value=Field(validators=[validate.equal(10)]))
+        field.validate({'test': 10, 'hello': 10})
 
         with raises(ValidationError):
-            example.validate({'test': 11})
+            field.validate({'test': 11})
 
 
 class TestList:
 
     def test___init___basic(self):
         # Construct a basic List and check values are set correctly.
-        example = List()
-        assert example.element == Field()
-        assert example.validators == []
+        field = List()
+        assert field.element == Field()
+        assert field.validators == []
 
     def test___init___options(self):
         # Construct a List with extra options and make sure values are passed to
         # Field.
-        example = List(element=Int, validators=[None])
-        assert example.element == Int()
-        assert example.validators == [None]
+        field = List(element=Int, validators=[None])
+        assert field.element == Int()
+        assert field.validators == [None]
 
     def test_serialize(self):
         # A List should serialize values based on the element Field.
-        example = List(element=Reversed)
-        assert example.serialize(['test', 'hello']) == ['tset', 'olleh']
+        field = List(element=Reversed)
+        assert field.serialize(['test', 'hello']) == ['tset', 'olleh']
 
     def test_serialize_extra(self):
         # A List should serialize values based on the element Field.
-        example = List(element=Field(serializers=[lambda x: x[::-1]]))
-        assert example.serialize(['test', 'hello']) == ['tset', 'olleh']
+        field = List(element=Field(serializers=[lambda x: x[::-1]]))
+        assert field.serialize(['test', 'hello']) == ['tset', 'olleh']
 
     def test_deserialize(self):
         # A List should deserialize values based on the element Field.
-        example = List(element=Reversed)
-        assert example.deserialize(['tset', 'olleh']) == ['test', 'hello']
+        field = List(element=Reversed)
+        assert field.deserialize(['tset', 'olleh']) == ['test', 'hello']
 
     def test_deserialize_extra(self):
         # A List should deserialize values based on the element Field.
-        example = List(element=Field(deserializers=[lambda x: x[::-1]]))
-        assert example.deserialize(['tset', 'olleh']) == ['test', 'hello']
+        field = List(element=Field(deserializers=[lambda x: x[::-1]]))
+        assert field.deserialize(['tset', 'olleh']) == ['test', 'hello']
+
+    def test_normalize(self):
+        # A List should normalize values based on the element Field.
+        field = List(element=Field)
+        assert field.normalize(['test', 'hello']) == ['test', 'hello']
+
+    def test_normalize_extra(self):
+        # A List should normalize values based on the element Field.
+        field = List(element=Field(normalizers=[lambda x: x[::-1]]))
+        assert field.normalize(['tset', 'olleh']) == ['test', 'hello']
 
     def test_validate(self):
         # A List should validate values based on the element Field.
-        example = List(element=Int)
-        example.validate([0, 1, 2, 3, 4])
+        field = List(element=Int)
+        field.validate([0, 1, 2, 3, 4])
 
         with raises(ValidationError):
-            example.validate(['1', '2', 'a', 'string'])
+            field.validate(['1', '2', 'a', 'string'])
 
     def test_validate_extra(self):
         # A List should validate values based on the element Field.
-        example = List(element=Field(validators=[validate.equal(10)]))
-        example.validate([10, 10, 10])
+        field = List(element=Field(validators=[validate.equal(10)]))
+        field.validate([10, 10, 10])
 
         with raises(ValidationError):
-            example.validate([10, 11, 12, 13])
+            field.validate([10, 11, 12, 13])
 
 
 class TestTuple:
 
     def test___init___basic(self):
         # Construct a basic Tuple and check values are set correctly.
-        example = Tuple()
-        example.elements == ()
-        assert example.validators == []
+        field = Tuple()
+        field.elements == ()
+        assert field.validators == []
 
     def test___init___options(self):
         # Construct a Tuple with extra options and make sure values are passed to
         # Field.
-        example = Tuple(Int, Str, validators=[None])
-        assert example.elements == (Int(), Str())
-        assert example.validators == [None]
+        field = Tuple(Int, Str, validators=[None])
+        assert field.elements == (Int(), Str())
+        assert field.validators == [None]
 
     def test_serialize(self):
         # A Tuple should serialize values based on each element Fields.
-        example = Tuple(Uuid, Reversed)
+        field = Tuple(Uuid, Reversed)
         value = (uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'), 'test')
         expected = ('2d7026c8-cc58-11e8-bd7a-784f4386978e', 'tset')
-        assert example.serialize(value) == expected
+        assert field.serialize(value) == expected
 
     def test_serialize_extra(self):
         # A Tuple should serialize values based on each element Fields.
-        example = Tuple(Field, Field(serializers=[lambda x: x[::-1]]))
-        assert example.serialize(('test', 'test')) == ('test', 'tset')
+        field = Tuple(Field, Field(serializers=[lambda x: x[::-1]]))
+        assert field.serialize(('test', 'test')) == ('test', 'tset')
 
     def test_deserialize(self):
         # A Tuple should deserialize values based on each element Fields.
-        example = Tuple(Uuid, Reversed)
+        field = Tuple(Uuid, Reversed)
         value = ('2d7026c8-cc58-11e8-bd7a-784f4386978e', 'tset')
-        expected = (uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'), 'test')
-        assert example.deserialize(value) == expected
+        expected = ('2d7026c8-cc58-11e8-bd7a-784f4386978e', 'test')
+        assert field.deserialize(value) == expected
 
     def test_deserialize_extra(self):
         # A Tuple should deserialize values based on each element Fields.
-        example = Tuple(Field, Field(deserializers=[lambda x: x[::-1]]))
-        assert example.deserialize(('test', 'test')) == ('test', 'tset')
+        field = Tuple(Field, Field(deserializers=[lambda x: x[::-1]]))
+        assert field.deserialize(('test', 'test')) == ('test', 'tset')
+
+    def test_normalize(self):
+        # A Tuple should normalize values based on each element Fields.
+        field = Tuple(Uuid, Field)
+        value = ('2d7026c8-cc58-11e8-bd7a-784f4386978e', 'tset')
+        expected = (uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'), 'tset')
+        assert field.normalize(value) == expected
+
+    def test_normalize_extra(self):
+        # A Tuple should normalize values based on each element Fields.
+        field = Tuple(Field, Field(normalizers=[lambda x: x[::-1]]))
+        assert field.normalize(('test', 'test')) == ('test', 'tset')
 
     def test_validate(self):
         # A Tuple should validate values based on each element Fields.
-        example = Tuple(Int, Str, Bool)
-        example.validate((5, 'test', True))
+        field = Tuple(Int, Str, Bool)
+        field.validate((5, 'test', True))
 
         with raises(ValidationError):
-            example.validate((5, 'test', 'not a bool'))
+            field.validate((5, 'test', 'not a bool'))
 
     def test_validate_extra(self):
         # A Tuple should validate values based on each element Fields.
-        example = Tuple(Field, Field(validators=[validate.equal(10)]))
-        example.validate((20, 10))
+        field = Tuple(Field, Field(validators=[validate.equal(10)]))
+        field.validate((20, 10))
 
         with raises(ValidationError):
-            example.validate((20, 11))
+            field.validate((20, 11))
 
 
 class TestRegex:
 
     def test___init__(self):
         # Construct a basic Regex and check values are set correctly.
-        example = Regex(r'[est]{4}', flags=re.DOTALL, validators=[None])
-        assert example.pattern == r'[est]{4}'
-        assert example.flags == re.DOTALL
-        assert example.validators == [None]
+        field = Regex(r'[est]{4}', flags=re.DOTALL, validators=[None])
+        assert field.pattern == r'[est]{4}'
+        assert field.flags == re.DOTALL
+        assert field.validators == [None]
 
     def test_validate(self):
         # A Regex simply validates the given value matches the regex.
-        example = Regex(r'[est]{4}')
-        example.validate('test')
-        example.validate('tset')
+        field = Regex(r'[est]{4}')
+        field.validate('test')
+        field.validate('tset')
         with raises(ValidationError):
-            example.validate('btesttest')
+            field.validate('btesttest')
 
 
 class TestChoice:
 
     def test___init__(self):
         # Construct a basic Choice and check values are set correctly.
-        example = Choice(range(5), validators=[None])
-        assert example.choices == range(5)
-        assert example.validators == [None]
+        field = Choice(range(5), validators=[None])
+        assert field.choices == range(5)
+        assert field.validators == [None]
 
     def test_validate(self):
         # A Choice simply validates the given value is in the choices.
-        example = Choice(range(5))
-        example.validate(0)
-        example.validate(4)
+        field = Choice(range(5))
+        field.validate(0)
+        field.validate(4)
         with raises(ValidationError):
-            example.validate(6)
+            field.validate(6)
 
 
 class TestDateTime:
 
     def test___init__(self):
         # Construct a basic DateTime and check values are set correctly.
-        example = DateTime(format='%Y%m%d %H:%M:%S')
-        assert example.format == '%Y%m%d %H:%M:%S'
+        field = DateTime(format='%Y%m%d %H:%M:%S')
+        assert field.format == '%Y%m%d %H:%M:%S'
 
     def test_serialize_iso8601(self):
         # A DateTime should serialize a datetime as a ISO 8601 formatted string.
-        example = DateTime()
+        field = DateTime()
         value = datetime.datetime(2001, 9, 11, 12, 5, 48)
-        assert example.serialize(value) == '2001-09-11T12:05:48'
+        assert field.serialize(value) == '2001-09-11T12:05:48'
 
     def test_serialize_custom(self):
         # A DateTime should serialize a datetime with the given format.
-        example = DateTime(format='%Y%m%d %H:%M:%S')
+        field = DateTime(format='%Y%m%d %H:%M:%S')
         value = datetime.datetime(2001, 9, 11, 12, 5, 48)
-        assert example.serialize(value) == '20010911 12:05:48'
+        assert field.serialize(value) == '20010911 12:05:48'
 
     def test_deserialize_iso8601(self):
         # A DateTime should deserialize a datetime from a ISO 8601 formatted string.
-        example = DateTime()
+        field = DateTime()
         value = '2001-09-11T12:05:48'
-        assert example.deserialize(value) == datetime.datetime(2001, 9, 11, 12, 5, 48)
+        assert field.deserialize(value) == datetime.datetime(2001, 9, 11, 12, 5, 48)
 
     def test_deserialize_custom(self):
         # A DateTime should deserialize a datetime with the given format.
-        example = DateTime(format='%Y%m%d %H:%M:%S')
+        field = DateTime(format='%Y%m%d %H:%M:%S')
         value = '20010911 12:05:48'
-        assert example.deserialize(value) == datetime.datetime(2001, 9, 11, 12, 5, 48)
+        assert field.deserialize(value) == datetime.datetime(2001, 9, 11, 12, 5, 48)
 
 
 class TestDate:
 
     def test_serialize_iso8601(self):
         # A Date should serialize a date as a ISO 8601 formatted string.
-        example = Date()
-        assert example.serialize(datetime.date(2001, 9, 11)) == '2001-09-11'
+        field = Date()
+        assert field.serialize(datetime.date(2001, 9, 11)) == '2001-09-11'
 
     def test_serialize_custom(self):
         # A Date should serialize a date with the given format.
-        example = Date(format='%Y%m%d')
-        assert example.serialize(datetime.date(2001, 9, 11)) == '20010911'
+        field = Date(format='%Y%m%d')
+        assert field.serialize(datetime.date(2001, 9, 11)) == '20010911'
 
     def test_deserialize_iso8601(self):
         # A Date should deserialize a date from a ISO 8601 formatted string.
-        example = Date()
-        assert example.deserialize('2001-09-11') == datetime.date(2001, 9, 11)
+        field = Date()
+        assert field.deserialize('2001-09-11') == datetime.date(2001, 9, 11)
 
     def test_deserialize_custom(self):
         # A Date should deserialize a datetime with the given format.
-        example = Date(format='%Y%m%d')
-        assert example.deserialize('20010911') == datetime.date(2001, 9, 11)
+        field = Date(format='%Y%m%d')
+        assert field.deserialize('20010911') == datetime.date(2001, 9, 11)
 
 
 class TestTime:
 
     def test_serialize_iso8601(self):
         # A Time should serialize a time as a ISO 8601 formatted string.
-        example = Time()
-        assert example.serialize(datetime.time(12, 5, 48)) == '12:05:48'
+        field = Time()
+        assert field.serialize(datetime.time(12, 5, 48)) == '12:05:48'
 
     def test_serialize_custom(self):
         # A Time should serialize a time with the given format.
-        example = Time(format='%H%M%S')
-        assert example.serialize(datetime.time(12, 5, 48)) == '120548'
+        field = Time(format='%H%M%S')
+        assert field.serialize(datetime.time(12, 5, 48)) == '120548'
 
     def test_deserialize_iso8601(self):
         # A Time should deserialize a time from a ISO 8601 formatted string.
-        example = Time()
-        assert example.deserialize('12:05:48') == datetime.time(12, 5, 48)
+        field = Time()
+        assert field.deserialize('12:05:48') == datetime.time(12, 5, 48)
 
     def test_deserialize_custom(self):
         # A Time should deserialize a time with the given format.
-        example = Time(format='%H%M%S')
-        assert example.deserialize('120548') == datetime.time(12, 5, 48)
+        field = Time(format='%H%M%S')
+        assert field.deserialize('120548') == datetime.time(12, 5, 48)
 
 
 class TestUuid:
 
     def test___init__(self):
         # Construct a basic Uuid and check values are set correctly.
-        example = Uuid()
-        assert example.type == uuid.UUID
+        field = Uuid()
+        assert field.type == uuid.UUID
 
     def test_serialize(self):
         # A Uuid should serialize a uuid.UUID as a string.
-        example = Uuid()
+        field = Uuid()
         value = uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e')
-        assert example.serialize(value) == '2d7026c8-cc58-11e8-bd7a-784f4386978e'
+        assert field.serialize(value) == '2d7026c8-cc58-11e8-bd7a-784f4386978e'
 
-    def test_deserialize(self):
-        # A Uuid should deserialize a string as a uuid.UUID.
-        example = Uuid()
+    def test_normalize_str(self):
+        # A Uuid should normalize a string as a uuid.UUID.
+        field = Uuid()
         value = '2d7026c8-cc58-11e8-bd7a-784f4386978e'
-        assert example.deserialize(value) == uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e')
+        assert field.normalize(value) == uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e')
+
+    def test_normalize_int(self):
+        # A Uuid should normalize a string as a uuid.UUID.
+        field = Uuid()
+        value = 255874896585658101253640125750883301947
+        assert field.normalize(value) == uuid.UUID('c07fb668-b3cb-4719-9b3d-0881d5eeba3b')
 
     def test_validate(self):
         # A Uuid should validate that the value is an instance of uuid.UUID.
-        example = Uuid()
-        example.validate(uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'))
+        field = Uuid()
+        field.validate(uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'))
         with raises(ValidationError):
-            example.validate('2d7026c8-cc58-11e8-bd7a-784f4386978e')
+            field.validate('2d7026c8-cc58-11e8-bd7a-784f4386978e')

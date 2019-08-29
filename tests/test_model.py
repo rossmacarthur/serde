@@ -3,8 +3,7 @@ from collections import OrderedDict
 
 from pytest import raises
 
-import serde.model
-from serde import Model, fields, validate
+from serde import Model, fields, tags, validate
 from serde.exceptions import (
     DeserializationError,
     InstantiationError,
@@ -13,22 +12,27 @@ from serde.exceptions import (
     SerializationError,
     ValidationError
 )
+from tests import py3
 
 
 class TestModel:
 
     def test___new___empty(self):
         # Check that a Model with no Fields can be created. There should still
-        # be a _fields attribute.
+        # be a __fields__ attribute.
 
         class Example(Model):
             pass
 
-        assert Example._fields == {}
+        assert Example.__abstract__ is False
+        assert Example.__parent__ is Model
+        assert Example.__fields__ == {}
+        assert Example.__tag__ is None
+        assert Example.__tags__ == []
 
     def test___new___basic(self):
         # Check that the ModelType basic usage works, Fields should be pulled
-        # off the class and added as a `_fields` attribute.
+        # off the class and added as a `__fields__` attribute.
 
         class Example(Model):
             a = fields.Int()
@@ -39,8 +43,8 @@ class TestModel:
         assert not hasattr(Example, 'b')
 
         # But they should be in the _fields attribute
-        assert isinstance(Example._fields.a, fields.Int)
-        assert isinstance(Example._fields.b, fields.Bool)
+        assert Example.__fields__.a == fields.Int()
+        assert Example.__fields__.b == fields.Bool()
 
     def test___new___subclassed_basic(self):
         # When extending a Model the parent field attributes should also be
@@ -50,11 +54,11 @@ class TestModel:
             a = fields.Int()
             b = fields.Bool()
 
-        class Example2(Model):
+        class Example2(Example):
             pass
 
-        assert isinstance(Example._fields.a, fields.Int)
-        assert isinstance(Example._fields.b, fields.Bool)
+        assert Example2.__fields__.a == fields.Int()
+        assert Example2.__fields__.b == fields.Bool()
 
     def test___new___subclassed_overriding_fields(self):
         # Subclassed Models with Fields of the same name should override the
@@ -68,9 +72,9 @@ class TestModel:
             b = fields.Float()
             c = fields.Float()
 
-        assert isinstance(Example2._fields.a, fields.Int)
-        assert isinstance(Example2._fields.b, fields.Float)
-        assert isinstance(Example2._fields.c, fields.Float)
+        assert Example2.__fields__.a == fields.Int()
+        assert Example2.__fields__.b == fields.Float()
+        assert Example2.__fields__.c == fields.Float()
 
     def test___new___subclassed_overriding_attributes(self):
         # Subclassed Models with functions, attributes, and properties should
@@ -92,14 +96,14 @@ class TestModel:
 
             c = 'is c'
 
-        assert not hasattr(Example2._fields, 'a')
-        assert not hasattr(Example2._fields, 'b')
-        assert not hasattr(Example2._fields, 'c')
+        assert not hasattr(Example2.__fields__, 'a')
+        assert not hasattr(Example2.__fields__, 'b')
+        assert not hasattr(Example2.__fields__, 'c')
 
-        example = Example2()
-        assert example.a == 'is a'
-        assert example.b() == 'is b'
-        assert example.c == 'is c'
+        model = Example2()
+        assert model.a == 'is a'
+        assert model.b() == 'is b'
+        assert model.c == 'is c'
 
     def test___new__subclassed_overriding_model_methods(self):
         # Subclassed Models can easily call override Model methods and call
@@ -113,7 +117,7 @@ class TestModel:
             def __init__(self):
                 super(Example2, self).__init__(a=5)
 
-        assert isinstance(Example2._fields.a, fields.Int)
+        assert Example2.__fields__.a == fields.Int()
         assert Example2().a == 5
 
     def test___new___meta_class(self):
@@ -121,10 +125,9 @@ class TestModel:
 
         class Example(Model):
             class Meta:
-                tag = 'kind'
+                tag = tags.Internal(tag='kind')
 
-        assert isinstance(Example._meta, serde.model.Meta)
-        assert Example._meta.tag == 'kind'
+        assert Example.__tags__ == [tags.Internal(tag='kind')]
 
     def test___init___empty(self):
         # An empty Model with no Fields should work just fine.
@@ -134,11 +137,10 @@ class TestModel:
 
         assert Example().__dict__ == {}
 
-        with raises(InstantiationError):
+        with raises(InstantiationError) as e:
             Example(a=None)
-
-        with raises(InstantiationError):
-            Example(a=None)
+        assert e.value.pretty() == """\
+InstantiationError: invalid keyword argument 'a'"""
 
     def test___init___normal(self):
         # Check that a normal Field behaves as it should.
@@ -148,8 +150,12 @@ class TestModel:
 
         assert Example(a=5).a == 5
 
-        with raises(InstantiationError):
+        with raises(InstantiationError) as e:
             Example()
+        assert e.value.pretty() == """\
+InstantiationError: expected attribute 'a'
+    Due to => NormalizationError: expected attribute 'a'
+    Due to => field 'a' of type 'Int' on model 'Example'"""
 
     def test___init___abstract(self):
         # Check that you can't instantiate an abstract Model.
@@ -158,8 +164,10 @@ class TestModel:
             class Meta:
                 abstract = True
 
-        with raises(InstantiationError):
+        with raises(InstantiationError) as e:
             Example()
+        assert e.value.pretty() == """\
+InstantiationError: unable to instantiate abstract Model 'Example'"""
 
     def test___init___optional(self):
         # Check that an Optional Field behaves as it should.
@@ -186,13 +194,13 @@ class TestModel:
             a = fields.Int()
             b = fields.Str()
 
-        example = Example(a=5, b='test')
-        assert example.a == 5
-        assert example.b == 'test'
+        model = Example(a=5, b='test')
+        assert model.a == 5
+        assert model.b == 'test'
 
-        example = Example(5, 'test')
-        assert example.a == 5
-        assert example.b == 'test'
+        model = Example(5, 'test')
+        assert model.a == 5
+        assert model.b == 'test'
 
     def test___init___args_multiple(self):
         # Check that you are not allowed to pass the same argument twice and
@@ -201,8 +209,10 @@ class TestModel:
         class Example(Model):
             a = fields.Int()
 
-        with raises(SerdeError):
+        with raises(SerdeError) as e:
             Example(5, a=5)
+        assert e.value.pretty() == """\
+InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         with raises(SerdeError):
             Example(5, 6)
@@ -213,8 +223,8 @@ class TestModel:
         class Example(Model):
             a = fields.Str(normalizers=[lambda x: x[::-1]])
 
-        example = Example(a='test')
-        assert example.a == 'tset'
+        model = Example(a='test')
+        assert model.a == 'tset'
 
     def test___init___validation(self):
         # The __init__() method should validate the values.
@@ -254,9 +264,9 @@ class TestModel:
         class Example(Model):
             nested = fields.Nested(NestedExample)
 
-        example = Example(nested=NestedExample(a=5))
-        assert example.nested == NestedExample(a=5)
-        assert example.nested.a == 5
+        model = Example(nested=NestedExample(a=5))
+        assert model.nested == NestedExample(a=5)
+        assert model.nested.a == 5
 
     def test___eq__(self):
         # Check that the Model equals method works.
@@ -305,6 +315,7 @@ class TestModel:
         assert hash(Example(NestedExample(5))) == hash(Example(nested=NestedExample(a=5)))
         assert hash(Example(NestedExample(5))) != hash(Example(nested=NestedExample(a=4)))
 
+    @py3
     def test___repr___basic(self):
         # Check that a basic Model __repr__ works.
 
@@ -312,8 +323,14 @@ class TestModel:
             a = fields.Int()
             b = fields.Str()
 
-        assert repr(Example(a=5, b='test')) == "Example(a=5, b='test')"
+        r = repr(Example(a=5, b='test'))
+        print(r)
+        assert r.startswith(
+            '<tests.test_model.TestModel.'
+            'test___repr___basic.<locals>.Example model at'
+        )
 
+    @py3
     def test___repr___nested(self):
         # Check that a nested Model __repr__ works.
 
@@ -323,7 +340,11 @@ class TestModel:
         class Example(Model):
             nested = fields.Nested(NestedExample)
 
-        assert repr(Example(nested=NestedExample(a=5))) == 'Example(nested=NestedExample(a=5))'
+        r = repr(Example(nested=NestedExample(a=5)))
+        assert r.startswith(
+            '<tests.test_model.TestModel.'
+            'test___repr___nested.<locals>.Example model at'
+        )
 
     def test_normalize_all_good(self):
         # normalize_all() should renormalize the Model so that if we have
@@ -332,25 +353,25 @@ class TestModel:
         class Example(Model):
             a = fields.Str(normalizers=[lambda x: x[::-1]])
 
-        example = Example(a='unused')
-        example.a = 'test'
-        example.normalize_all()
-        assert example.a == 'tset'
+        model = Example(a='unused')
+        model.a = 'test'
+        model.normalize_all()
+        assert model.a == 'tset'
 
     def test_normalize_all_bad_normalizers(self):
         # normalize_all() should raise normalization exceptions.
 
-        class Example(Model):
-            a = fields.Str()
-
         def raises_exception(value):
             raise ValueError
 
-        example = Example(a='test')
-        example._fields.a.normalizers = [raises_exception]
+        class Example(Model):
+            a = fields.Str()
+
+        model = Example(a='test')
+        model.__class__._fields.a.normalizers = [raises_exception]
 
         with raises(NormalizationError):
-            example.normalize_all()
+            model.normalize_all()
 
     def test_normalize_all_bad_normalize(self):
         # normalize_all() should raise a NormalizationError that will be mapped
@@ -362,11 +383,11 @@ class TestModel:
         def normalize(self):
             raise ValueError
 
-        example = Example(a='test')
+        model = Example(a='test')
         Example.normalize = normalize
 
         with raises(NormalizationError):
-            example.normalize_all()
+            model.normalize_all()
 
     def test_validate_all(self):
         # validate_all() should revalidate the Model so that if we have changed
@@ -375,10 +396,10 @@ class TestModel:
         class Example(Model):
             a = fields.Int(validators=[validate.min(100)])
 
-        example = Example(a=101)
-        example.a = 5
+        model = Example(a=101)
+        model.a = 5
         with raises(ValidationError):
-            example.validate_all()
+            model.validate_all()
 
     def test_validate(self):
         # You should be able to specify custom Model validation by overriding
@@ -393,10 +414,10 @@ class TestModel:
         with raises(InstantiationError):
             Example(a=0)
 
-        example = Example(a=5)
-        example.a = 0
+        model = Example(a=5)
+        model.a = 0
         with raises(ValidationError):
-            example.validate_all()
+            model.validate_all()
 
     def test_validation_error_context(self):
         # Check that error context is added to ValidationErrors.
@@ -407,8 +428,8 @@ class TestModel:
         try:
             Example(a='not an integer')
         except InstantiationError as e:
-            assert e.model is Example
-            assert e.field is Example._fields.a
+            assert e.model_cls is Example
+            assert e.field is Example.__fields__.a
             assert e.value == 'not an integer'
 
     def test_from_dict_empty(self):
@@ -441,7 +462,7 @@ class TestModel:
 
         class Example(Model):
             class Meta:
-                tag = True
+                tag = tags.External()
 
             nested = fields.Nested(NestedExample)
 
@@ -458,7 +479,7 @@ class TestModel:
 
         class Example(Model):
             class Meta:
-                tag = 'kind'
+                tag = tags.Internal(tag='kind')
 
             nested = fields.Nested(NestedExample)
 
@@ -475,8 +496,7 @@ class TestModel:
 
         class Example(Model):
             class Meta:
-                tag = 'kind'
-                content = 'data'
+                tag = tags.Adjacent(tag='kind', content='data')
 
             nested = fields.Nested(NestedExample)
 
@@ -516,18 +536,6 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'a': 5})
 
-    def test_from_dict_strict(self):
-        # Check that if strict is set then unknown keys are not allowed and
-        # visa versa.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example.from_dict({'a': 5, 'c': 'unknown'}, strict=False) == Example(a=5)
-
-        with raises(DeserializationError):
-            Example.from_dict({'a': 5, 'b': 'test', 'c': 'unknown'})
-
     def test_from_dict_modified___init__(self):
         # Check that overriding the __init__ method does not break from_dict().
 
@@ -553,50 +561,12 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'nested': 'not the nested'})
 
-    def test_from_dict_untagged_tagged(self):
-        # Check that untagged variants work correctly.
-
-        class Example(Model):
-            class Meta:
-                tag = False
-            a = fields.Int()
-
-        class SubExampleA(Example):
-            b = fields.Float()
-
-        class SubExampleB(Example):
-            c = fields.Float()
-
-        # Deserializing untagged data from the parent (allowed)
-        assert Example.from_dict({'a': 5}) == Example(a=5)
-        assert Example.from_dict({'a': 5, 'b': 1.0}) == SubExampleA(a=5, b=1.0)
-        assert Example.from_dict({'a': 5, 'c': 1.0}) == SubExampleB(a=5, c=1.0)
-
-        # Deserializing untagged data from the variant (not allowed)
-        with raises(DeserializationError):
-            SubExampleA.from_dict({'a': 5})
-        with raises(DeserializationError):
-            SubExampleB.from_dict({'a': 5, 'b': 1.0})
-
-        # Deserializing untagged data from the variant (allowed)
-        assert SubExampleA.from_dict({'a': 5, 'b': 1.0}) == SubExampleA(a=5, b=1.0)
-        assert SubExampleB.from_dict({'a': 5, 'c': 1.0}) == SubExampleB(a=5, c=1.0)
-
-        # Edge case: bad data, all variants tried
-        with raises(DeserializationError):
-            Example.from_dict({'b': 1.0})
-
-        # Edge case: abstract untagged variant
-        Example._meta.abstract = True
-        with raises(DeserializationError):
-            Example.from_dict({'a': 5})
-
     def test_from_dict_externally_tagged(self):
         # Check that externally tagged variants work correctly.
 
         class Example(Model):
             class Meta:
-                tag = True
+                tag = tags.External()
             a = fields.Int()
 
         class SubExample(Example):
@@ -622,7 +592,7 @@ class TestModel:
             Example.from_dict({})
 
         # Edge case: abstract externally tagged
-        Example._meta.abstract = True
+        Example._abstract = True
         with raises(DeserializationError):
             Example.from_dict({'Example': {'a': 5}})
 
@@ -631,7 +601,7 @@ class TestModel:
 
         class Example(Model):
             class Meta:
-                tag = 'kind'
+                tag = tags.Internal(tag='kind')
             a = fields.Int()
 
         class SubExample(Example):
@@ -647,15 +617,11 @@ class TestModel:
         with raises(DeserializationError):
             Example.from_dict({'a': 5, 'b': 1.0})
 
-        # Deserializing tagged data from the variant (not allowed)
-        with raises(DeserializationError):
-            SubExample.from_dict({'kind': 'SubExample', 'a': 5, 'b': 1.0})
-
         # Deserializing untagged data from the variant (allowed)
         assert SubExample.from_dict({'a': 5, 'b': 1.0}) == SubExample(a=5, b=1.0)
 
         # Edge case: abstract externally tagged
-        Example._meta.abstract = True
+        Example._abstract = True
         with raises(DeserializationError):
             Example.from_dict({'kind': 'Example', 'a': 5})
 
@@ -664,8 +630,7 @@ class TestModel:
 
         class Example(Model):
             class Meta:
-                tag = 'kind'
-                content = 'data'
+                tag = tags.Adjacent(tag='kind', content='data')
             a = fields.Int()
 
         class SubExample(Example):
@@ -693,20 +658,20 @@ class TestModel:
             Example.from_dict({'kind': 'SubExample', 'content': {'a': 5, 'b': 1.0}})
 
         # Edge case: abstract adjacently tagged
-        Example._meta.abstract = True
+        Example._abstract = True
         with raises(DeserializationError):
             Example.from_dict({'kind': 'Example', 'data': {'a': 5}})
 
     def test_from_dict_override_tag_for(self):
         # Check that from_dict() works when you modify the Meta.tag_for() method
 
+        class ExampleTag(tags.Internal):
+            def lookup_tag(self, variant):
+                return variant.__name__.lower()
+
         class Example(Model):
             class Meta:
-                tag = 'kind'
-
-                def tag_for(self, variant):
-                    return variant.__name__.lower()
-
+                tag = ExampleTag('kind')
             a = fields.Int()
 
         class SubExample(Example):
@@ -726,15 +691,15 @@ class TestModel:
         class Example(Model):
             a = fields.Int()
 
-        Example._fields.a.deserialize = always_raise(AssertionError)
+        Example.__fields__.a.deserialize = always_raise(AssertionError)
         with raises(DeserializationError):
             Example.from_dict({'a': 5})
 
-        Example._fields.a.deserialize = always_raise(DeserializationError)
+        Example.__fields__.a.deserialize = always_raise(DeserializationError)
         with raises(DeserializationError):
             Example.from_dict({'a': 5})
 
-        Example._fields.a.deserialize = always_raise(Exception)
+        Example.__fields__.a.deserialize = always_raise(Exception)
         with raises(DeserializationError):
             Example.from_dict({'a': 5})
 
@@ -747,8 +712,8 @@ class TestModel:
         try:
             Example.from_dict({'a': 'not a datetime'})
         except DeserializationError as e:
-            assert e.model is Example
-            assert e.field is Example._fields.a
+            assert e.model_cls is Example
+            assert e.field is Example.__fields__.a
             assert e.value == 'not a datetime'
 
     def test_from_dict_deserializers(self):
@@ -765,8 +730,8 @@ class TestModel:
         class Example(Model):
             a = fields.Str(normalizers=[lambda x: x[::-1]])
 
-        example = Example.from_dict({'a': 'test'})
-        assert example.a == 'tset'
+        model = Example.from_dict({'a': 'test'})
+        assert model.a == 'tset'
 
     def test_from_json_basic(self):
         # Check that you can deserialize from JSON.
@@ -775,17 +740,6 @@ class TestModel:
             a = fields.Int()
 
         assert Example.from_json('{"a": 5}') == Example(a=5)
-
-    def test_from_json_strict(self):
-        # Check that the from_json() method passes through the strict option.
-
-        class Example(Model):
-            a = fields.Int()
-
-        assert Example.from_json('{"a": 5, "b": "unknown"}', strict=False) == Example(a=5)
-
-        with raises(DeserializationError):
-            Example.from_json('{"a": 5, "b": "unknown"}')
 
     def test_from_json_kwargs(self):
         # Check that extra JSON kwargs can be passed.
@@ -827,18 +781,6 @@ class TestModel:
 
         assert Example(a=5).to_dict() == {'b': 5}
 
-    def test_to_dict_type(self):
-        # Check that the dictionary type can be modified.
-
-        class Example(Model):
-            a = fields.Int()
-
-        class CustomDict(OrderedDict):
-            def __eq__(self, other):
-                return isinstance(other, CustomDict) and super(CustomDict, self).__eq__(other)
-
-        assert Example(a=5).to_dict(dict=CustomDict) == CustomDict([('a', 5)])
-
     def test_to_dict_nested(self):
         # Check that nested Models are serialized correctly.
 
@@ -850,29 +792,12 @@ class TestModel:
 
         assert Example(nested=NestedExample(a=5)).to_dict() == {'nested': {'a': 5}}
 
-    def test_to_dict_untagged_tagged(self):
-        # Check that untagged variants work correctly.
-
-        class Example(Model):
-            class Meta:
-                tag = False
-            a = fields.Int()
-
-        class SubExample(Example):
-            b = fields.Float()
-
-        # Serializing data from the parent
-        assert Example(a=5).to_dict() == {'a': 5}
-
-        # Serializing data from the variant
-        assert SubExample(a=5, b=1.0).to_dict() == {'a': 5, 'b': 1.0}
-
     def test_to_dict_externally_tagged(self):
         # Check that externally tagged variants work correctly.
 
         class Example(Model):
             class Meta:
-                tag = True
+                tag = tags.External()
             a = fields.Int()
 
         class SubExample(Example):
@@ -889,7 +814,7 @@ class TestModel:
 
         class Example(Model):
             class Meta:
-                tag = 'kind'
+                tag = tags.Internal(tag='kind')
             a = fields.Int()
 
         class SubExample(Example):
@@ -906,8 +831,7 @@ class TestModel:
 
         class Example(Model):
             class Meta:
-                tag = 'kind'
-                content = 'data'
+                tag = tags.Adjacent(tag='kind', content='data')
             a = fields.Int()
 
         class SubExample(Example):
@@ -922,14 +846,13 @@ class TestModel:
 
     def test_to_dict_override_tag_for(self):
         # Check that to_dict() works when you modify the Meta.tag_for() method
+        class ExampleTag(tags.Internal):
+            def lookup_tag(self, variant):
+                return variant.__name__.lower()
 
         class Example(Model):
             class Meta:
-                tag = 'kind'
-
-                def tag_for(self, variant):
-                    return variant.__name__.lower()
-
+                tag = ExampleTag(tag='kind')
             a = fields.Int()
 
         class SubExample(Example):
@@ -948,15 +871,15 @@ class TestModel:
         class Example(Model):
             a = fields.Int()
 
-        Example._fields.a.serialize = always_raise(AssertionError)
+        Example.__fields__.a.serialize = always_raise(AssertionError)
         with raises(SerializationError):
             Example(a=5).to_dict()
 
-        Example._fields.a.serialize = always_raise(SerializationError)
+        Example.__fields__.a.serialize = always_raise(SerializationError)
         with raises(SerializationError):
             Example(a=5).to_dict()
 
-        Example._fields.a.serialize = always_raise(Exception)
+        Example.__fields__.a.serialize = always_raise(Exception)
         with raises(SerializationError):
             Example(a=5).to_dict()
 
@@ -967,11 +890,11 @@ class TestModel:
             a = fields.DateTime()
 
         try:
-            example = Example(a=datetime.datetime.utcnow())
-            example.a = 'not a datetime'
+            model = Example(a=datetime.datetime.utcnow())
+            model.a = 'not a datetime'
         except SerializationError as e:
-            assert e.model is Example
-            assert e.field is Example._fields.a
+            assert e.model_cls is Example
+            assert e.field is Example.__fields__.a
             assert e.value == 'not a datetime'
 
     def test_to_dict_serializers(self):
