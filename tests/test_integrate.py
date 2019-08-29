@@ -1,7 +1,7 @@
 import doctest
 from uuid import UUID, uuid4
 
-from serde import Model, fields
+from serde import Model, fields, tags
 from tests import py2_patch_str_with_basestring, py3
 
 
@@ -178,28 +178,21 @@ def test_base_2():
 
 def test_base_3():
 
+    class CustomTag(tags.Internal):
+
+        def lookup_tag(self, variant):
+            segments = ()
+
+            while variant and variant is not self.__model__:
+                segments = (variant.__name__.lower(),) + segments
+                variant = variant.__parent__
+
+            return '.'.join(segments)
+
     class Secret(Model):
         class Meta:
             abstract = True
-            tag = 'kind'
-            recurse_variants = True
-
-            def variants(self):
-                variants = self.model.__subclasses_recursed__()
-
-                if not self.abstract:
-                    variants = [self.model] + variants
-
-                return variants
-
-            def tag_for(self, variant):
-                segments = ()
-
-                while variant and variant != self.model:
-                    segments = (variant.__name__.lower(),) + segments
-                    variant = variant._parent
-
-                return '.'.join(segments)
+            tag = CustomTag(tag='kind', recurse=True)
 
         a = fields.Int()
 

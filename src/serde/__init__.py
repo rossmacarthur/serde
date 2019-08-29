@@ -94,10 +94,12 @@ When instantiating you have to supply instances of the nested Models.
 
     >>> group.name
     'The Lonely Island'
-    >>> group.lead
-    Person(name='Andy Samberg')
-    >>> group.members
-    [Person(name='Akiva Schaffer'), Person(name='Jorma Taccone')]
+    >>> group.lead.name
+    'Andy Samberg'
+    >>> group.members[0].name
+    'Akiva Schaffer'
+    >>> group.members[1].name
+    'Jorma Taccone'
 
 Serializing a ``Group`` would serialize the entire nested structure.
 
@@ -125,8 +127,8 @@ structure, and create instances of all the submodels.
 
     >>> group.name
     'One-man Wolf Pack'
-    >>> group.lead
-    Person(name='Alan Garner')
+    >>> group.lead.name
+    'Alan Garner'
     >>> group.members
     []
 
@@ -169,7 +171,7 @@ include Model tagging.
 
     >>> class Person(Model):
     ...     class Meta:
-    ...         tag = 'kind'
+    ...         tag = tags.Internal(tag='kind')
     ...
     ...     name = fields.Str()
     ...     birthday = fields.Optional(fields.Date)
@@ -207,15 +209,18 @@ field to ``True``.
 
     >>> class Pet(Model):
     ...     class Meta:
-    ...         tag = True
+    ...         tag = tags.External()
     ...
     ...     name = fields.Str()
 
     >>> class Dog(Pet):
     ...     hates_cats = fields.Bool()
 
-    >>> Pet.from_dict({'Dog': {'name': 'Max', 'hates_cats': True}})
-    Dog(name='Max', hates_cats=True)
+    >>> dog = Pet.from_dict({'Dog': {'name': 'Max', 'hates_cats': True}})
+    >>> dog.name
+    'Max'
+    >>> dog.hates_cats
+    True
 
 Internally tagged
 ~~~~~~~~~~~~~~~~~
@@ -228,15 +233,18 @@ field to a string value.
 
     >>> class Pet(Model):
     ...     class Meta:
-    ...         tag = 'species'
+    ...         tag = tags.Internal(tag='species')
     ...
     ...     name = fields.Str()
 
     >>> class Dog(Pet):
     ...     hates_cats = fields.Bool()
 
-    >>> Pet.from_dict({'species': 'Dog', 'name': 'Max', 'hates_cats': True})
-    Dog(name='Max', hates_cats=True)
+    >>> dog = Pet.from_dict({'species': 'Dog', 'name': 'Max', 'hates_cats': True})
+    >>> dog.name
+    'Max'
+    >>> dog.hates_cats
+    True
 
 Adjacently tagged
 ~~~~~~~~~~~~~~~~~
@@ -249,37 +257,18 @@ content field to string values.
 
     >>> class Pet(Model):
     ...     class Meta:
-    ...         tag = 'species'
-    ...         content = 'data'
+    ...         tag = tags.Adjacent(tag='species', content='data')
     ...
     ...     name = fields.Str()
 
     >>> class Dog(Pet):
     ...     hates_cats = fields.Bool()
 
-    >>> Pet.from_dict({'species': 'Dog', 'data': {'name': 'Max', 'hates_cats': True}})
-    Dog(name='Max', hates_cats=True)
-
-Untagged
-~~~~~~~~
-
-Untagged data will try to deserialize each variant in turn. The first variant
-that succeeds deserialization will be returned. You can enable this by setting
-the ``tag`` field to ``False``.
-
-::
-
-    >>> class Pet(Model):
-    ...     class Meta:
-    ...         tag = False
-    ...
-    ...     name = fields.Str()
-
-    >>> class Dog(Pet):
-    ...     hates_cats = fields.Bool()
-
-    >>> Pet.from_dict({'name': 'Max', 'hates_cats': True})
-    Dog(name='Max', hates_cats=True)
+    >>> dog = Pet.from_dict({'species': 'Dog', 'data': {'name': 'Max', 'hates_cats': True}})
+    >>> dog.name
+    'Max'
+    >>> dog.hates_cats
+    True
 
 Abstract Models
 ~~~~~~~~~~~~~~~
@@ -357,7 +346,7 @@ in with each other.
 from serde.model import Model
 
 
-__all__ = ['Model', 'exceptions', 'fields', 'validate']
+__all__ = ['Model', 'exceptions', 'fields', 'tags', 'validate']
 __title__ = 'serde'
 __version__ = '0.6.2'
 __url__ = 'https://github.com/rossmacarthur/serde'

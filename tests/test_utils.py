@@ -5,9 +5,53 @@ from pytest import raises
 from serde import utils
 
 
+def test_chained():
+    assert utils.chained([str.strip, str.upper], ' hello ') == 'HELLO'
+    assert utils.chained([lambda x: x[::-1], str.lstrip, str.upper], 'hello ') == 'OLLEH'
+    assert utils.chained([lambda x: x[::-1], str.rstrip, str.upper], 'hello ') == ' OLLEH'
+    assert utils.chained([str.lstrip, str.upper, lambda x: x[::-1]], 'hello ') == ' OLLEH'
+    assert utils.chained([str.rstrip, str.upper, lambda x: x[::-1]], 'hello ') == 'OLLEH'
+
+
+def test_applied():
+    def a(d):
+        d['a'] = 1
+
+    def b(d):
+        d['b'] = 2
+
+    def c(d):
+        d['a'] = 2
+
+    d = {}
+    utils.applied([a, b], d)
+    assert d == {'a': 1, 'b': 2}
+
+    d = {}
+    utils.applied([c, a, b], d)
+    assert d == {'a': 1, 'b': 2}
+
+    d = {}
+    utils.applied([a, b, c], d)
+    assert d == {'a': 2, 'b': 2}
+
+
 def test_dict_partition():
     d = {'a': 1, 'b': 5}
     assert utils.dict_partition(d, lambda k, v: v == 5) == ({'b': 5}, {'a': 1})
+
+
+def test_subclasses():
+    class Example(object):
+        pass
+
+    class A(Example):
+        pass
+
+    class B(Example):
+        pass
+
+    assert utils.subclasses(Example) == [A, B]
 
 
 def test_try_import():
@@ -16,6 +60,12 @@ def test_try_import():
 
     # Check that the returned value is None.
     assert utils.try_import('not_a_real_package_i_hope') is None
+
+
+def test_try_import_all():
+    ns = {}
+    utils.try_import_all('pty', ns)
+    assert set(ns.keys()) == {'fork', 'openpty', 'spawn'}
 
 
 def test_zip_equal():

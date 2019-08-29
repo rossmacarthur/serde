@@ -55,7 +55,11 @@ def equal(to):
 
 def min(endpoint, inclusive=True):
     """
-    Returns a validator that asserts the  value is greater than a minimum.
+    Returns a validator that asserts the value is greater than a minimum.
+
+    Args:
+        inclusive (bool): if this is set to `False` then the endpoint value will
+            not be considered valid.
     """
     @wraps(min)
     def validator(value):
@@ -78,6 +82,10 @@ def min(endpoint, inclusive=True):
 def max(endpoint, inclusive=True):
     """
     Returns a validator that asserts the value is less than a maximum.
+
+    Args:
+        inclusive (bool): if this is set to `False` then the endpoint value will
+            not be considered valid.
     """
     @wraps(max)
     def validator(value):
@@ -100,6 +108,10 @@ def max(endpoint, inclusive=True):
 def between(min_endpoint, max_endpoint, inclusive=True):
     """
     Returns a validator that asserts the value is between two endpoints.
+
+    Args:
+        inclusive (bool): if this is set to `False` then the endpoint values
+            will not be considered valid.
     """
     min_validator = min(min_endpoint, inclusive=inclusive)
     max_validator = max(max_endpoint, inclusive=inclusive)
@@ -128,6 +140,10 @@ def length(equal_to):
 def length_min(endpoint, inclusive=True):
     """
     Returns a validator that asserts the value's length is greater than a minimum.
+
+    Args:
+        inclusive (bool): if this is set to `False` then the endpoint value will
+            not be considered valid.
     """
     min_validator = min(endpoint, inclusive=inclusive)
 
@@ -141,6 +157,10 @@ def length_min(endpoint, inclusive=True):
 def length_max(endpoint, inclusive=True):
     """
     Returns a validator that asserts the value's length is less than a maximum.
+
+    Args:
+        inclusive (bool): if this is set to `False` then the endpoint value will
+            not be considered valid.
     """
     max_validator = max(endpoint, inclusive=inclusive)
 
@@ -154,6 +174,10 @@ def length_max(endpoint, inclusive=True):
 def length_between(min_endpoint, max_endpoint, inclusive=True):
     """
     Returns a validator that asserts the value's length is between two endpoints.
+
+    Args:
+        inclusive (bool): if this is set to `False` then the endpoint values
+            will not be considered valid.
     """
     min_validator = min(min_endpoint, inclusive=inclusive)
     max_validator = max(max_endpoint, inclusive=inclusive)
@@ -182,6 +206,10 @@ def contains(allowed):
 def regex(pattern, flags=0):
     """
     Returns validator that asserts a string matches a regex.
+
+    Args:
+        pattern (str): the regex pattern that the value must match.
+        flags (int): the regex flags passed directly to `re.compile`.
     """
     compiled = re.compile(pattern, flags=flags)
 

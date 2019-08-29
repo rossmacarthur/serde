@@ -1,9 +1,8 @@
 """
 This module contains Field classes for `Models <serde.model.Model>`.
 
-While the `~serde.model.Model` class might do some magical metaclass stuff, its
-the Fields that actually do the work of serializing, deserializing, normalizing,
-and validating the input values. Fields are always assigned to a
+`Fields <serde.fields.Field>` do the work of serializing, deserializing,
+normalizing, and validating the input values. Fields are always assigned to a
 `~serde.model.Model` as *instances*. And although it is easy enough to subclass
 `Field`, they support extra serialization, deserialization, normalization, and
 validation of values without having to subclass `Field`.
@@ -12,11 +11,13 @@ In the following example we define an ``Album`` class. The ``title`` field is
 of type `str`, and we apply the `str.strip` normalizer to automatically strip
 the input value when instantiating or deserializing the ``Album``. The
 ``released`` field is of type `datetime.date` and we apply an extra validator to
-only accept dates after the given one. Note that the ``rename`` argument only
+only accept dates after 15th April 1912. Note: the ``rename`` argument only
 applies to the serializing and deserializing of the data, the ``Album`` class
 would still be instantiated using ``Album(released=...)``.
 
 ::
+
+    >>> from serde import Model, fields, validate
 
     >>> class Album(Model):
     ...     title = fields.Str(normalizers=[str.strip])
@@ -25,7 +26,7 @@ would still be instantiated using ``Album(released=...)``.
     ...         validators=[validate.min(datetime.date(1912, 4, 15))]
     ...     )
 
-Furthermore, the `create()` method can be used to generate a new `Field` class
+Additionally, the `create()` method can be used to generate a new `Field` class
 from arbitrary functions without having to manually subclass a `Field`. For
 example if we wanted a ``Percent`` field we would do the following.
 
@@ -54,17 +55,27 @@ can always subclass a `Field` and override the relevant methods.
 
 import datetime
 import uuid
+from functools import wraps
+from itertools import chain
 
 import isodate
+from six import integer_types
 
 from serde import validate
-from serde.exceptions import ContextError, SerdeError, SkipSerialization, ValidationError
-from serde.utils import try_import_all, zip_equal
+from serde.exceptions import (
+    ContextError,
+    DeserializationError,
+    NormalizationError,
+    SerializationError,
+    ValidationError,
+    map_errors
+)
+from serde.utils import applied, chained, try_import_all, zip_equal
 
 
 __all__ = [
+    'BaseField',
     'Bool',
-    'Boolean',
     'Bytes',
     'Choice',
     'Complex',
@@ -72,17 +83,14 @@ __all__ = [
     'Date',
     'DateTime',
     'Dict',
-    'Dictionary',
     'Field',
     'Float',
     'Instance',
     'Int',
-    'Integer',
     'List',
     'Nested',
     'Optional',
     'Str',
-    'String',
     'Time',
     'Tuple',
     'Uuid',
@@ -130,7 +138,7 @@ def _resolve_to_field_instance(thing, none_allowed=True):
 
     # If the thing is a built-in type that we support then create an Instance
     # with that type.
-    field_class = BUILTIN_FIELD_CLASSES.get(thing, None)
+    field_class = FIELD_CLASS_MAP.get(thing, None)
 
     if field_class is not None:
         return field_class()
@@ -141,7 +149,123 @@ def _resolve_to_field_instance(thing, none_allowed=True):
     )
 
 
-class Field(object):
+class BaseField(object):
+    """
+    A base field or tag on a `~serde.model.Model`.
+
+    Fields and tags handle serializing and deserializing of input values for
+    Models. This class serves as a base class for both Fields and Tags.
+    """
+
+    # This is so we can get the order the bases were instantiated in.
+    _counter = 1
+
+    def __init__(self, serializers=None, deserializers=None):
+        """
+        Create a new BaseField.
+
+        Args:
+            serializers (list): a list of serializer functions taking the value
+                to serialize as an argument. The functions need to raise an
+                `Exception` if they fail. These serializer functions will be
+                applied before the primary serializer on this BaseField.
+            deserializers (list): a list of deserializer functions taking the
+                value to deserialize as an argument. The functions need to raise
+                an `Exception` if they fail. These deserializer functions will
+                be applied after the primary deserializer on this BaseField.
+        """
+        self.id = Field._counter
+        Field._counter += 1
+        self.serializers = serializers or []
+        self.deserializers = deserializers or []
+
+    def __eq__(self, other):
+        """
+        Whether two BaseFields are the same.
+        """
+        return isinstance(other, self.__class__) and self._attrs() == other._attrs()
+
+    @property
+    def __model__(self):
+        """
+        The Model class that the BaseField is bound to.
+        """
+        return self._model_cls
+
+    def _attrs(self):
+        """
+        Return all attributes of BaseField except 'id' and some private attributes.
+        """
+        return {
+            name: value for name, value in vars(self).items()
+            if name not in ('id', '_model_cls')
+        }
+
+    def _bind(self, model_cls):
+        """
+        Bind the BaseField to a Model.
+        """
+        if hasattr(self, '_model_cls'):
+            raise ContextError(
+                '{name!r} instance used multiple times'
+                .format(name=self.__class__.__name__),
+            )
+
+        self._model_cls = model_cls
+
+    def _serialize_with(self, model, d):
+        """
+        Serialize value(s) from a Model instance to a dictionary.
+
+        This method should use `self._serialize()` on individual values. This
+        method needs to be overridden.
+
+        Args:
+            model (Model): the Model instance that we are serializing from.
+            d (dict): the dictionary to serialize to.
+
+        Returns:
+            dict: the updated dictionary to continue serializing to.
+        """
+        raise NotImplementedError('this method should be overridden')
+
+    def _deserialize_with(self, model, d):
+        """
+        Deserialize value(s) from a dictionary to a Model instance.
+
+        This method should use `self._deserialize()` on individual values. This
+        method needs to be overridden.
+
+        Args:
+            model (Model): the Model instance that we are deserializing to.
+            d (dict): the dictionary to deserialize from.
+
+        Returns:
+            (model, dict): the updated Model instance to continue deserializing
+                to and the updated dictionary to continue deserializing from.
+        """
+        raise NotImplementedError('this method should be overridden')
+
+    def _serialize(self, value):
+        return chained(chain(self.serializers, [self.serialize]), value)
+
+    def _deserialize(self, value):
+        return chained(chain([self.deserialize], self.deserializers), value)
+
+    def serialize(self, value):
+        """
+        Serialize the given value according to this BaseField's specification.
+        """
+        return value
+
+    def deserialize(self, value):
+        """
+        Deserialize the given value according to this BaseField's specification.
+        """
+        return value
+
+
+class Field(BaseField):
     """
     A field on a `~serde.model.Model`.
 
@@ -149,11 +273,13 @@ class Field(object):
     input values for Model objects.
     """
 
-    # This is so we can get the order the fields were instantiated in.
-    __counter = 0
-
     def __init__(
-        self, rename=None, serializers=None, deserializers=None, normalizers=None, validators=None
+        self,
+        rename=None,
+        serializers=None,
+        deserializers=None,
+        normalizers=None,
+        validators=None
     ):
         """
         Create a new Field.
@@ -171,130 +297,107 @@ class Field(object):
                 be applied after the primary deserializer on this Field.
             normalizers (list): a list of normalizer functions taking the value
                 to normalize as an argument. The functions need to raise an
-                `Exception` if they fail. These deserializer functions will be
-                applied after the primary deserializer on this Field.
+                `Exception` if they fail. These normalizer functions will be
+                applied after the primary normalizer on this Field.
             validators (list): a list of validator functions taking the value
                 to validate as an argument. The functions need to raise an
                 `Exception` if they fail.
         """
-        super(Field, self).__init__()
-
-        self.id = Field.__counter
-        Field.__counter += 1
-
+        super(Field, self).__init__(serializers=serializers, deserializers=deserializers)
         self.rename = rename
-        self.serializers = serializers or []
-        self.deserializers = deserializers or []
         self.normalizers = normalizers or []
         self.validators = validators or []
 
     def _attrs(self):
         """
-        Return all attributes of this Field except "id" and "_name".
+        Return all attributes of Base except 'id' and some private attributes.
         """
         return {
             name: value for name, value in vars(self).items()
-            if name not in ('id', '_name')
+            if name not in ('id', '_model_cls', '_attr_name', '_serde_name')
         }
 
-    def __eq__(self, other):
+    def _bind(self, model_cls, name):
         """
-        Whether two Fields are the same.
+        Bind the Field to a Model.
         """
-        return isinstance(other, self.__class__) and self._attrs() == other._attrs()
+        super(Field, self)._bind(model_cls)
+        self._attr_name = name
+        self._serde_name = self.rename if self.rename else name
 
-    def __setattr__(self, name, value):
+    def _serialize_with(self, model, d):
         """
-        Set a named attribute on a Field.
-        """
-        if name == '_name' and hasattr(self, '_name'):
-            raise ContextError(
-                '{name} instance used multiple times'
-                .format(name=self.__class__.__name__)
-            )
-
-        super(Field, self).__setattr__(name, value)
-
-    def _serialize(self, value):
-        """
-        Serialize the given value according to this Field's specification.
-
-        This method is called by the Model.
-        """
-        for serializer in self.serializers:
-            value = serializer(value)
-
-        value = self.serialize(value)
-
-        return value
-
-    def _deserialize(self, value):
-        """
-        Deserialize the given value according to this Field's specification.
-
-        This method is called by the Model.
-        """
-        value = self.deserialize(value)
-
-        for deserializer in self.deserializers:
-            value = deserializer(value)
-
-        return value
-
-    def _normalize(self, value):
-        """
-        Normalize the given value according to this Field's specification.
-
-        This is called after deserialization and on initialization, both before
-        validation.
-        """
-        value = self.normalize(value)
-
-        for normalizer in self.normalizers:
-            value = normalizer(value)
-
-        return value
-
-    def _validate(self, value):
-        """
-        Validate the given value according to this Field's specification.
-
-        This method is called by the Model.
-        """
-        self.validate(value)
-
-        for validator in self.validators:
-            validator(value)
-
-    @property
-    def name(self):
-        """
-        The name of this Field.
-
-        This is the rename value, given when the Field is instantiated,
-        otherwise it is the attribute name of this Field on the Model.
+        Serialize the Model's attribute to a dictionary.
         """
         try:
-            name = self._name
+            value = getattr(model, self._attr_name)
         except AttributeError:
-            raise SerdeError('{name} is not on a Model'.format(name=self.__class__.__name__))
+            raise SerializationError(
+                'expected attribute {!r}'.format(self._attr_name),
+                field=self,
+                model_cls=model.__class__
+            )
 
-        if self.rename is not None:
-            return self.rename
-        else:
-            return name
+        with map_errors(SerializationError, value=value, field=self, model_cls=model.__class__):
+            d[self._serde_name] = self._serialize(value)
 
-    def serialize(self, value):
-        """
-        Serialize the given value according to this Field's specification.
-        """
-        return value
+        return d
 
-    def deserialize(self, value):
+    def _deserialize_with(self, model, d):
         """
-        Deserialize the given value according to this Field's specification.
+        Deserialize the Model's attribute from a dictionary.
         """
-        return value
+        try:
+            value = d[self._serde_name]
+        except KeyError:
+            raise DeserializationError(
+                'expected field {!r}'.format(self._serde_name),
+                field=self,
+                model_cls=model.__class__
+            )
+
+        with map_errors(DeserializationError, value=value, field=self, model_cls=model.__class__):
+            setattr(model, self._attr_name, self._deserialize(value))
+
+        return model, d
+
+    def _normalize_with(self, model):
+        """
+        Normalize the Model's attribute according to this Field's specification.
+        """
+        try:
+            value = getattr(model, self._attr_name)
+        except AttributeError:
+            raise NormalizationError(
+                'expected attribute {!r}'.format(self._attr_name),
+                field=self,
+                model_cls=model.__class__
+            )
+
+        with map_errors(NormalizationError, value=value, field=self, model_cls=model.__class__):
+            setattr(model, self._attr_name, self._normalize(value))
+
+    def _validate_with(self, model):
+        """
+        Validate the Model's attribute according to this Field's specification.
+        """
+        try:
+            value = getattr(model, self._attr_name)
+        except AttributeError:
+            raise ValidationError(
+                'expected attribute {!r}'.format(self._attr_name),
+                field=self,
+                model_cls=model.__class__
+            )
+
+        with map_errors(ValidationError, value=value, field=self, model_cls=model.__class__):
+            self._validate(value)
+
+    def _normalize(self, value):
+        return chained(chain([self.normalize], self.normalizers), value)
+
+    def _validate(self, value):
+        applied(chain([self.validate], self.validators), value)
 
     def normalize(self, value):
         """
@@ -306,24 +409,16 @@ class Field(object):
         """
         Validate the given value according to this Field's specification.
         """
-        if value is None:
-            raise ValidationError(
-                '{name} value is not allowed to be None'.format(name=self.__class__.__name__)
-            )
+        pass
 
 
 def _create_serialize(cls, serializers):
     """
     Create a new serialize method with extra serializer functions.
     """
+    @wraps(serializers[0])
     def serialize(self, value):
-        for serializer in serializers:
-            value = serializer(value)
-        value = super(cls, self).serialize(value)
-        return value
-
-    serialize.__doc__ = serializers[0].__doc__
-
+        return chained(chain(serializers, [super(cls, self).serialize]), value)
     return serialize
 
 
@@ -331,14 +426,9 @@ def _create_deserialize(cls, deserializers):
     """
     Create a new deserialize method with extra deserializer functions.
     """
+    @wraps(deserializers[0])
     def deserialize(self, value):
-        value = super(cls, self).deserialize(value)
-        for deserializer in deserializers:
-            value = deserializer(value)
-        return value
-
-    deserialize.__doc__ = deserializers[0].__doc__
-
+        return chained(chain([super(cls, self).deserialize], deserializers), value)
     return deserialize
 
 
@@ -346,14 +436,9 @@ def _create_normalize(cls, normalizers):
     """
     Create a new normalize method with extra normalizer functions.
     """
+    @wraps(normalizers[0])
     def normalize(self, value):
-        value = super(cls, self).normalize(value)
-        for normalizer in normalizers:
-            value = normalizer(value)
-        return value
-
-    normalize.__doc__ = normalizers[0].__doc__
-
+        return chained(chain([super(cls, self).normalize], normalizers), value)
     return normalize
 
 
@@ -361,25 +446,26 @@ def _create_validate(cls, validators):
     """
     Create a new validate method with extra validator functions.
     """
+    @wraps(validators[0])
     def validate(self, value):
-        super(cls, self).validate(value)
-        for validator in validators:
-            validator(value)
-
-    validate.__doc__ = validators[0].__doc__
-
+        applied(chain([super(cls, self).validate], validators), value)
     return validate
 
 
 def create(
-    name, base=None, args=None,
-    serializers=None, deserializers=None, normalizers=None, validators=None
+    name,
+    base=None,
+    args=None,
+    serializers=None,
+    deserializers=None,
+    normalizers=None,
+    validators=None
 ):
     """
     Create a new Field class.
 
     This is a convenience method for creating new Field classes from arbitrary
-    serializer, deserializer, and/or validator functions.
+    serializer, deserializer, normalizer, and/or validator functions.
 
     Args:
         name (str): the name of the class.
@@ -407,32 +493,183 @@ def create(
     if not base:
         base = Field
 
-    cls = type(name, (base,), {})
+    field_cls = type(name, (base,), {})
 
     if args:
         def __init__(self, **kwargs):  # noqa: N807
-            super(cls, self).__init__(*args, **kwargs)
+            super(field_cls, self).__init__(*args, **kwargs)
 
-        __init__.__doc__ = (
-            'Create a new {}.\n\n'
-            'Args:\n'
-            '    **kwargs: keyword arguments for the `{}` constructor.'
-        ).format(name, base.__name__)
-        cls.__init__ = __init__
+        __init__.__doc__ = """\
+Create a new {name}.
+
+Args:
+    **kwargs: keyword arguments for the `{base}` constructor.
+""".format(name=name, base=base.__name__)
+        field_cls.__init__ = __init__
 
     if serializers:
-        cls.serialize = _create_serialize(cls, serializers)
+        field_cls.serialize = _create_serialize(field_cls, serializers)
 
     if deserializers:
-        cls.deserialize = _create_deserialize(cls, deserializers)
+        field_cls.deserialize = _create_deserialize(field_cls, deserializers)
 
     if normalizers:
-        cls.normalize = _create_normalize(cls, normalizers)
+        field_cls.normalize = _create_normalize(field_cls, normalizers)
 
     if validators:
-        cls.validate = _create_validate(cls, validators)
+        field_cls.validate = _create_validate(field_cls, validators)
 
-    return cls
+    return field_cls
+
+
+class Optional(Field):
+    """
+    An optional `Field`.
+
+    An Optional is a field that is allowed to be None. Serialization,
+    deserialization, and validation using the wrapped Field will only be called
+    if the value is not None. The wrapped Field can be specified using a Field
+    class, a Field instance, a Model class, or a built-in type that has a
+    corresponding Field type in this library.
+
+    ::
+
+        >>> class Quote(Model):
+        ...     author = Optional(str)
+        ...     year = Optional(int, default=2004)
+        ...     content = Str()
+
+        >>> quote = Quote(year=2000, content='Beautiful is better than ugly.')
+        >>> assert quote.author is None
+        >>> quote.year
+        2000
+        >>> quote.content
+        'Beautiful is better than ugly.'
+
+        >>> assert quote.to_dict() == {
+        ...     'content': 'Beautiful is better than ugly.',
+        ...     'year': 2000
+        ... }
+
+        >>> quote = Quote.from_dict({
+        ...     'author': 'Tim Peters',
+        ...     'content': 'Now is better than never',
+        ... })
+        >>> quote.author
+        'Tim Peters'
+        >>> quote.year
+        2004
+        >>> quote.content
+        'Now is better than never'
+    """
+
+    def __init__(self, inner=None, default=None, **kwargs):
+        """
+        Create a new Optional.
+
+        Args:
+            inner: the the Field class/instance that this Optional wraps.
+            default: a value to use if there is no input field value or the
+                input value is None. This can also be a callable that generates
+                the default. The callable must take no positional arguments.
+            **kwargs: keyword arguments for the `Field` constructor.
+        """
+        super(Optional, self).__init__(**kwargs)
+        self.inner = _resolve_to_field_instance(inner)
+        self.default = default
+
+    def _serialize_with(self, model, d):
+        """
+        Serialize value(s) from a Model instance to a dictionary.
+        """
+        try:
+            value = getattr(model, self._attr_name)
+        except AttributeError:
+            raise SerializationError(
+                'expected attribute {!r}'.format(self._attr_name),
+                field=self,
+                model_cls=model.__class__
+            )
+
+        if value is not None:
+            with map_errors(SerializationError, value=value, field=self, model_cls=model.__class__):
+                d[self._serde_name] = self._serialize(value)
+
+        return d
+
+    def _deserialize_with(self, model, d):
+        """
+        Deserialize value(s) from a dictionary to a Model instance.
+        """
+        try:
+            value = d[self._serde_name]
+        except KeyError:
+            return model, d
+
+        with map_errors(DeserializationError, value=value, field=self, model_cls=model.__class__):
+            setattr(model, self._attr_name, self._deserialize(value))
+
+        return model, d
+
+    def _normalize_with(self, model):
+        """
+        Normalize value(s) according to this Field's specification.
+        """
+        value = getattr(model, self._attr_name, None)
+
+        if value is not None:
+            with map_errors(NormalizationError, value=value, field=self, model_cls=model.__class__):
+                value = self._normalize(value)
+        elif self.default is not None:
+            if callable(self.default):
+                value = self.default()
+            else:
+                value = self.default
+
+        setattr(model, self._attr_name, value)
+
+        return model
+
+    def _validate_with(self, model):
+        """
+        Validate value(s) according to this Field's specification.
+        """
+        try:
+            value = getattr(model, self._attr_name)
+        except AttributeError:
+            raise ValidationError(
+                'expected attribute {!r}'.format(self._attr_name),
+                field=self,
+                model_cls=model.__class__
+            )
+
+        if value is not None:
+            with map_errors(ValidationError, value=value, field=self, model_cls=model.__class__):
+                self._validate(value)
+
+    def serialize(self, value):
+        """
+        Serialize the given value using the inner Field.
+        """
+        return self.inner._serialize(value)
+
+    def deserialize(self, value):
+        """
+        Deserialize the given value using the inner Field.
+        """
+        return self.inner._deserialize(value)
+
+    def normalize(self, value):
+        """
+        Normalize the given value using the inner Field.
+        """
+        return self.inner._normalize(value)
+
+    def validate(self, value):
+        """
+        Validate the given value using the inner Field.
+        """
+        self.inner._validate(value)
 
 
 class Instance(Field):
@@ -509,36 +746,17 @@ class Nested(Instance):
         'September'
     """
 
-    def __init__(self, model, dict=None, strict=True, **kwargs):
-        """
-        Create a new Nested.
-
-        Args:
-            model: the Model class that this Nested wraps.
-            dict (type): the class of the deserialized dictionary. This defaults
-                to an `~collections.OrderedDict` so that the fields will be
-                returned in the order they were defined on the Model.
-            strict (bool): if set to False then no exception will be raised when
-                unknown dictionary keys are present when deserializing.
-            **kwargs: keyword arguments for the `Field` constructor.
-        """
-        super(Nested, self).__init__(model, **kwargs)
-        self.dict = dict
-        self.strict = strict
-
-    def serialize(self, value):
+    def serialize(self, model):
         """
         Serialize the given `~serde.model.Model` instance as a dictionary.
         """
-        value = value.to_dict(dict=self.dict)
-        return super(Nested, self).serialize(value)
+        return model.to_dict()
 
-    def deserialize(self, value):
+    def deserialize(self, d):
         """
         Deserialize the given dictionary to a `~serde.model.Model` instance.
         """
-        value = self.type.from_dict(value, strict=self.strict)
-        return super(Nested, self).deserialize(value)
+        return self.type.from_dict(d)
 
 
 class Constant(Field):
@@ -576,114 +794,7 @@ class Constant(Field):
         """
         Validate that the given value is equal to the constant value.
         """
-        super(Constant, self).validate(value)
         validate.equal(self.value)(value)
-
-
-class Optional(Field):
-    """
-    An optional Field.
-
-    An Optional is a Field that is allowed to be None. Serialization,
-    deserialization, and validation using the wrapped Field will only be called
-    if the value is not None. The wrapped Field can be specified using a Field
-    class, a Field instance, a Model class, or a built-in type that has a
-    corresponding Field type in this library.
-
-    ::
-
-        >>> class Quote(Model):
-        ...     author = Optional(Str)
-        ...     year = Optional(Int, default=2004)
-        ...     content = Str()
-
-        >>> quote = Quote(year=2000, content='Beautiful is better than ugly.')
-        >>> assert quote.author is None
-        >>> quote.year
-        2000
-        >>> quote.content
-        'Beautiful is better than ugly.'
-
-        >>> assert quote.to_dict() == {
-        ...     'content': 'Beautiful is better than ugly.',
-        ...     'year': 2000
-        ... }
-
-        >>> quote = Quote.from_dict({
-        ...     'author': 'Tim Peters',
-        ...     'content': 'Now is better than never',
-        ... })
-        >>> quote.author
-        'Tim Peters'
-        >>> quote.year
-        2004
-        >>> quote.content
-        'Now is better than never'
-    """
-
-    def __init__(self, inner=None, default=None, **kwargs):
-        """
-        Create a new Optional.
-
-        Args:
-            inner: the the Field class/instance that this Optional wraps.
-            default: a value to use if there is no input field value or the
-                input value is None. This can also be a callable that generates
-                the default. The function must take no arguments.
-            **kwargs: keyword arguments for the `Field` constructor.
-        """
-        super(Optional, self).__init__(**kwargs)
-        self.inner = _resolve_to_field_instance(inner)
-        self.default = default
-
-    def serialize(self, value):
-        """
-        Serialize the given value according to the inner Field's specification.
-
-        Serialization will only be called if the value is not None.
-        """
-        if value is None:
-            raise SkipSerialization()
-
-        return self.inner._serialize(value)
-
-    def deserialize(self, value):
-        """
-        Deserialize the given value according to the inner Field's specification.
-
-        Deserialization will only be called if the value is not None.
-        """
-        if value is not None:
-            return self.inner._deserialize(value)
-
-    def normalize(self, value):
-        """
-        Normalize the given value according to the inner Field's specification.
-
-        This is called after deserialization and on initialization, both before
-        validation. If a default is defined, this method will set the value to
-        the default if the value is None. Otherwise it will call the inner
-        Field's normalize method.
-        """
-        if value is None:
-            if self.default is not None:
-                if callable(self.default):
-                    value = self.default()
-                else:
-                    value = self.default
-        else:
-            value = self.inner._normalize(value)
-
-        return value
-
-    def validate(self, value):
-        """
-        Validate the given value according to the inner Field's specification.
-
-        Validation will only be called if the value is not None.
-        """
-        if value is not None:
-            self.inner._validate(value)
 
 
 class Dict(Instance):
@@ -747,8 +858,7 @@ class Dict(Instance):
         Each key and value in the dictionary will be serialized with the
         specified key and value Field instances.
         """
-        value = {self.key._serialize(k): self.value._serialize(v) for k, v in value.items()}
-        return super(Dict, self).serialize(value)
+        return {self.key._serialize(k): self.value._serialize(v) for k, v in value.items()}
 
     def deserialize(self, value):
         """
@@ -757,7 +867,6 @@ class Dict(Instance):
         Each key and value in the dictionary will be deserialized with the
         specified key and value Field instances.
         """
-        value = super(Dict, self).deserialize(value)
         return {self.key._deserialize(k): self.value._deserialize(v) for k, v in value.items()}
 
     def normalize(self, value):
@@ -767,7 +876,6 @@ class Dict(Instance):
         Each key and value in the dictionary will be normalized with the
         specified key and value Field instances.
         """
-        value = super(Dict, self).normalize(value)
         return {self.key._normalize(k): self.value._normalize(v) for k, v in value.items()}
 
     def validate(self, value):
@@ -1000,12 +1108,6 @@ try:
 except NameError:
     pass
 
-# Aliases
-Boolean = Bool
-Dictionary = Dict
-Integer = Int
-String = Str
-
 
 class Regex(Str):
 
@@ -1021,13 +1123,14 @@ class Regex(Str):
         super(Regex, self).__init__(**kwargs)
         self.pattern = pattern
         self.flags = flags
+        self._validate_regex = validate.regex(self.pattern, flags=self.flags)
 
     def validate(self, value):
         """
         Validate the given string matches the specified regex.
         """
         super(Regex, self).validate(value)
-        validate.regex(self.pattern, flags=self.flags)(value)
+        self._validate_regex(value)
 
 
 class Choice(Field):
@@ -1167,8 +1270,8 @@ class Uuid(Instance):
     """
     A `~uuid.UUID` field.
 
-    This field validates that the input data is an instance of `~uuid.UUID`. It
-    serializes the UUID as a string, and deserializes strings as UUIDs.
+    This field validates that the input data is a UUID. It serializes the UUID
+    as a hex string, and deserializes hex strings or integers as UUIDs.
 
     ::
 
@@ -1183,7 +1286,7 @@ class Uuid(Instance):
         >>> User('not a uuid')
         Traceback (most recent call last):
         ...
-        serde.exceptions.InstantiationError: expected 'UUID' but got 'str'
+        serde.exceptions.InstantiationError: badly formed hexadecimal UUID string
     """
 
     def __init__(self, **kwargs):
@@ -1201,14 +1304,17 @@ class Uuid(Instance):
         """
         return str(value)
 
-    def deserialize(self, value):
+    def normalize(self, value):
         """
-        Deserialize the given string as a `~uuid.UUID`.
+        Normalize the value into a `~uuid.UUID`.
         """
-        return uuid.UUID(value)
+        if not isinstance(value, uuid.UUID):
+            input_form = 'int' if isinstance(value, integer_types) else 'hex'
+            return uuid.UUID(**{input_form: value})
 
 
-BUILTIN_FIELD_CLASSES = {
+FIELD_CLASS_MAP = {
+    # Built-in types
     bool: Bool,
     bytes: Bytes,
     complex: Complex,
@@ -1217,21 +1323,29 @@ BUILTIN_FIELD_CLASSES = {
     int: Int,
     list: List,
     str: Str,
-    tuple: Tuple
+    tuple: Tuple,
+
+    # Datetimes
+    datetime.datetime: DateTime,
+    datetime.date: Date,
+    datetime.time: Time,
+
+    # Others
+    uuid.UUID: Uuid,
 }
 
 try:
-    BUILTIN_FIELD_CLASSES[basestring] = BaseString
+    FIELD_CLASS_MAP[basestring] = BaseString
 except NameError:
     pass
 
 try:
-    BUILTIN_FIELD_CLASSES[long] = Long
+    FIELD_CLASS_MAP[long] = Long
 except NameError:
     pass
 
 try:
-    FIELD_CLASSES[unicode] = Unicode
+    FIELD_CLASS_MAP[unicode] = Unicode
 except NameError:
     pass
 
