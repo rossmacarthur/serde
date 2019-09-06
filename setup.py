@@ -21,7 +21,7 @@ def get_metadata():
         about_text = f.read()
 
     metadata = {
-        key: re.search(r'__' + key + r'__ = ["\'](.*?)["\']', about_text).group(1)
+        key: re.search(r'__' + key + r"__ = '(.*?)'", about_text).group(1)
         for key in ('title', 'version', 'url', 'author', 'author_email', 'license', 'description')
     }
     metadata['name'] = metadata.pop('title')

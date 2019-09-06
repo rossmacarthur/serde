@@ -150,7 +150,6 @@ class Internal(Tag):
     """
     A tag to internally tag `~serde.Model` data.
 
-
     Args:
         tag: the key to use when serializing the model variant's tag.
     """
@@ -264,3 +263,9 @@ class Adjacent(Tag):
             model.__class__ = self._deserialize(tag)
 
         return model, content
+
+
+__all__ = [
+    name for name, obj in globals().items()
+    if utils.is_subclass(obj, Tag)
+]

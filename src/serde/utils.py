@@ -63,6 +63,18 @@ def dict_partition(d, keyfunc, dict=OrderedDict):
     return left, right
 
 
+def is_subclass(cls, class_or_tuple):
+    """
+    Return whether 'cls' is a derived from another class or is the same class.
+
+    Does not raise `TypeError` if the given `cls` is not a class.
+    """
+    try:
+        return issubclass(cls, class_or_tuple)
+    except TypeError:
+        return False
+
+
 def subclasses(cls):
     """
     Returns the recursed subclasses.

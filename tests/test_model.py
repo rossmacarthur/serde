@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from pytest import raises
 
-from serde import Model, fields, tags, validate
+from serde import Model, fields, tags, validators
 from serde.exceptions import (
     DeserializationError,
     InstantiationError,
@@ -248,7 +248,7 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         # Check that extra validators work.
 
         class Example(Model):
-            a = fields.Int(validators=[validate.between(100, 200)])
+            a = fields.Int(validators=[validators.Between(100, 200)])
 
         assert Example(a=101).a == 101
 
@@ -394,7 +394,7 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         # values they are validated.
 
         class Example(Model):
-            a = fields.Int(validators=[validate.min(100)])
+            a = fields.Int(validators=[validators.Min(100)])
 
         model = Example(a=101)
         model.a = 5

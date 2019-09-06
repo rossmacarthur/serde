@@ -61,7 +61,7 @@ Tags
 Validators
 ----------
 
-.. automodule:: serde.validate
+.. automodule:: serde.validators
     :members:
 
 Exceptions
