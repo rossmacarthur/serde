@@ -10,7 +10,7 @@ from itertools import chain
 import isodate
 from six import integer_types
 
-from serde import validate
+from serde import validators
 from serde.exceptions import (
     ContextError,
     DeserializationError,
@@ -19,7 +19,7 @@ from serde.exceptions import (
     ValidationError,
     map_errors
 )
-from serde.utils import applied, chained, try_import_all, zip_equal
+from serde.utils import applied, chained, is_subclass, try_import_all, zip_equal
 
 
 def _resolve_to_field_instance(thing, none_allowed=True):
@@ -122,8 +122,7 @@ class BaseField(object):
 
     def _attrs(self):
         """
-        Return all attributes of base field except `id` and some private
-        attributes.
+        Returns a dictionary of all public attributes on this base field.
         """
         return {
             name: value for name, value in vars(self).items()
@@ -242,8 +241,7 @@ class Field(BaseField):
 
     def _attrs(self):
         """
-        Return all attributes of the field except `id` and some private
-        attributes.
+        Returns a dictionary of all public attributes on this field.
         """
         return {
             name: value for name, value in vars(self).items()
@@ -650,7 +648,7 @@ class Instance(Field):
         """
         super(Instance, self).__init__(**kwargs)
         self.type = type
-        self._validate_instance = validate.instance(type)
+        self._validate_instance = validators.Instance(type)
 
     def validate(self, value):
         """
@@ -681,32 +679,6 @@ class Nested(Instance):
         Deserialize the given dictionary to a `~serde.Model` instance.
         """
         return self.type.from_dict(d)
-
-
-class Constant(Field):
-    """
-    A constant field.
-
-    A `Constant` is a field that always has to be the specified value.
-
-    Args:
-        value: the constant value that this `Constant` wraps.
-        **kwargs: keyword arguments for the `Field` constructor.
-    """
-
-    def __init__(self, value, **kwargs):
-        """
-        Create a new `Constant`.
-        """
-        super(Constant, self).__init__(**kwargs)
-        self.value = value
-        self._validate_equal = validate.equal(value)
-
-    def validate(self, value):
-        """
-        Validate that the given value is equal to the constant value.
-        """
-        self._validate_equal(value)
 
 
 class Dict(Instance):
@@ -959,34 +931,30 @@ except NameError:
     pass
 
 
-class Regex(Str):
+class Constant(Field):
     """
-    A regex field.
+    A constant field.
 
-    A `Regex` is a string field that validates that data matches a specified
-    regex expression.
+    A `Constant` is a field that always has to be the specified value.
 
     Args:
-        pattern (str): the regex pattern that the value must match.
-        flags (int): the regex flags passed directly to `re.compile`.
+        value: the constant value that this `Constant` wraps.
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
-    def __init__(self, pattern, flags=0, **kwargs):
+    def __init__(self, value, **kwargs):
         """
-        Create a new `Regex`.
+        Create a new `Constant`.
         """
-        super(Regex, self).__init__(**kwargs)
-        self.pattern = pattern
-        self.flags = flags
-        self._validate_regex = validate.regex(self.pattern, flags=self.flags)
+        super(Constant, self).__init__(**kwargs)
+        self.value = value
+        self._validate_equal = validators.Equal(value)
 
     def validate(self, value):
         """
-        Validate the given string matches the specified regex.
+        Validate that the given value is equal to the constant value.
         """
-        super(Regex, self).validate(value)
-        self._validate_regex(value)
+        self._validate_equal(value)
 
 
 class Choice(Field):
@@ -1007,7 +975,7 @@ class Choice(Field):
         """
         super(Choice, self).__init__(**kwargs)
         self.choices = choices
-        self._validate_contains = validate.contains(choices)
+        self._validate_contains = validators.Contains(choices)
 
     def validate(self, value):
         """
@@ -1099,6 +1067,36 @@ class Time(DateTime):
             return datetime.datetime.strptime(value, self.format).time()
 
 
+class Regex(Str):
+    """
+    A regex field.
+
+    A `Regex` is a string field that validates that data matches a specified
+    regex expression.
+
+    Args:
+        pattern (str): the regex pattern that the value must match.
+        flags (int): the regex flags passed directly to `re.compile`.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    def __init__(self, pattern, flags=0, **kwargs):
+        """
+        Create a new `Regex`.
+        """
+        super(Regex, self).__init__(**kwargs)
+        self.pattern = pattern
+        self.flags = flags
+        self._validate_regex = validators.Regex(self.pattern, flags=self.flags)
+
+    def validate(self, value):
+        """
+        Validate the given string matches the specified regex.
+        """
+        super(Regex, self).validate(value)
+        self._validate_regex(value)
+
+
 class Uuid(Instance):
     """
     A `~uuid.UUID` field.
@@ -1170,5 +1168,5 @@ except NameError:
 
 try_import_all('serde_ext.fields', globals())
 
-__all__ = [name for name, obj in globals().items() if isinstance(obj, Field)]
+__all__ = [name for name, obj in globals().items() if is_subclass(obj, Field)]
 __all__.append('create')

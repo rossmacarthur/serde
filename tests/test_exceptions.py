@@ -1,6 +1,6 @@
 from pytest import raises
 
-from serde import Model, fields, tags, validate
+from serde import Model, fields, tags, validators
 from serde.exceptions import (
     BaseError,
     Context,
@@ -139,7 +139,7 @@ class TestSerdeError:
         # Test a better use case for the pretty formatted error.
 
         class SubExample(Model):
-            a = fields.Str(validators=[validate.length_between(0, 5)])
+            a = fields.Str(validators=[validators.LengthBetween(0, 5)])
 
         class Example(Model):
             sub = fields.Nested(SubExample)

@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 from pytest import raises
 
-from serde import Model, fields, validate
+from serde import Model, fields, validators
 from serde.exceptions import (
     ContextError,
     DeserializationError,
@@ -552,7 +552,7 @@ ValidationError: expected attribute 'test'
 
     def test_validate_extra(self):
         # An Optional should call the wrapped Field's _validate method.
-        field = Optional(Field(validators=[validate.equal(10)]))
+        field = Optional(Field(validators=[validators.Equal(10)]))
         with raises(ValidationError):
             assert field.validate(5)
 
@@ -635,17 +635,6 @@ class TestConstant:
         assert field.value == -1234
         assert field.validators == [None]
 
-    def test_normalize_none(self):
-        # Check that None values are normalized to the constant value.
-        field = Constant(123)
-        assert field.normalize(None) == 123
-
-    def test_normalize_something(self):
-        # Check that other values are normalized to themselves.
-        field = Constant(123)
-        other = object()
-        assert field.normalize(other) is other
-
     def test_validate(self):
         # Check that values must be equal to the constant value.
         field = Constant(True)
@@ -712,7 +701,7 @@ class TestDict:
 
     def test_validate_extra(self):
         # A Dict should validate values based on the key and value Fields.
-        field = Dict(value=Field(validators=[validate.equal(10)]))
+        field = Dict(value=Field(validators=[validators.Equal(10)]))
         field.validate({'test': 10, 'hello': 10})
 
         with raises(ValidationError):
@@ -774,7 +763,7 @@ class TestList:
 
     def test_validate_extra(self):
         # A List should validate values based on the element Field.
-        field = List(element=Field(validators=[validate.equal(10)]))
+        field = List(element=Field(validators=[validators.Equal(10)]))
         field.validate([10, 10, 10])
 
         with raises(ValidationError):
@@ -842,7 +831,7 @@ class TestTuple:
 
     def test_validate_extra(self):
         # A Tuple should validate values based on each element Fields.
-        field = Tuple(Field, Field(validators=[validate.equal(10)]))
+        field = Tuple(Field, Field(validators=[validators.Equal(10)]))
         field.validate((20, 10))
 
         with raises(ValidationError):

@@ -41,6 +41,11 @@ def test_dict_partition():
     assert utils.dict_partition(d, lambda k, v: v == 5) == ({'b': 5}, {'a': 1})
 
 
+def test_is_subclass():
+    assert utils.is_subclass(5, int) is False
+    assert utils.is_subclass(int, int) is True
+
+
 def test_subclasses():
     class Example(object):
         pass
@@ -62,10 +67,19 @@ def test_try_import():
     assert utils.try_import('not_a_real_package_i_hope') is None
 
 
-def test_try_import_all():
+def test_try_import_all_serde():
     ns = {}
-    utils.try_import_all('pty', ns)
-    assert set(ns.keys()) == {'fork', 'openpty', 'spawn'}
+    utils.try_import_all('serde', ns)
+    assert set(ns.keys()) == {'Model', 'fields', 'exceptions', 'tags', 'validators'}
+
+
+def test_try_import_all_tests():
+    ns = {}
+    utils.try_import_all('bisect', ns)
+    assert set(ns.keys()) == {
+        'bisect', 'bisect_left', 'bisect_right',
+        'insort', 'insort_left', 'insort_right'
+    }
 
 
 def test_zip_equal():
