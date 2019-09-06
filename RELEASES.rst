@@ -8,11 +8,15 @@ Releases
 
 *Unreleased*
 
+- Rework validators as classes. (`#102`_)
+- Documentation overhaul. (`#101`_)
 - Rework tags to subclass ``BaseField``. (`#100`_)
 - Remove optional extras (`#97`_)
 
 .. _#97: https://github.com/rossmacarthur/serde/pull/97
 .. _#100: https://github.com/rossmacarthur/serde/pull/100
+.. _#101: https://github.com/rossmacarthur/serde/pull/101
+.. _#102: https://github.com/rossmacarthur/serde/pull/102
 
 0.6.2
 -----
