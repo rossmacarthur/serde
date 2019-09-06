@@ -113,7 +113,10 @@ def try_import_all(name, namespace):
         if hasattr(module, '__all__'):
             all_names = module.__all__
         else:
-            all_names = (name for name in dir(module) if not name.startswith('_'))
+            all_names = (
+                name for name in dir(module)
+                if not name.startswith('_')
+            )
 
         namespace.update({name: getattr(module, name) for name in all_names})
 

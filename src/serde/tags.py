@@ -1,31 +1,45 @@
 """
-This module contains Tag classes `Models <serde.model.Model>`.
+This module contains tag classes for use with `Models <serde.Model>`.
 """
 
 from serde import fields, utils
-from serde.exceptions import DeserializationError, SerializationError, map_errors
+from serde.exceptions import (
+    DeserializationError,
+    SerializationError,
+    map_errors
+)
 
 
 class Tag(fields.BaseField):
     """
-    A tag Field for a `Model <serde.model.Model>`.
+    A tag field for a `Model <serde.Model>`.
+
+    Args:
+        recurse (bool): whether to recurse subclasses when calculating model
+            variants.
+        serializers (list): a list of serializer functions taking the value to
+            serialize as an argument. The functions need to raise an `Exception`
+            if they fail. These serializer functions will be applied before the
+            primary serializer on this tag.
+        deserializers (list): a list of deserializer functions taking the value
+            to deserialize as an argument. The functions need to raise an
+            `Exception` if they fail. These deserializer functions will be
+            applied after the primary deserializer on this tag.
     """
 
-    def __init__(self, recurse=False, **kwargs):
+    def __init__(self, recurse=False, serializers=None, deserializers=None):
         """
-        Create a new Tag.
-
-        Args:
-            recurse (bool): whether to recurse subclasses when calculating Model
-                variants.
-            **kwargs: keyword arguments for the `Base` constructor.
+        Create a new `Tag`.
         """
-        super(Tag, self).__init__(**kwargs)
+        super(Tag, self).__init__(
+            serializers=serializers,
+            deserializers=deserializers
+        )
         self.recurse = recurse
 
     def variants(self):
         """
-        Returns a list of variants for the given Model class.
+        Returns a list of variants for the bound model class.
         """
         base_cls = self.__model__
 
@@ -41,10 +55,10 @@ class Tag(fields.BaseField):
 
     def lookup_tag(self, variant):
         """
-        Get the tag value for the given Model variant.
+        Get the tag value for the given model variant.
 
         Args:
-            variant (Model): the Model class.
+            variant (Model): the model class.
 
         Returns:
             tag: the corresponding tag value.
@@ -79,7 +93,7 @@ class Tag(fields.BaseField):
 
         if not variant:
             raise DeserializationError(
-                'no variant found for tag',
+                'no variant found for tag {!r}'.format(value),
                 value=value,
                 field=self,
                 model_cls=self.__model__
@@ -90,30 +104,43 @@ class Tag(fields.BaseField):
 
 class External(Tag):
     """
-    A tag to externally tag `Model <serde.model.Model>` data.
+    A tag to externally tag `~serde.Model` data.
     """
 
     def _serialize_with(self, model, d):
         """
-        Serialize the Model variant by externally tagging the given dictionary.
+        Serialize the model variant by externally tagging the given dictionary.
         """
         variant = model.__class__
 
-        with map_errors(SerializationError, value=variant, field=self, model_cls=model.__class__):
+        with map_errors(
+            SerializationError,
+            value=variant,
+            field=self,
+            model_cls=model.__class__
+        ):
             d = {self._serialize(variant): d}
 
         return d
 
     def _deserialize_with(self, model, d):
         """
-        Deserialize the Model variant from an externally tagged dictionary.
+        Deserialize the model variant from an externally tagged dictionary.
         """
         try:
             tag = next(iter(d))
         except StopIteration:
-            raise DeserializationError('expected externally tagged data', field=self)
+            raise DeserializationError(
+                'expected externally tagged data',
+                field=self
+            )
 
-        with map_errors(DeserializationError, value=tag, field=self, model_cls=model.__class__):
+        with map_errors(
+            DeserializationError,
+            value=tag,
+            field=self,
+            model_cls=model.__class__
+        ):
             model.__class__ = self._deserialize(tag)
 
         return model, d[tag]
@@ -121,40 +148,54 @@ class External(Tag):
 
 class Internal(Tag):
     """
-    A tag to internally tag `Model <serde.model.Model>` data.
+    A tag to internally tag `~serde.Model` data.
+
+
+    Args:
+        tag: the key to use when serializing the model variant's tag.
     """
 
     def __init__(self, tag='tag', **kwargs):
         """
-        Create a new Internal tag.
-
-        Args:
-            tag: the key to use when serializing the Model variant's tag.
+        Create a new `Internal`.
         """
         super(Internal, self).__init__(**kwargs)
         self.tag = tag
 
     def _serialize_with(self, model, d):
         """
-        Serialize the Model variant by internally tagging the given dictionary.
+        Serialize the model variant by internally tagging the given dictionary.
         """
         variant = model.__class__
 
-        with map_errors(SerializationError, value=variant, field=self, model_cls=model.__class__):
+        with map_errors(
+            SerializationError,
+            value=variant,
+            field=self,
+            model_cls=model.__class__
+        ):
             d[self.tag] = self._serialize(variant)
 
         return d
 
     def _deserialize_with(self, model, d):
         """
-        Deserialize the Model variant from an internally tagged dictionary.
+        Deserialize the model variant from an internally tagged dictionary.
         """
         try:
             tag = d[self.tag]
         except KeyError:
-            raise DeserializationError('expected tag {!r}'.format(self.tag), field=self)
+            raise DeserializationError(
+                'expected tag {!r}'.format(self.tag),
+                field=self
+            )
 
-        with map_errors(DeserializationError, value=tag, field=self, model_cls=model.__class__):
+        with map_errors(
+            DeserializationError,
+            value=tag,
+            field=self,
+            model_cls=model.__class__
+        ):
             model.__class__ = self._deserialize(tag)
 
         return model, d
@@ -162,16 +203,16 @@ class Internal(Tag):
 
 class Adjacent(Tag):
     """
-    A tag to adjacently tag `Model <serde.model.Model>` data.
+    A tag to adjacently tag `~serde.Model` data.
+
+    Args:
+        tag: the key to use when serializing the model variant's tag.
+        content: the key to use when serializing the model variant's data.
     """
 
     def __init__(self, tag='tag', content='content', **kwargs):
         """
-        Create a new Adjacent tag.
-
-        Args:
-            tag: the key to use when serializing the Model variant's tag.
-            content: the key to use when serializing the Model variant's data.
+        Create a new `Adjacent`.
         """
         super(Adjacent, self).__init__(**kwargs)
         self.tag = tag
@@ -179,11 +220,15 @@ class Adjacent(Tag):
 
     def _serialize_with(self, model, d):
         """
-        Serialize the Model variant by adjacently tagging the given dictionary.
+        Serialize the model variant by adjacently tagging the given dictionary.
         """
         variant = model.__class__
 
-        with map_errors(SerializationError, field=self, model_cls=model.__class__):
+        with map_errors(
+            SerializationError,
+            field=self,
+            model_cls=model.__class__
+        ):
             d = {
                 self.tag: self._serialize(variant),
                 self.content: d
@@ -193,19 +238,29 @@ class Adjacent(Tag):
 
     def _deserialize_with(self, model, d):
         """
-        Deserialize the Model variant from an adjacently tagged dictionary.
+        Deserialize the model variant from an adjacently tagged dictionary.
         """
         try:
             tag = d[self.tag]
         except KeyError:
-            raise DeserializationError('expected tag {!r}'.format(self.tag), field=self)
+            raise DeserializationError(
+                'expected tag {!r}'.format(self.tag),
+                field=self
+            )
 
         try:
             content = d[self.content]
         except KeyError:
-            raise DeserializationError('expected content {!r}'.format(self.content), field=self)
+            raise DeserializationError(
+                'expected content {!r}'.format(self.content),
+                field=self
+            )
 
-        with map_errors(DeserializationError, field=self, model_cls=model.__class__):
+        with map_errors(
+            DeserializationError,
+            field=self,
+            model_cls=model.__class__
+        ):
             model.__class__ = self._deserialize(tag)
 
         return model, content

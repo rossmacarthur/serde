@@ -1,5 +1,5 @@
 """
-This module defines the core `~serde.model.Model` class.
+This module defines the core `~serde.Model` class.
 """
 
 import inspect
@@ -24,7 +24,7 @@ __all__ = ['Model']
 
 class Fields(OrderedDict):
     """
-    An OrderedDict that allows value access with dot notation.
+    An `~collections.OrderedDict` that allows value access with dot notation.
     """
 
     def __getattr__(self, name):
@@ -39,12 +39,12 @@ class Fields(OrderedDict):
 
 class ModelType(type):
     """
-    A metaclass for Models.
+    A metaclass for a `Model`.
 
     This metaclass pulls `~serde.fields.Field` attributes off the defined class.
-    The can be accessed using the `__fields__` attribute on the class or
-    instance. Model methods use the `__fields__` attribute to construct,
-    validate, and convert Models between data formats.
+    These can be accessed using the ``__fields__`` attribute on the class. Model
+    methods use the ``__fields__`` attribute to instantiate, serialize,
+    deserialize, normalize, and validate models.
     """
 
     def __new__(cls, cname, bases, attrs):
@@ -57,7 +57,7 @@ class ModelType(type):
             attrs (dict): the attributes for this class.
 
         Returns:
-            Model: a new Model class.
+            Model: a new model class.
         """
         abstract = False
         tag = None
@@ -72,10 +72,18 @@ class ModelType(type):
                 tag = meta['tag']
 
         # Split the attrs into Fields and non-Fields.
-        fields, final_attrs = dict_partition(attrs, lambda k, v: isinstance(v, Field))
+        fields, final_attrs = dict_partition(
+            attrs,
+            lambda k, v: isinstance(v, Field)
+        )
 
         # Create our Model class.
-        model_cls = super(ModelType, cls).__new__(cls, cname, bases, final_attrs)
+        model_cls = super(ModelType, cls).__new__(
+            cls,
+            cname,
+            bases,
+            final_attrs
+        )
 
         # Bind the Model to the Fields.
         for name, field in fields.items():
@@ -102,7 +110,9 @@ class ModelType(type):
         # Assign all the things to the Model!
         model_cls._abstract = abstract
         model_cls._parent = parent
-        model_cls._fields = Fields(sorted(fields.items(), key=lambda x: x[1].id))
+        model_cls._fields = Fields(
+            sorted(fields.items(), key=lambda x: x[1].id)
+        )
         model_cls._tag = tag
         model_cls._tags = tags
 
@@ -110,40 +120,55 @@ class ModelType(type):
 
     @property
     def __abstract__(cls):
+        """
+        Whether this model class is abstract or not.
+        """
         return cls._abstract
 
     @property
     def __parent__(cls):
+        """
+        This model class's parent model class.
+        """
         return cls._parent
 
     @property
     def __fields__(cls):
+        """
+        A map of attribute name to field instance.
+        """
         return cls._fields.copy()
 
     @property
     def __tag__(cls):
+        """
+        The model class's tag (or None).
+        """
         return cls._tag
 
     @property
     def __tags__(cls):
+        """
+        The model class's tag and all parent class's tags.
+        """
         return cls._tags[:]
 
 
 @add_metaclass(ModelType)
 class Model(object):
     """
-    The base Model.
+    The base model.
     """
 
     def __init__(self, *args, **kwargs):
         """
-        Create a new Model.
+        Create a new model.
 
         Args:
-            *args: positional arguments values for each Field on the Model. If
+            *args: positional arguments values for each field on the model. If
                 these are given they will be interpreted as corresponding to the
-                Fields in the order the Fields are defined on the Model.
-            **kwargs: keyword argument values for each Field on the Model.
+                fields in the order they are defined on the model class.
+            **kwargs: keyword argument values for each field on the model.
         """
         if self.__class__.__abstract__:
             raise InstantiationError(
@@ -152,16 +177,21 @@ class Model(object):
             )
 
         try:
-            for name, value in zip_until_right(self.__class__.__fields__.keys(), args):
+            for name, value in zip_until_right(
+                self.__class__.__fields__.keys(),
+                args
+            ):
                 if name in kwargs:
                     raise InstantiationError(
-                        '__init__() got multiple values for keyword argument {!r}'
+                        '__init__() got multiple values '
+                        'for keyword argument {!r}'
                         .format(name),
                     )
                 kwargs[name] = value
         except ValueError:
             raise InstantiationError(
-                '__init__() takes a maximum of {!r} positional arguments but {!r} were given'
+                '__init__() takes a maximum of {!r} positional arguments'
+                ' but {!r} were given'
                 .format(len(self.__class__.__fields__) + 1, len(args) + 1),
             )
 
@@ -178,12 +208,12 @@ class Model(object):
             )
 
         with map_errors(InstantiationError):
-            self.normalize_all()
-            self.validate_all()
+            self._normalize()
+            self._validate()
 
     def __eq__(self, other):
         """
-        Whether two Models are the same.
+        Whether two models are the same.
         """
         return (
             isinstance(other, self.__class__)
@@ -195,26 +225,33 @@ class Model(object):
 
     def __hash__(self):
         """
-        Return a hash value for this Model.
+        Return a hash value for this model.
         """
-        return hash(tuple((name, getattr(self, name)) for name in self.__class__.__fields__.keys()))
+        return hash(tuple(
+            (name, getattr(self, name))
+            for name in self.__class__.__fields__.keys()
+        ))
 
     def __repr__(self):
         """
-        Return the canonical string representation of this Model.
+        Return the canonical string representation of this model.
         """
         return '<{module}.{name} model at 0x{id:x}>'.format(
             module=self.__class__.__module__,
-            name=getattr(self.__class__, '__qualname__', self.__class__.__name__),
+            name=getattr(
+                self.__class__,
+                '__qualname__',
+                self.__class__.__name__
+            ),
             id=id(self)
         )
 
     def to_dict(self):
         """
-        Convert this Model to a dictionary.
+        Convert this model to a dictionary.
 
         Returns:
-            dict: the Model serialized as a dictionary.
+            ~collections.OrderedDict: the model serialized as a dictionary.
         """
         d = OrderedDict()
 
@@ -228,26 +265,26 @@ class Model(object):
 
     def to_json(self, **kwargs):
         """
-        Dump the Model as a JSON string.
+        Dump the model as a JSON string.
 
         Args:
             **kwargs: extra keyword arguments to pass directly to `json.dumps`.
 
         Returns:
-            str: a JSON representation of this Model.
+            str: a JSON representation of this model.
         """
         return json.dumps(self.to_dict(), **kwargs)
 
     @classmethod
     def from_dict(cls, d):
         """
-        Convert a dictionary to an instance of this Model.
+        Convert a dictionary to an instance of this model.
 
         Args:
-            d (dict): a serialized version of this Model.
+            d (dict): a serialized version of this model.
 
         Returns:
-            Model: an instance of this Model.
+            Model: an instance of this model.
         """
         model = cls.__new__(cls)
 
@@ -260,32 +297,32 @@ class Model(object):
             model, d = field._deserialize_with(model, d)
 
         with map_errors(DeserializationError):
-            model.normalize_all()
-            model.validate_all()
+            model._normalize()
+            model._validate()
 
         return model
 
     @classmethod
     def from_json(cls, s, **kwargs):
         """
-        Load the Model from a JSON string.
+        Load the model from a JSON string.
 
         Args:
             s (str): the JSON string.
             **kwargs: extra keyword arguments to pass directly to `json.loads`.
 
         Returns:
-            Model: an instance of this Model.
+            Model: an instance of this model.
         """
         return cls.from_dict(json.loads(s, **kwargs))
 
-    def normalize_all(self):
+    def _normalize(self):
         """
-        Normalize all Fields on this Model, and the Model itself.
+        Normalize all fields on this model, and the model itself.
 
-        This is called by the Model constructor and on deserialization, so this
+        This is called by the model constructor and on deserialization, so this
         is only needed if you modify attributes directly and want to renormalize
-        the Model.
+        the model instance.
         """
         for field in self.__class__.__fields__.values():
             field._normalize_with(self)
@@ -295,19 +332,20 @@ class Model(object):
 
     def normalize(self):
         """
-        Normalize this Model.
+        Normalize this model.
 
-        Override this method to add any additional normalization to the Model.
-        This will be called after all Fields have been normalized.
+        Override this method to add any additional normalization to the model.
+        This will be called after all fields have been normalized.
         """
         pass
 
-    def validate_all(self):
+    def _validate(self):
         """
-        Validate all Fields on this Model, and the Model itself.
+        Validate all fields on this model, and the model itself.
 
-        This is called by the Model constructor, so this is only needed if you
-        modify attributes directly and want to revalidate the Model.
+        This is called by the model constructor and on deserialization, so this
+        is only needed if you modify attributes directly and want to revalidate
+        the model instance.
         """
         for field in self.__class__.__fields__.values():
             field._validate_with(self)
@@ -317,9 +355,9 @@ class Model(object):
 
     def validate(self):
         """
-        Validate this Model.
+        Validate this model.
 
-        Override this method to add any additional validation to the Model. This
-        will be called after all Fields have been validated.
+        Override this method to add any additional validation to the model. This
+        will be called after all fields have been validated.
         """
         pass

@@ -37,9 +37,7 @@ html_theme_options = {
     'fixed_sidebar': True,
     'logo_name': True,
     'github_user': 'rossmacarthur',
-    'github_repo': 'serde',
-    'page_width': '1000px',
-    'sidebar_width': '200px'
+    'github_repo': 'serde'
 }
 html_sidebars = {
     '**': [
@@ -49,4 +47,4 @@ html_sidebars = {
         'searchbox.html'
     ]
 }
-html_static_path = ['static']
+html_static_path = ['_static']

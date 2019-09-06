@@ -1,12 +1,25 @@
+:tocdepth: 1
+
 Releases
 ========
+
+0.7.0
+-----
+
+*Unreleased*
+
+- Rework tags to subclass ``BaseField``. (`#100`_)
+- Remove optional extras (`#97`_)
+
+.. _#97: https://github.com/rossmacarthur/serde/pull/97
+.. _#100: https://github.com/rossmacarthur/serde/pull/100
 
 0.6.2
 -----
 
 *Released on July 20th, 2019*
 
-- Add Regex Field. (`#95`_)
+- Add ``Regex`` field. (`#95`_)
 - Drop Python 3.4 support (`#94`_)
 
 .. _#95: https://github.com/rossmacarthur/serde/pull/95
@@ -17,7 +30,7 @@ Releases
 
 *Released on April 4th, 2019*
 
-- Fix some bugs in Model tagging (`#92`_)
+- Fix some bugs in ``Model`` tagging (`#92`_)
 
 .. _#92: https://github.com/rossmacarthur/serde/pull/92
 
@@ -26,8 +39,8 @@ Releases
 
 *Released on March 30th, 2019*
 
-- Improve base Field exception messages. (`#86`_)
-- Add Constant Field. (`#58`_, `#85`_)
+- Improve base ``Field`` exception messages. (`#86`_)
+- Add ``Constant`` field. (`#58`_, `#85`_)
 - Model tagging when serializing and deserializing. (`#64`_, `#81`_, `#83`_)
 - Streamline sdist. (`#82`_)
 - Better error context and handling. (`#38`_, `#80`_)
@@ -48,7 +61,7 @@ Releases
 
 *Released on February 4th, 2019*
 
-- Add Long Field in Python 2. (`#79`_)
+- Add ``Long`` field in Python 2. (`#79`_)
 - Fix a bug where validators was a required dependency. (`#78`_)
 - Support conversion between Pickle. (`#10`_, `#76`_)
 
@@ -63,7 +76,7 @@ Releases
 
 *Released on January 29th, 2019*
 
-- Reexport `serde-ext`_ Fields and validators. (`#75`_)
+- Reexport `serde-ext`_ fields and validators. (`#75`_)
 
 .. _#75: https://github.com/rossmacarthur/serde/pull/75
 
@@ -73,11 +86,11 @@ Releases
 *Released on January 29th, 2019*
 
 - Support conversion between CBOR. (`#40`_, `#74`_)
-- Remove Fields and validators that were moved to `serde-ext`_ package. (`#66`_,
+- Remove fields and validators that were moved to `serde-ext`_ package. (`#66`_,
   `#71`_)
-- Container Fields now properly call inner Field methods. (`#70`_)
-- Add equal and length validators. (`#67`_, `#69`_)
-- Add basestring and unicode to built-in Field map. (`#68`_)
+- Container fields now properly call inner ``Field`` methods. (`#70`_)
+- Add ``equal()`` and ``length()`` validators. (`#67`_, `#69`_)
+- Add ``basestring`` and ``unicode`` to built-in ``Field`` map. (`#68`_)
 
 .. _serde-ext: https://github.com/rossmacarthur/serde-ext
 
@@ -96,10 +109,11 @@ Releases
 
 *Released on January 23rd, 2019*
 
-- Fix a bug where Optional Field didn't call the inner Field's normalize.
+- Fix a bug where ``Optional`` didn't call the inner ``Field.normalize()``.
   (`#65`_)
 - Use 'simplejson' package if available. (`#60`_, `#63`_)
-- Fix a bug where Choice Field didn't call super().validate(). (`#62`_)
+- Fix a bug where ``Choice`` fiel didn't call ``super().validate()``.
+  (`#62`_)
 
 .. _#65: https://github.com/rossmacarthur/serde/pull/65
 .. _#63: https://github.com/rossmacarthur/serde/pull/63
@@ -114,7 +128,7 @@ Releases
 
 - Fix a bug where dependencies were not pinned correctly. (`#54`_)
 - Pluralise module names. (`#52`_)
-- Add Optional Field. (`#51`_, `#48`_, `#49`_)
+- Add ``Optional`` field. (`#51`_, `#48`_, `#49`_)
 
 .. _#54: https://github.com/rossmacarthur/serde/pull/54
 .. _#52: https://github.com/rossmacarthur/serde/pull/52
@@ -128,7 +142,7 @@ Releases
 
 *Released on December 19th, 2018*
 
-- Fix a bug where overriding Model `__init__` method affected Model `from_dict`.
+- Fix a bug where overriding ``Model.__init__()`` method affected ``Model.from_dict``.
   (`#45`_, `#46`_)
 
 .. _#46: https://github.com/rossmacarthur/serde/pull/46
@@ -140,10 +154,10 @@ Releases
 
 *Released on December 17th, 2018*
 
-- Fix a bug with the Model `__repr__` method. (`#44`_)
-- Make Bytes an alias of Str Field in Python 2.7. (`#43`_)
+- Fix a bug with the ``Model.__repr__()`` method. (`#44`_)
+- Make ``Bytes`` an alias of ``Str`` in Python 2.7. (`#43`_)
 - Fix not being able to create attributes, methods, and functions with the same
-  name as Fields on a Model. (`#41`_, `#42`_)
+  name as fields on a ``Model``. (`#41`_, `#42`_)
 
 .. _#44: https://github.com/rossmacarthur/serde/pull/44
 .. _#43: https://github.com/rossmacarthur/serde/pull/43
@@ -157,14 +171,14 @@ Releases
 *Released on December 9th, 2018*
 
 - Support Python 2.7. (`#35`_)
-- Add BaseString and Unicode Fields. (`#35`_)
+- Add ``BaseString`` and ``Unicode`` fields. (`#35`_)
 - Remove extra validation options from built-in type Fields. (`#34`_)
-- Add min() and max() validation functions. (`#34`_)
-- Add "inclusive" option to between() validator. (`#34`_)
-- Add "args" option to the field.create() method. (`#34`_)
-- Generate built-in types using the field.create() method. (`#34`_)
-- Add Complex and Bytes Fields. (`#34`_)
-- Do not clutter root namespace with Fields. (`#34`_)
+- Add ``min()`` and ``max()`` validation functions. (`#34`_)
+- Add ``inclusive`` option to ``between()`` validator. (`#34`_)
+- Add ``args`` option to the ``field.create()`` method. (`#34`_)
+- Generate built-in types using the ``field.create()`` method. (`#34`_)
+- Add ``Complex`` and ``Bytes`` fields. (`#34`_)
+- Do not clutter root namespace with fields. (`#34`_)
 
 .. _#35: https://github.com/rossmacarthur/serde/pull/35
 .. _#34: https://github.com/rossmacarthur/serde/pull/34
@@ -174,10 +188,10 @@ Releases
 
 *Released on November 21th, 2018*
 
-- Fix SerdeErrors having incorrect context. (`#32`_)
-- Add IpAddress, Ipv4Address, Ipv6Address, and MacAddress Fields. (`#3`_,
-  `#30`_)
-- Add DateTime, Date, and Time Fields. (`#2`_, `#29`_)
+- Fix ``SerdeErrors`` having incorrect context. (`#32`_)
+- Add ``IpAddress``, ``Ipv4Address``, ``Ipv6Address``, and ``MacAddress``
+  fields. (`#3`_, `#30`_)
+- Add ``DateTime``, ``Date``, and ``Time`` fields. (`#2`_, `#29`_)
 
 .. _#32: https://github.com/rossmacarthur/serde/pull/30
 .. _#30: https://github.com/rossmacarthur/serde/pull/30
@@ -191,15 +205,16 @@ Releases
 
 *Released on November 16th, 2018*
 
-- Add validate module with validate functions for use with Fields. (`#22`_)
-- Support Field creation from functions. (`#22`_)
+- Add validate module with validate functions for use with fields. (`#22`_)
+- Support ``Field`` creation from functions. (`#22`_)
 - General API improvements. (`#17`_)
 - Support conversion between TOML, YAML. (`#7`_, `#8`_, `#16`_)
-- Add Boolean, Dictionary, Integer, and String Field aliases. (`#11`_, `#14`_)
-- Add ``serializers`` and ``deserializers`` Field options for arbitrary
+- Add ``Boolean``, ``Dictionary``, ``Integer``, and ``String`` aliases.
+  (`#11`_, `#14`_)
+- Add ``serializers`` and ``deserializers`` ``Field`` options for arbitrary
   serializer and deserializer functions. (`#6`_)
-- Nested Fields now take the same options as ``to_dict()`` and ``from_dict()``
-  on Model objects. (`#5`_)
+- ``Nested`` fields now take the same options as ``to_dict()`` and
+  ``from_dict()`` on ``Model`` objects. (`#5`_)
 
 .. _#22: https://github.com/rossmacarthur/serde/pull/22
 .. _#17: https://github.com/rossmacarthur/serde/pull/17

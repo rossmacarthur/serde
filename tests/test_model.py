@@ -346,8 +346,8 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
             'test___repr___nested.<locals>.Example model at'
         )
 
-    def test_normalize_all_good(self):
-        # normalize_all() should renormalize the Model so that if we have
+    def test__normalize_good(self):
+        # _normalize() should renormalize the Model so that if we have
         # changed values they are normalized.
 
         class Example(Model):
@@ -355,11 +355,11 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         model = Example(a='unused')
         model.a = 'test'
-        model.normalize_all()
+        model._normalize()
         assert model.a == 'tset'
 
-    def test_normalize_all_bad_normalizers(self):
-        # normalize_all() should raise normalization exceptions.
+    def test__normalize_bad_normalizers(self):
+        # _normalize() should raise normalization exceptions.
 
         def raises_exception(value):
             raise ValueError
@@ -371,10 +371,10 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         model.__class__._fields.a.normalizers = [raises_exception]
 
         with raises(NormalizationError):
-            model.normalize_all()
+            model._normalize()
 
-    def test_normalize_all_bad_normalize(self):
-        # normalize_all() should raise a NormalizationError that will be mapped
+    def test__normalize_bad_normalize(self):
+        # _normalize() should raise a NormalizationError that will be mapped
         # to an InstantiationError.
 
         class Example(Model):
@@ -387,10 +387,10 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         Example.normalize = normalize
 
         with raises(NormalizationError):
-            model.normalize_all()
+            model._normalize()
 
-    def test_validate_all(self):
-        # validate_all() should revalidate the Model so that if we have changed
+    def test__validate(self):
+        # _validate() should revalidate the Model so that if we have changed
         # values they are validated.
 
         class Example(Model):
@@ -399,7 +399,7 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         model = Example(a=101)
         model.a = 5
         with raises(ValidationError):
-            model.validate_all()
+            model._validate()
 
     def test_validate(self):
         # You should be able to specify custom Model validation by overriding
@@ -417,7 +417,7 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         model = Example(a=5)
         model.a = 0
         with raises(ValidationError):
-            model.validate_all()
+            model._validate()
 
     def test_validation_error_context(self):
         # Check that error context is added to ValidationErrors.

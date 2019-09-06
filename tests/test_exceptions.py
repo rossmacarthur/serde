@@ -1,7 +1,13 @@
 from pytest import raises
 
 from serde import Model, fields, tags, validate
-from serde.exceptions import BaseError, Context, DeserializationError, SerdeError, ValidationError
+from serde.exceptions import (
+    BaseError,
+    Context,
+    DeserializationError,
+    SerdeError,
+    ValidationError
+)
 
 
 class TestBaseError:
