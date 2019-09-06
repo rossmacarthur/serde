@@ -19,7 +19,8 @@ __all__ = [
     'length_max',
     'length_min',
     'max',
-    'min'
+    'min',
+    'regex'
 ]
 
 
@@ -40,7 +41,7 @@ def instance(type):
 
 def equal(to):
     """
-    Returns a validator that asserts the value is equal to a specific value.
+    Returns a validator that asserts the value is equal to the specified one.
     """
     @wraps(equal)
     def validator(value):
@@ -139,7 +140,7 @@ def length(equal_to):
 
 def length_min(endpoint, inclusive=True):
     """
-    Returns a validator that asserts the value's length is greater than a minimum.
+    Returns a validator that asserts the value's length is greater than a min.
 
     Args:
         inclusive (bool): if this is set to `False` then the endpoint value will
@@ -156,7 +157,7 @@ def length_min(endpoint, inclusive=True):
 
 def length_max(endpoint, inclusive=True):
     """
-    Returns a validator that asserts the value's length is less than a maximum.
+    Returns a validator that asserts the value's length is less than a max.
 
     Args:
         inclusive (bool): if this is set to `False` then the endpoint value will
@@ -173,7 +174,7 @@ def length_max(endpoint, inclusive=True):
 
 def length_between(min_endpoint, max_endpoint, inclusive=True):
     """
-    Returns a validator that asserts the value's length is between two endpoints.
+    Returns a validator that asserts the value's length is between two values.
 
     Args:
         inclusive (bool): if this is set to `False` then the endpoint values
@@ -216,7 +217,10 @@ def regex(pattern, flags=0):
     @wraps(regex)
     def validator(value):
         if not compiled.match(value):
-            raise ValidationError('{!r} does not match regex {!r}'.format(value, pattern))
+            raise ValidationError(
+                '{!r} does not match regex {!r}'
+                .format(value, pattern)
+            )
 
     return validator
 

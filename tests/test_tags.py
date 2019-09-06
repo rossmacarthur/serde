@@ -117,7 +117,7 @@ class TestTag:
             tag.deserialize('Example4')
 
         assert e.value.pretty() == """\
-DeserializationError: no variant found for tag
+DeserializationError: no variant found for tag 'Example4'
     Due to => value 'Example4' for tag 'Tag' on model 'Example'"""
 
 

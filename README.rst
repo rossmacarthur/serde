@@ -17,58 +17,403 @@ Serde
     :target: https://codecov.io/gh/rossmacarthur/serde
     :alt: Code Coverage
 
-Serde is a lightweight, general-purpose, powerful ORM framework for defining,
-serializing, deserializing, and validating data structures in Python.
+Serde is a lightweight, general-purpose framework for defining, serializing,
+deserializing, and validating data structures in Python.
+
+.. contents::
+    :backlinks: none
+    :local:
+    :depth: 2
 
 Getting started
 ---------------
 
-Install this package with
+Serde is available on PyPI, you can install it using
 
-::
+.. code-block:: sh
 
-    pip install serde
+   pip install serde
+
+In Serde *models* are containers for *fields*. Data structures are defined by
+subclassing ``Model`` and assigning ``Field`` instances as class attributes.
+These fields handle serialization, deserialization, normalization, and
+validation for these attributes.
+
+.. code-block:: python
+
+   from datetime import date
+   from serde import Model, fields
+
+   class Artist(Model):
+       name = fields.Str()
+
+   class Album(Model):
+       title = fields.Str()
+       release_date = fields.Optional(fields.Date)
+       artist = fields.Nested(Artist)
+
+   album = Album(
+       title='Dangerously in Love',
+       release_date=date(2003, 6, 23),
+       artist=Artist(name='Beyoncé')
+   )
+   assert album.to_dict() == {
+       'title': 'Dangerously in Love',
+       'release_date': '2003-06-23',
+       'artist': {
+           'name': 'Beyoncé'
+       }
+   }
+
+   album = Album.from_json("""{
+       "title": "Lemonade",
+       "artist": {"name": "Beyoncé"}}"
+   """)
+   assert album == Album(title='Lemonade', artist=Artist(name='Beyoncé'))
+
+Basic usage
+-----------
+
+Below we create a ``User`` model by subclassing ``Model`` with ``name`` and
+``email`` fields.
+
+.. code-block:: python
+
+   >>> from datetime import datetime
+   >>> from serde import Model, fields
+   >>>
+   >>> class User(Model):
+   ...     name = fields.Str(rename='username')
+   ...     email = fields.Email()
+
+The same attribute names are used to instantiate the model object and access the
+values on the model instance.
+
+.. code-block:: python
+
+   >>> user = User(name='Linus Torvalds', email='torvalds@linuxfoundation.org')
+   >>> user.name
+   'Linus Torvalds'
+   >>> user.email
+   'torvalds@linuxfoundation.org'
+
+Models are validated when they are instantiated and an ``InstantiationError`` is
+raised if you provide invalid values.
+
+.. code-block:: python
+
+   >>> User(name='Linus Torvalds', email='not an email')
+   Traceback (most recent call last):
+   ...
+   serde.exceptions.InstantiationError: 'not an email' is not a valid email
+
+Models are serialized into primitive Python types using the ``to_dict()`` method
+on the model instance.
+
+.. code-block:: python
+
+   >>> user.to_dict()
+   {'username': 'Linus Torvalds', 'email': 'torvalds@linuxfoundation.org'}
+
+Or to JSON using the ``to_json()`` method.
+
+.. code-block:: python
+
+   >>> user.to_json()
+   '{"username": "Linus Torvalds", "email": "torvalds@linuxfoundation.org"}'
+
+Models are also validated when they are deserialized. Models are deserialized
+from primitive Python types using the reciprocal ``from_dict()`` class method.
+
+.. code-block:: python
+
+   >>> user = User.from_dict({
+   ...     'username': 'Donald Knuth',
+   ...     'email': 'noreply@stanford.edu'
+   ... })
+
+Or from JSON using the ``from_json()`` method.
+
+.. code-block:: python
+
+   >>> user = User.from_json('''{
+   ...     "username": "Donald Knuth",
+   ...     "email": "noreply@stanford.edu"
+   ... }''')
+
+Attempting to deserialize invalid data will result in a
+``DeserializationError``.
+
+.. code-block:: python
+
+   >>> User.from_dict({'username': 'Donald Knuth'})
+   Traceback (most recent call last):
+   ...
+   serde.exceptions.DeserializationError: expected field 'email'
+
+Models
+------
+
+Models can be nested and used in container-like fields.  Below we create a
+``Blog`` with an author and a list of subscribers which must all be ``User``
+instances.
+
+.. code-block:: python
+
+   >>> class Blog(Model):
+   ...     title = fields.Str()
+   ...     author = fields.Nested(User)
+   ...     subscribers = fields.List(User)
+
+When instantiating you have to supply instances of the nested models.
+
+.. code-block:: python
+
+   >>> blog = Blog(
+   ...     title="sobolevn's personal blog",
+   ...     author=User(name='Nikita Sobolev', email='mail@sobolevn.me'),
+   ...     subscribers=[
+   ...         User(name='Ned Batchelder', email='ned@nedbatchelder.com')
+   ...     ]
+   ... )
+
+Serializing a ``Blog`` would serialize the entire nested structure.
+
+.. code-block:: python
+
+   >>> print(blog.to_json(indent=2))
+   {
+       "title": "sobolevn's personal blog",
+       "author": {
+       "username": "Nikita Sobolev",
+       "email": "mail@sobolevn.me"
+       },
+       "subscribers": [
+       {
+           "username": "Ned Batchelder",
+           "email": "ned@nedbatchelder.com"
+       }
+       ]
+   }
+
+Similiarly deserializing a ``Blog`` would deserialize the entire nested
+structure, and create instances of all the submodels.
+
+Subclassed models
+^^^^^^^^^^^^^^^^^
+
+Models can be subclassed. The subclass will have all the fields of the parent
+and any additional ones. Consider the case where we define a ``SuperUser`` model
+which is a subclass of a ``User``. Simply a ``User`` that has an extra ``level``
+field.
+
+.. code-block:: python
+
+   >>> class SuperUser(User):
+   ...     # inherits name and email fields from User
+   ...     level = fields.Choice(['admin', 'read-only'])
+
+We instantiate a subclassed model as normal by passing in each field value.
+
+.. code-block:: python
+
+   >>> superuser = SuperUser(
+   ...     name='Linus Torvalds',
+   ...     email='torvalds@linuxfoundation.org',
+   ...     level='admin'
+   ... )
+
+This is great for many cases, however, a commonly desired paradigm is to be able
+to have the ``User.from_dict()`` class method be able to deserialize a
+``SuperUser`` as well. This can be made possible through tagging.
+
+Model tagging
+^^^^^^^^^^^^^
+
+Model tagging is a way to mark serialized data in order to show that it is a
+particular *variant* of a model. Let us consider an example where we define a
+``Pet`` model with a ``tag``. We can then subclass this model and deserialize
+arbitrary subclasses using the tagged model.
+
+.. code-block:: python
+
+   >>> from serde import Model, fields, tags
+   >>>
+   >>> class Pet(Model):
+   ...     name = fields.Str()
+   ...
+   ...     class Meta:
+   ...         tag = tags.Internal(tag='species')
+   ...
+   >>> class Dog(Pet):
+   ...     hates_cats = fields.Bool()
+   ...
+   >>> class Cat(Pet):
+   ...     hates_dogs = fields.Bool()
+
+We refer to the ``Dog`` and ``Cat`` subclasses as *variants* of ``Pet``. When
+serializing all parent model tag serialization is done after field
+serialization.
+
+.. code-block:: python
+
+   >>> Cat(name='Fluffy', hates_dogs=True).to_dict()
+   {'name': 'Fluffy', 'hates_dogs': True, 'species': 'Cat'}
+
+When deserializing, tag deserialization is done first to determine which model
+to use for the deserialization.
+
+.. code-block:: python
+
+   >>> milo = Pet.from_dict({
+   ...     'name': 'Milo',
+   ...     'hates_cats': False,
+   ...     'species': 'Dog'
+   ... })
+   >>> milo.__class__
+   <class '__main__.Dog'>
+   >>> milo.name
+   'Milo'
+   >>> milo.hates_cats
+   False
+
+An invalid or missing tag will raise a ``DeserializationError``.
+
+.. code-block:: python
+
+   >>> Pet.from_dict({'name': 'Milo', 'hates_cats': False})
+   Traceback (most recent call last):
+   ...
+   serde.exceptions.DeserializationError: expected tag 'species'
+   >>>
+   >>> Pet.from_dict({'name': 'Duke', 'species': 'Horse'})
+   Traceback (most recent call last):
+   ...
+   serde.exceptions.DeserializationError: no variant found for tag 'Horse'
+
+Abstract models
+^^^^^^^^^^^^^^^
+
+By default model tagging still allows deserialization of the base model. It is
+common to have this model be abstract. You can do this by setting the
+``abstract`` Meta field to ``True``. This will make it uninstantiatable and it
+won't be included in the variant list during deserialization.
+
+.. code-block:: python
+
+   >>> class Fruit(Model):
+   ...     class Meta:
+   ...         abstract = True
+   ...
+   >>> Fruit()
+   Traceback (most recent call last):
+   ...
+   serde.exceptions.InstantiationError: unable to instantiate abstract Model 'Fruit'
+
+Fields
+------
+
+Fields do the work of serializing, deserializing, normalizing, and validating
+the input values. Fields are always assigned to a model as *instances* , and
+they support extra serialization, deserialization, normalization, and validation
+of values without having to subclass ``Field``. For example
+
+.. code-block:: python
+
+   from serde import Model, fields, validate
+
+   class Album(Model):
+       title = fields.Str(normalizers=[str.strip])
+       released = fields.Date(
+           rename='release_date',
+           validators=[validate.min(datetime.date(1912, 4, 15))]
+       )
+
+In the above example we define an ``Album`` class. The ``title`` field is of
+type `str` , and we apply the ``str.strip`` normalizer to automatically strip
+the input value when instantiating or deserializing the ``Album``. The
+``released`` field is of type ``datetime.date`` and we apply an extra validator
+to only accept dates after 15th April 1912. Note: the ``rename`` argument only
+applies to the serializing and deserializing of the data, the ``Album`` class
+would still be instantiated using ``Album(released=...)``.
+
+The ``create()`` method can be used to generate a new ``Field`` class from
+arbitrary functions without having to manually subclass a ``Field``. For example
+if we wanted a ``Percent`` field we would do the following.
+
+.. code-block:: python
+
+   >>> Percent = fields.create(
+   ...     'Percent',
+   ...     Float,
+   ...     validators=[validate.between(0.0, 100.0)]
+   ... )
+   >>>
+   >>> issubclass(Percent, Float)
+   True
+
+If these methods of creating custom ``Field`` classes are not satisfactory, you
+can always subclass a ``Field`` and override the relevant methods.
+
+.. code-block:: python
+
+   >>> class Percent(Float):
+   ...     def validate(self, value):
+   ...         super().validate(value)
+   ...         validate.between(0.0, 100.0)(value)
+
+Model states and processes
+--------------------------
+
+In Serde, there are two states that the data can be in:
+
+* Serialized data
+* Model instance
+
+There are five different processes that the data structure can go through when
+moving between these two states.
+
+* Deserialization happens when you create a model instance from a serialized
+  version using ``from_dict()`` or similar.
+* Instantiation happens when you construct a model instance in Python using the
+  ``__init__()`` constructor.
+* Normalization happens after instantiation and after deserialization. This is
+  usually a way to transform things before they are validated. For example: this
+  is where an ``Optional`` field sets default values.
+* Validation is where the model and fields values are validated. This happens
+  after normalization.
+* Serialization is when you serialize a model instance to a supported
+  serialization format using ``to_dict()`` or similar.
+
+The diagram below shows how the stages (uppercase) and processes (lowercase) fit
+in with each other.
+
+.. code-block:: text
 
 
-Example usage
--------------
-
-Define your data structures in a clean and obvious way.
-
-.. code:: python
-
-    >>> from serde import Model, fields
-
-    >>> class Dog(Model):
-    ...     name = fields.Str()
-    ...     hates_cats = fields.Optional(fields.Bool, default=True)
-
-    >>> class Owner(Model):
-    ...     name = fields.Str()
-    ...     birthday = fields.Date()
-    ...     dog = fields.Nested(Dog)
-
-Easily serialize and deserialize arbitrary data to and from Python objects.
-
-.. code:: python
-
-    >>> owner = Owner.from_json('''{
-    ...     "name": "Paris Hilton",
-    ...     "birthday": "1981-02-17",
-    ...     "dog": {"name": "Tinkerbell"}
-    ... }''')
-
-    >>> owner.name
-    'Paris Hilton'
-    >>> owner.birthday
-    datetime.date(1981, 2, 17)
-    >>> owner.dog.name
-    'Tinkerbell'
-    >>> owner.dog.hates_cats
-    True
-
-View the latest usage and API documentation
-`here <https://ross.macarthur.io/project/serde/api.html>`_.
+                           +---------------+
+                           | Instantiation |
+                           +---------------+
+                                   |
+                                   v
+       +---------------+   +---------------+
+       |Deserialization|-->| Normalization |
+       +---------------+   +---------------+
+               ^                   |
+               |                   v
+               |           +---------------+
+               |           |   Validation  |
+               |           +---------------+
+               |                   |
+               |                   v
+       +-------+-------+   +---------------+
+       |SERIALIZED DATA|   | MODEL INSTANCE|
+       +---------------+   +---------------+
+               ^                   |
+               |                   |
+       +-------+-------+           |
+       | Serialization |<----------+
+       +---------------+
 
 License
 -------

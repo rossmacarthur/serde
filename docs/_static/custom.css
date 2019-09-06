@@ -27,12 +27,17 @@ code.literal {
   padding: 3px 5px;
 }
 
-dl.class {
-  padding-top: 25px;
-  padding-bottom: 25px;
+dl.class, dl.exception {
+  padding-top: 15px;
+  padding-bottom: 15px;
 }
 
 table.field-list th.field-name {
   font-style: italic;
   font-weight: normal;
+}
+
+div.contents {
+  background-color: #fff;
+  border: none;
 }

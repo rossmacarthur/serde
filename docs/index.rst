@@ -1,10 +1,12 @@
 .. include:: ../README.rst
 
-Documentation
--------------
+Index
+-----
 
 .. toctree::
 
-    api
+    API Reference <api>
     contributing
     releases
+
+* :ref:`search`
