@@ -552,7 +552,7 @@ ValidationError: expected attribute 'test'
 
     def test_validate_extra(self):
         # An Optional should call the wrapped Field's _validate method.
-        field = Optional(Field(validators=[validators.Equal(10)]))
+        field = Optional(Field(validators=[validators.Between(10, 10)]))
         with raises(ValidationError):
             assert field.validate(5)
 
@@ -701,7 +701,7 @@ class TestDict:
 
     def test_validate_extra(self):
         # A Dict should validate values based on the key and value Fields.
-        field = Dict(value=Field(validators=[validators.Equal(10)]))
+        field = Dict(value=Field(validators=[validators.Between(10, 10)]))
         field.validate({'test': 10, 'hello': 10})
 
         with raises(ValidationError):
@@ -763,7 +763,7 @@ class TestList:
 
     def test_validate_extra(self):
         # A List should validate values based on the element Field.
-        field = List(element=Field(validators=[validators.Equal(10)]))
+        field = List(element=Field(validators=[validators.Between(10, 10)]))
         field.validate([10, 10, 10])
 
         with raises(ValidationError):
@@ -831,7 +831,7 @@ class TestTuple:
 
     def test_validate_extra(self):
         # A Tuple should validate values based on each element Fields.
-        field = Tuple(Field, Field(validators=[validators.Equal(10)]))
+        field = Tuple(Field, Field(validators=[validators.Between(10, 10)]))
         field.validate((20, 10))
 
         with raises(ValidationError):

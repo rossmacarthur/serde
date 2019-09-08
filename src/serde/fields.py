@@ -3,6 +3,7 @@ This module contains field classes for use with `Models <serde.Model>`.
 """
 
 import datetime
+import re
 import uuid
 from functools import wraps
 from itertools import chain
@@ -10,7 +11,6 @@ from itertools import chain
 import isodate
 from six import integer_types
 
-from serde import validators
 from serde.exceptions import (
     ContextError,
     DeserializationError,
@@ -415,6 +415,7 @@ def create(
     name,
     base=None,
     args=None,
+    description=None,
     serializers=None,
     deserializers=None,
     normalizers=None,
@@ -453,18 +454,23 @@ def create(
     if not base:
         base = Field
 
-    field_cls = type(name, (base,), {})
+    if not description:
+        description = name.lower()
+
+    doc = """\
+{description}
+
+Args:
+    **kwargs: keyword arguments for the `Field` constructor.
+""".format(description=description)
+
+    field_cls = type(name, (base,), {'__doc__': doc})
 
     if args:
         def __init__(self, **kwargs):  # noqa: N807
             super(field_cls, self).__init__(*args, **kwargs)
 
-        __init__.__doc__ = """\
-Create a new {name}.
-
-Args:
-    **kwargs: keyword arguments for the `{base}` constructor.
-""".format(name=name, base=base.__name__)
+        __init__.__doc__ = 'Create a new `{name}`.'.format(name=name)
         field_cls.__init__ = __init__
 
     if serializers:
@@ -648,14 +654,17 @@ class Instance(Field):
         """
         super(Instance, self).__init__(**kwargs)
         self.type = type
-        self._validate_instance = validators.Instance(type)
 
     def validate(self, value):
         """
         Validate the given value is an instance of the specified type.
         """
         super(Instance, self).validate(value)
-        self._validate_instance(value)
+        if not isinstance(value, self.type):
+            raise ValidationError(
+                'expected {!r} but got {!r}'
+                .format(self.type.__name__, value.__class__.__name__)
+            )
 
 
 class Nested(Instance):
@@ -894,41 +903,40 @@ class Tuple(Instance):
             e._validate(v)
 
 
-#: This field represents the built-in `bool` type.
-Bool = create('Bool', base=Instance, args=(bool,))
+def create_primitive(name, type):
+    """
+    Create a primitive `Field` class.
+    """
+    description = (
+        'This field represents the built-in `{type}` type.'
+        .format(type=type.__name__)
+    )
+    return create(name, base=Instance, args=(type,), description=description)
 
-#: This field represents the built-in `complex` type.
-Complex = create('Complex', base=Instance, args=(complex,))
 
-#: This field represents the built-in `float` type.
-Float = create('Float', base=Instance, args=(float,))
-
-#: This field represents the built-in `int` type.
-Int = create('Int', base=Instance, args=(int,))
-
-#: This field represents the built-in `str` type.
-Str = create('Str', base=Instance, args=(str,))
-
-#: This field represents the built-in `bytes` type.
-Bytes = create('Bytes', base=Instance, args=(bytes,)) if bytes != str else Str
+Bool = create_primitive('Bool', bool)
+Complex = create_primitive('Complex', complex)
+Float = create_primitive('Float', float)
+Int = create_primitive('Int', int)
+Str = create_primitive('Str', str)
+Bytes = create_primitive('Bytes', bytes) if bytes != str else Str
 
 try:
-    #: This field represents the built-in `basestring` type.
-    BaseString = create('BaseString', base=Instance, args=(basestring,))
+    BaseString = create_primitive('BaseString', basestring)
 except NameError:
     pass
 
 try:
-    #: This field represents the built-in `long` type.
-    Long = create('Long', base=Instance, args=(long,))
+    Long = create_primitive('Long', long)
 except NameError:
     pass
 
 try:
-    #: This field represents the built-in `unicode` type.
-    Unicode = create('Unicode', base=Instance, args=(unicode,))
+    Unicode = create_primitive('Unicode', unicode)
 except NameError:
     pass
+
+del create_primitive
 
 
 class Constant(Field):
@@ -948,13 +956,16 @@ class Constant(Field):
         """
         super(Constant, self).__init__(**kwargs)
         self.value = value
-        self._validate_equal = validators.Equal(value)
 
     def validate(self, value):
         """
         Validate that the given value is equal to the constant value.
         """
-        self._validate_equal(value)
+        if value != self.value:
+            raise ValidationError(
+                'expected {!r} but got {!r}'
+                .format(self.value, value)
+            )
 
 
 class Choice(Field):
@@ -975,14 +986,14 @@ class Choice(Field):
         """
         super(Choice, self).__init__(**kwargs)
         self.choices = choices
-        self._validate_contains = validators.Contains(choices)
 
     def validate(self, value):
         """
         Validate that the given value is one of the choices.
         """
         super(Choice, self).validate(value)
-        self._validate_contains(value)
+        if value not in self.choices:
+            raise ValidationError('{!r} is not a valid choice'.format(value))
 
 
 class DateTime(Instance):
@@ -1087,14 +1098,18 @@ class Regex(Str):
         super(Regex, self).__init__(**kwargs)
         self.pattern = pattern
         self.flags = flags
-        self._validate_regex = validators.Regex(self.pattern, flags=self.flags)
+        self._compiled = re.compile(pattern, flags=flags)
 
     def validate(self, value):
         """
         Validate the given string matches the specified regex.
         """
         super(Regex, self).validate(value)
-        self._validate_regex(value)
+        if not self._compiled.match(value):
+            raise ValidationError(
+                '{!r} does not match regex {!r}'
+                .format(value, self.pattern)
+            )
 
 
 class Uuid(Instance):
