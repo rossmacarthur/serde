@@ -2,6 +2,8 @@
 This module contains tag classes for use with `Models <serde.Model>`.
 """
 
+from collections import OrderedDict
+
 from serde import fields, utils
 from serde.exceptions import (
     DeserializationError,
@@ -119,7 +121,7 @@ class External(Tag):
             field=self,
             model_cls=model.__class__
         ):
-            d = {self._serialize(variant): d}
+            d = OrderedDict([(self._serialize(variant), d)])
 
         return d
 
@@ -228,10 +230,10 @@ class Adjacent(Tag):
             field=self,
             model_cls=model.__class__
         ):
-            d = {
-                self.tag: self._serialize(variant),
-                self.content: d
-            }
+            d = OrderedDict([
+                (self.tag, self._serialize(variant)),
+                (self.content, d)
+            ])
 
         return d
 
