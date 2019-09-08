@@ -332,7 +332,7 @@ tagged example above.
     ...     hates_cats = fields.Bool()
     ...
     >>> Dog(name='Max', hates_cats=True).to_dict()
-    {'Dog': OrderedDict([('name', 'Max'), ('hates_cats', True)])}
+    OrderedDict([('Dog', OrderedDict([('name', 'Max'), ('hates_cats', True)]))])
 
 Adjacently tagged
 ^^^^^^^^^^^^^^^^^
@@ -353,7 +353,7 @@ example.
     ...     hates_cats = fields.Bool()
     ...
     >>> Dog(name='Max', hates_cats=True).to_dict()
-    {'species': 'Dog', 'data': OrderedDict([('name', 'Max'), ('hates_cats', True)])}
+    OrderedDict([('species', 'Dog'), ('data', OrderedDict([('name', 'Max'), ('hates_cats', True)]))])
 
 Abstract models
 ^^^^^^^^^^^^^^^
