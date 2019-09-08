@@ -33,11 +33,11 @@ check-venv:
 
 # Install package and all features.
 install: check-venv
-    $VIRTUAL_ENV/bin/pip install -e .
+    $VIRTUAL_ENV/bin/pip install -e ".[ext]"
 
 # Install package, all features, and all development dependencies.
 install-all: check-venv
-    $VIRTUAL_ENV/bin/pip install -r ci/requirements/lint.txt -r requirements/test.txt -e .
+    $VIRTUAL_ENV/bin/pip install -r ci/requirements/lint.txt -r ci/requirements/test.txt -e ".[ext]"
 
 # Run all lints.
 lint:
@@ -54,7 +54,7 @@ test:
 # Run all tests.
 test-all:
     $VIRTUAL_ENV/bin/pytest -vv --cov=serde --cov-report term-missing --cov-fail-under 100 \
-                                --doctest-modules --doctest-import "*<serde" "datetime"
+                                --doctest-modules --doctest-import "*<serde"
 
 # Build source and wheel package.
 dist: clean

@@ -19,7 +19,7 @@ from serde.exceptions import (
     ValidationError,
     map_errors
 )
-from serde.utils import applied, chained, is_subclass, try_import_all, zip_equal
+from serde.utils import applied, chained, is_subclass, try_lookup, zip_equal
 
 
 def _resolve_to_field_instance(thing, none_allowed=True):
@@ -354,7 +354,7 @@ class Field(BaseField):
         """
         Normalize a value according to this field's specification.
 
-        By default this method does not do anything and should be overridden.
+        By default this method does not do anything.
         """
         return value
 
@@ -362,7 +362,7 @@ class Field(BaseField):
         """
         Validate a value according to this field's specification.
 
-        By default this method does not do anything and should be overridden.
+        By default this method does not do anything.
         """
         pass
 
@@ -1166,7 +1166,53 @@ except NameError:
     pass
 
 
-try_import_all('serde_ext.fields', globals())
+def create_from(foreign, name=None, human=None):
+    """
+    Create a new `Field` class from a `validators` function.
+    """
+    suffix = foreign.split('.', 1)[1]
+
+    if name is None:
+        name = suffix.title()
+    if human is None:
+        human = suffix
+
+    doc = """\
+A string field that asserts the string is a valid {}.
+
+The validation is delegated to `{}`.
+
+Args:
+    **kwargs: keyword arguments for the `Field` constructor.
+""".format(human, foreign)
+
+    field_cls = type(name, (Str,), {'__doc__': doc})
+
+    def __init__(self, **kwargs):  # noqa: N807
+        super(field_cls, self).__init__(**kwargs)
+        self._validator = try_lookup(foreign)
+
+    def validate(self, value):
+        super(field_cls, self).validate(value)
+        if not self._validator(value):
+            raise ValidationError('{!r} is not a valid {}'.format(value, human))
+
+    field_cls.__init__ = __init__
+    field_cls.validate = validate
+
+    return field_cls
+
+
+# Generate string fields using functions in the 'validators' package.
+Domain = create_from('validators.domain')
+Email = create_from('validators.email')
+Ipv4Address = create_from('validators.ip_address.ipv4', name='Ipv4Address', human='IPv4 address')
+Ipv6Address = create_from('validators.ip_address.ipv6', name='Ipv6Address', human='IPv6 address')
+MacAddress = create_from('validators.mac_address', name='MacAddress', human='MAC address')
+Slug = create_from('validators.slug')
+Url = create_from('validators.url', human='URL')
+
+del create_from
 
 __all__ = [name for name, obj in globals().items() if is_subclass(obj, Field)]
 __all__.append('create')

@@ -1,5 +1,3 @@
-:tocdepth: 1
-
 Releases
 ========
 
@@ -8,6 +6,7 @@ Releases
 
 *Unreleased*
 
+- Embed ``serde-ext`` package code in serde. (`#103`_)
 - Rework validators as classes. (`#102`_)
 - Documentation overhaul. (`#101`_)
 - Rework tags to subclass ``BaseField``. (`#100`_)
@@ -17,6 +16,7 @@ Releases
 .. _#100: https://github.com/rossmacarthur/serde/pull/100
 .. _#101: https://github.com/rossmacarthur/serde/pull/101
 .. _#102: https://github.com/rossmacarthur/serde/pull/102
+.. _#103: https://github.com/rossmacarthur/serde/pull/103
 
 0.6.2
 -----

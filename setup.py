@@ -22,7 +22,10 @@ def get_metadata():
 
     metadata = {
         key: re.search(r'__' + key + r"__ = '(.*?)'", about_text).group(1)
-        for key in ('title', 'version', 'url', 'author', 'author_email', 'license', 'description')
+        for key in (
+            'title', 'version', 'url', 'author',
+            'author_email', 'license', 'description'
+        )
     }
     metadata['name'] = metadata.pop('title')
 
@@ -40,7 +43,7 @@ install_requires = [
     'six >=1.0.0, <2.0.0'
 ]
 ext_requires = [
-    'serde-ext >=0.1.0, <0.2.0'
+    'validators >=0.12.0, <0.15.0'
 ]
 
 setup(

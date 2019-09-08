@@ -5,7 +5,7 @@ This module contains validators for use with `Fields <serde.fields.Field>`.
 import re
 
 from serde.exceptions import ValidationError
-from serde.utils import is_subclass, try_import_all
+from serde.utils import is_subclass
 
 
 class Validator(object):
@@ -229,8 +229,6 @@ class Regex(Validator):
                 .format(value, self.pattern)
             )
 
-
-try_import_all('serde_ext.validators', globals())
 
 __all__ = [
     name for name, obj in globals().items()

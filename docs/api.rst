@@ -46,6 +46,19 @@ Miscellanous
 .. autoclass:: serde.fields.Constant
 .. autoclass:: serde.fields.Choice
 
+Extended
+^^^^^^^^
+
+The following fields are available with the ``ext`` feature.
+
+.. autoclass:: serde.fields.Domain
+.. autoclass:: serde.fields.Email
+.. autoclass:: serde.fields.Ipv4Address
+.. autoclass:: serde.fields.Ipv6Address
+.. autoclass:: serde.fields.MacAddress
+.. autoclass:: serde.fields.Slug
+.. autoclass:: serde.fields.Url
+
 Tags
 ----
 
@@ -77,3 +90,4 @@ Exceptions
 .. autoexception:: serde.exceptions.InstantiationError
 .. autoexception:: serde.exceptions.NormalizationError
 .. autoexception:: serde.exceptions.ValidationError
+.. autoexception:: serde.exceptions.MissingDependency

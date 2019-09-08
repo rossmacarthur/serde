@@ -45,8 +45,9 @@ Development process
 
     git clone git@github.com:your_name_here/serde.git
 
-3. Setup and activate your virtualenv using pyenv or similar. You can use ``make install-all`` to
-   install the package and all development dependencies into your virtualenv.
+3. Setup and activate your virtualenv using pyenv or similar. You can use
+   ``just install-all`` to install the package and all development dependencies
+   into your virtualenv.
 
 4. Create a branch for local development::
 
@@ -54,9 +55,9 @@ Development process
 
 5. Make your changes locally.
 
-6. Run all lints using ``make lint``.
+6. Run all lints using ``just lint``.
 
-7. Run all tests using ``make test``.
+7. Run all tests using ``just test``.
 
 8. Commit your changes and push your branch to GitHub::
 
