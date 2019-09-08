@@ -55,6 +55,12 @@ class BaseError(Exception):
         return self.message
 
 
+class MissingDependency(BaseError):
+    """
+    Raised when a dependency is missing.
+    """
+
+
 class SerdeError(BaseError):
     """
     Raised when any `~serde.Model` stage fails.

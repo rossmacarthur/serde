@@ -1,8 +1,7 @@
-import types
-
 from pytest import raises
 
-from serde import utils
+from serde import Model, fields, utils
+from serde.exceptions import MissingDependency
 
 
 def test_chained():
@@ -59,27 +58,17 @@ def test_subclasses():
     assert utils.subclasses(Example) == [A, B]
 
 
-def test_try_import():
-    # Check that the returned value is a module.
-    assert isinstance(utils.try_import('json'), types.ModuleType)
+def test_try_lookup():
+    assert utils.try_lookup('serde.fields.Str') is fields.Str
+    assert utils.try_lookup('serde.Model') is Model
 
-    # Check that the returned value is None.
-    assert utils.try_import('not_a_real_package_i_hope') is None
+    with raises(MissingDependency) as e:
+        utils.try_lookup('not_a_real_pkg.not_a_real_module')
 
-
-def test_try_import_all_serde():
-    ns = {}
-    utils.try_import_all('serde', ns)
-    assert set(ns.keys()) == {'Model', 'fields', 'exceptions', 'tags', 'validators'}
-
-
-def test_try_import_all_tests():
-    ns = {}
-    utils.try_import_all('bisect', ns)
-    assert set(ns.keys()) == {
-        'bisect', 'bisect_left', 'bisect_right',
-        'insort', 'insort_left', 'insort_right'
-    }
+    assert e.value.message == (
+        "'not_a_real_pkg' is missing, "
+        "did you forget to install the 'ext' feature?"
+    )
 
 
 def test_zip_equal():

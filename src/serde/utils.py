@@ -7,6 +7,8 @@ from collections import OrderedDict
 
 from six.moves import zip_longest
 
+from serde.exceptions import MissingDependency
+
 
 def chained(funcs, value):
     """
@@ -94,43 +96,33 @@ def subclasses(cls):
     return subs + variants
 
 
-def try_import(name, package=None):
+def try_lookup(name):
     """
-    Try import the given library, ignoring ImportErrors.
+    Try lookup a fully qualified Python path, importing the module if necessary.
 
     Args:
-        name (str): the name to import.
-        package (str): the package this module belongs to.
+        name (str): the fully qualifed Python path. Example: 'validators.email'.
 
     Returns:
-        module: the imported module or None.
+        the object at the path.
+
+    Raises:
+        serde.exceptions.MissingDepenency: if the path could not be imported.
     """
+    module, path = name.split('.', 1)
+
     try:
-        return importlib.import_module(name, package=package)
+        obj = importlib.import_module(module)
     except ImportError:
-        pass
+        raise MissingDependency(
+            "{!r} is missing, did you forget to install the 'ext' feature?"
+            .format(module)
+        )
 
+    for attr in path.split('.'):
+        obj = getattr(obj, attr)
 
-def try_import_all(name, namespace):
-    """
-    Try import the names from the given library, ignoring ImportErrors.
-
-    Args:
-        name (str): the name to import.
-        namespace (dict): the namespace to update.
-    """
-    module = try_import(name)
-
-    if module:
-        if hasattr(module, '__all__'):
-            all_names = module.__all__
-        else:
-            all_names = (
-                name for name in dir(module)
-                if not name.startswith('_')
-            )
-
-        namespace.update({name: getattr(module, name) for name in all_names})
+    return obj
 
 
 def zip_equal(*iterables):
