@@ -28,11 +28,23 @@ deserializing, and validating data structures in Python.
 Getting started
 ---------------
 
+Installation
+^^^^^^^^^^^^
 Serde is available on PyPI, you can install it using
 
 .. code-block:: sh
 
     pip install serde
+
+
+Extended features can be installed with the ``ext`` feature.
+
+.. code-block:: sh
+
+    pip install serde[ext]
+
+Introduction
+^^^^^^^^^^^^
 
 In Serde *models* are containers for *fields*. Data structures are defined by
 subclassing ``Model`` and assigning ``Field`` instances as class attributes.
@@ -225,15 +237,25 @@ We instantiate a subclassed model as normal by passing in each field value.
 
 This is great for many cases, however, a commonly desired paradigm is to be able
 to have the ``User.from_dict()`` class method be able to deserialize a
-``SuperUser`` as well. This can be made possible through tagging.
+``SuperUser`` as well. This can be made possible through *model tagging*.
 
 Model tagging
-^^^^^^^^^^^^^
+-------------
 
 Model tagging is a way to mark serialized data in order to show that it is a
-particular *variant* of a model. Let us consider an example where we define a
-``Pet`` model with a ``tag``. We can then subclass this model and deserialize
-arbitrary subclasses using the tagged model.
+particular *variant* of a model. Serde provides three types of model tagging,
+but you can also define you own custom ``Tag``. A ``Tag`` can be thought of in
+the same way as a ``Field`` but instead of deserializing data into an attribute
+on a model instance, it deserializes data into a model class.
+
+Internally tagged
+^^^^^^^^^^^^^^^^^
+
+Internally tagged data stores a tag value inside the serialized data.
+
+Let us consider an example where we define a ``Pet`` model with a ``tag``. We
+can then subclass this model and deserialize arbitrary subclasses using the
+tagged model.
 
 .. code-block:: python
 
@@ -291,6 +313,48 @@ An invalid or missing tag will raise a ``DeserializationError``.
     ...
     serde.exceptions.DeserializationError: no variant found for tag 'Horse'
 
+Externally tagged
+^^^^^^^^^^^^^^^^^
+
+Externally tagged data uses the tag value as a key and nests the content
+underneath that key. All other processes behave similarly to the internally
+tagged example above.
+
+.. code-block:: python
+
+    >>> class Pet(Model):
+    ...     name = fields.Str()
+    ...
+    ...     class Meta:
+    ...         tag = tags.External()
+    ...
+    >>> class Dog(Pet):
+    ...     hates_cats = fields.Bool()
+    ...
+    >>> Dog(name='Max', hates_cats=True).to_dict()
+    {'Dog': OrderedDict([('name', 'Max'), ('hates_cats', True)])}
+
+Adjacently tagged
+^^^^^^^^^^^^^^^^^
+
+Adjacently tagged data data stores the tag value and the content underneath two
+separate keys. All other processes behave similarly to the internally tagged
+example.
+
+.. code-block:: python
+
+    >>> class Pet(Model):
+    ...     name = fields.Str()
+    ...
+    ...     class Meta:
+    ...         tag = tags.Adjacent(tag='species', content='data')
+    ...
+    >>> class Dog(Pet):
+    ...     hates_cats = fields.Bool()
+    ...
+    >>> Dog(name='Max', hates_cats=True).to_dict()
+    {'species': 'Dog', 'data': OrderedDict([('name', 'Max'), ('hates_cats', True)])}
+
 Abstract models
 ^^^^^^^^^^^^^^^
 
@@ -309,6 +373,43 @@ won't be included in the variant list during deserialization.
     Traceback (most recent call last):
     ...
     serde.exceptions.InstantiationError: unable to instantiate abstract Model 'Fruit'
+
+Custom tags
+^^^^^^^^^^^
+
+It is possible to create your own custom tag class by subclassing any of
+``tags.External``, ``tags.Internal``, ``tags.Adjacent`` or even the base
+``tags.Tag``. This will allow customization of how the variants are looked up,
+how the tag values are generated for variants, and how the data is serialized.
+
+Consider an example where we use a class attribute ``code`` as the tag value.
+
+.. code-block:: python
+
+    >>> class Custom(tags.Internal):
+    ...     def lookup_tag(self, variant):
+    ...         return variant.code
+    ...
+    >>> class Pet(Model):
+    ...     name = fields.Str()
+    ...
+    ...     class Meta:
+    ...         abstract = True
+    ...         tag = Custom(tag='code')
+    ...
+    >>> class Dog(Pet):
+    ...     code = 1
+    ...     hates_cats = fields.Bool()
+    ...
+    >>> Dog(name='Max', hates_cats=True).to_dict()
+    OrderedDict([('name', 'Max'), ('hates_cats', True), ('code', 1)])
+    >>> max = Pet.from_dict({'name': 'Max', 'hates_cats': True, 'code': 1})
+    >>> max.__class__
+    <class '__main__.Dog'>
+    >>> max.name
+    'Max'
+    >>> max.hates_cats
+    True
 
 Fields
 ------
