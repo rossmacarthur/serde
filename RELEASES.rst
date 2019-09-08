@@ -4,7 +4,7 @@ Releases
 0.7.0
 -----
 
-*Unreleased*
+*Released on September 8th, 2019*
 
 - Embed ``serde-ext`` package code in serde. (`#104`_)
 - Rework validators as classes. (`#102`_)
