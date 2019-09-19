@@ -121,8 +121,8 @@ class Length(Validator):
     def __call__(self, value):
         if len(value) != self.value:
             raise ValidationError(
-                'expected length {!r} but got {!r}'
-                .format(self.value, value)
+                'expected length {!r} but got length {!r} for value {!r}'
+                .format(self.value, len(value), value),
             )
 
 

@@ -4,37 +4,6 @@ from serde import Model, fields, utils
 from serde.exceptions import MissingDependency
 
 
-def test_chained():
-    assert utils.chained([str.strip, str.upper], ' hello ') == 'HELLO'
-    assert utils.chained([lambda x: x[::-1], str.lstrip, str.upper], 'hello ') == 'OLLEH'
-    assert utils.chained([lambda x: x[::-1], str.rstrip, str.upper], 'hello ') == ' OLLEH'
-    assert utils.chained([str.lstrip, str.upper, lambda x: x[::-1]], 'hello ') == ' OLLEH'
-    assert utils.chained([str.rstrip, str.upper, lambda x: x[::-1]], 'hello ') == 'OLLEH'
-
-
-def test_applied():
-    def a(d):
-        d['a'] = 1
-
-    def b(d):
-        d['b'] = 2
-
-    def c(d):
-        d['a'] = 2
-
-    d = {}
-    utils.applied([a, b], d)
-    assert d == {'a': 1, 'b': 2}
-
-    d = {}
-    utils.applied([c, a, b], d)
-    assert d == {'a': 1, 'b': 2}
-
-    d = {}
-    utils.applied([a, b, c], d)
-    assert d == {'a': 2, 'b': 2}
-
-
 def test_dict_partition():
     d = {'a': 1, 'b': 5}
     assert utils.dict_partition(d, lambda k, v: v == 5) == ({'b': 5}, {'a': 1})
