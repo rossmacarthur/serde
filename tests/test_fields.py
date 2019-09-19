@@ -556,6 +556,67 @@ ValidationError: expected attribute 'test'
         with raises(ValidationError):
             assert field.validate(5)
 
+    def test_integrate_contained(self):
+        # An Optional should be able to be contained by other container fields.
+
+        class Example(Model):
+            a = Dict(key=str, value=Optional(int))
+
+        assert Example(a={'x': 1234, 'y': None, 'z': 0}).a == {'x': 1234, 'y': None, 'z': 0}
+
+    def test_integrate_contained_default(self):
+        # An Optional with a default should be able to be contained by other
+        # container fields.
+
+        class Example(Model):
+            a = Dict(key=str, value=Optional(int, default=0))
+
+        assert Example(a={'x': 1234, 'y': None, 'z': 0}).a == {'x': 1234, 'y': 0, 'z': 0}
+
+    def test_integrate_contained_deserializers(self):
+        # An Optional with extra deserializers should be able to be contained by
+        # other container fields.
+
+        class Example(Model):
+            a = List(
+                Optional(int, deserializers=[lambda x: x * 2]),
+                deserializers=[lambda x: x[1:]]
+            )
+
+        assert Example.from_dict({'a': [1, 2, None, 3, 4]}).a == [4, None, 6, 8]
+
+    def test_integrate_contained_normalizers(self):
+        # An Optional with extra normalizers should be able to be contained by
+        # other container fields.
+
+        class Example(Model):
+            a = Dict(key=str, value=Optional(int, normalizers=[lambda x: x * 2]))
+
+        assert Example(a={'x': 1234, 'y': None, 'z': 0}).a == {'x': 2468, 'y': None, 'z': 0}
+        assert (
+            Example.from_dict({'a': {'x': 1234, 'y': None, 'z': 0}}).a
+            == {'x': 2468, 'y': None, 'z': 0}
+        )
+
+    def test_integrate_contained_validators(self):
+        # An optional with extra validators shoudl be able to be contained by
+        # other container fields.
+
+        class Example(Model):
+            a = List(
+                Optional(str, validators=[validators.Length(1)]),
+                validators=[validators.LengthBetween(1, 5)]
+            )
+
+        with raises(InstantiationError) as e:
+            Example(a=['a', 'b', None, 'c', 'hello there'])
+
+        assert e.value.pretty() == """\
+InstantiationError: expected length 1 but got length 11 for value 'hello there'
+    Due to => ValidationError: expected length 1 but got length 11 for value 'hello there'
+    Due to => value ['a', 'b', None, 'c', 'hel...  for field 'a' of type 'List' on model 'Example'\
+"""
+
 
 class TestInstance:
 

@@ -6,7 +6,6 @@ import datetime
 import re
 import uuid
 from functools import wraps
-from itertools import chain
 
 import isodate
 from six import integer_types
@@ -19,7 +18,7 @@ from serde.exceptions import (
     ValidationError,
     map_errors
 )
-from serde.utils import applied, chained, is_subclass, try_lookup, zip_equal
+from serde.utils import is_subclass, try_lookup, zip_equal
 
 
 def _resolve_to_field_instance(thing, none_allowed=True):
@@ -175,10 +174,18 @@ class BaseField(object):
         raise NotImplementedError('this method should be overridden')
 
     def _serialize(self, value):
-        return chained(chain(self.serializers, [self.serialize]), value)
+        for serializer in self.serializers:
+            value = serializer(value)
+
+        return self.serialize(value)
 
     def _deserialize(self, value):
-        return chained(chain([self.deserialize], self.deserializers), value)
+        value = self.deserialize(value)
+
+        for deserializer in self.deserializers:
+            value = deserializer(value)
+
+        return value
 
     def serialize(self, value):
         """
@@ -345,10 +352,18 @@ class Field(BaseField):
             self._validate(value)
 
     def _normalize(self, value):
-        return chained(chain([self.normalize], self.normalizers), value)
+        value = self.normalize(value)
+
+        for normalizer in self.normalizers:
+            value = normalizer(value)
+
+        return value
 
     def _validate(self, value):
-        applied(chain([self.validate], self.validators), value)
+        self.validate(value)
+
+        for validator in self.validators:
+            validator(value)
 
     def normalize(self, value):
         """
@@ -373,8 +388,10 @@ def _create_serialize(cls, serializers):
     """
     @wraps(serializers[0])
     def serialize(self, value):
-        funcs = chain(serializers, [super(cls, self).serialize])
-        return chained(funcs, value)
+        for serializer in serializers:
+            value = serializer(value)
+        value = super(cls, self).serialize(value)
+        return value
     return serialize
 
 
@@ -384,8 +401,10 @@ def _create_deserialize(cls, deserializers):
     """
     @wraps(deserializers[0])
     def deserialize(self, value):
-        funcs = chain([super(cls, self).deserialize], deserializers)
-        return chained(funcs, value)
+        value = super(cls, self).deserialize(value)
+        for deserializer in deserializers:
+            value = deserializer(value)
+        return value
     return deserialize
 
 
@@ -395,8 +414,10 @@ def _create_normalize(cls, normalizers):
     """
     @wraps(normalizers[0])
     def normalize(self, value):
-        funcs = chain([super(cls, self).normalize], normalizers)
-        return chained(funcs, value)
+        value = super(cls, self).normalize(value)
+        for normalizer in normalizers:
+            value = normalizer(value)
+        return value
     return normalize
 
 
@@ -406,8 +427,9 @@ def _create_validate(cls, validators):
     """
     @wraps(validators[0])
     def validate(self, value):
-        funcs = chain([super(cls, self).validate], validators)
-        applied(funcs, value)
+        super(cls, self).validate(value)
+        for validator in validators:
+            validator(value)
     return validate
 
 
@@ -529,14 +551,15 @@ class Optional(Field):
                 model_cls=model.__class__
             )
 
-        if value is not None:
-            with map_errors(
-                SerializationError,
-                value=value,
-                field=self,
-                model_cls=model.__class__
-            ):
-                d[self._serde_name] = self._serialize(value)
+        with map_errors(
+            SerializationError,
+            value=value,
+            field=self,
+            model_cls=model.__class__
+        ):
+            value = self._serialize(value)
+            if value is not None:
+                d[self._serde_name] = value
 
         return d
 
@@ -565,52 +588,41 @@ class Optional(Field):
     def _normalize_with(self, model):
         """
         Normalize the model attribute.
-
-        If the value is `None` or not present then the value will be normalized
-        using the inner field's normalize method. Otherwise, if a default is
-        specified then it is set here.
         """
         value = getattr(model, self._attr_name, None)
 
+        with map_errors(
+            NormalizationError,
+            value=value,
+            field=self,
+            model_cls=model.__class__
+        ):
+            setattr(model, self._attr_name, self._normalize(value))
+
+    def _deserialize(self, value):
         if value is not None:
-            with map_errors(
-                NormalizationError,
-                value=value,
-                field=self,
-                model_cls=model.__class__
-            ):
-                value = self._normalize(value)
-        elif self.default is not None:
-            if callable(self.default):
-                value = self.default()
-            else:
-                value = self.default
+            value = self.deserialize(value)
 
-        setattr(model, self._attr_name, value)
+            for deserializer in self.deserializers:
+                value = deserializer(value)
 
-        return model
+        return value
 
-    def _validate_with(self, model):
-        """
-        Validate the model attribute if it is not `None`.
-        """
-        try:
-            value = getattr(model, self._attr_name)
-        except AttributeError:
-            raise ValidationError(
-                'expected attribute {!r}'.format(self._attr_name),
-                field=self,
-                model_cls=model.__class__
-            )
+    def _normalize(self, value):
+        normalized = self.normalize(value)
 
         if value is not None:
-            with map_errors(
-                ValidationError,
-                value=value,
-                field=self,
-                model_cls=model.__class__
-            ):
-                self._validate(value)
+            for normalizer in self.normalizers:
+                normalized = normalizer(normalized)
+
+        return normalized
+
+    def _validate(self, value):
+        if value is not None:
+            self.validate(value)
+
+            for validator in self.validators:
+                validator(value)
 
     def serialize(self, value):
         """
@@ -627,8 +639,20 @@ class Optional(Field):
     def normalize(self, value):
         """
         Normalize the given value using the inner `Field`.
+
+        If the value is `None` or not present then the value will be normalized
+        using the inner field's normalize method. Otherwise, if a default is
+        specified then it is set here.
         """
-        return self.inner._normalize(value)
+        if value is not None:
+            return self.inner._normalize(value)
+        elif self.default is not None:
+            if callable(self.default):
+                return self.default()
+            else:
+                return self.default
+        else:
+            return None
 
     def validate(self, value):
         """
