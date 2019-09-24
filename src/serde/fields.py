@@ -2,6 +2,7 @@
 This module contains field classes for use with `Models <serde.Model>`.
 """
 
+import collections
 import datetime
 import re
 import uuid
@@ -521,7 +522,7 @@ class Optional(Field):
     or built-in types that have a corresponding field type in this library.
 
     Args:
-        inner: the the `Field` class/instance that this `Optional` wraps.
+        inner: the `Field` class/instance that this `Optional` wraps.
         default: a value to use if there is no input field value or the input
             value is `None`. This can also be a callable that generates the
             default. The callable must take no positional arguments.
@@ -730,11 +731,13 @@ class Dict(Instance):
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
+    type = dict
+
     def __init__(self, key=None, value=None, **kwargs):
         """
         Create a new `Dict`.
         """
-        super(Dict, self).__init__(dict, **kwargs)
+        super(Dict, self).__init__(self.__class__.type, **kwargs)
         self.key = _resolve_to_field_instance(key)
         self.value = _resolve_to_field_instance(value)
 
@@ -745,10 +748,10 @@ class Dict(Instance):
         Each key and value in the dictionary will be serialized with the
         specified key and value field instances.
         """
-        return {
-            self.key._serialize(k): self.value._serialize(v)
+        return self.type(
+            (self.key._serialize(k), self.value._serialize(v))
             for k, v in value.items()
-        }
+        )
 
     def deserialize(self, value):
         """
@@ -757,10 +760,10 @@ class Dict(Instance):
         Each key and value in the dictionary will be deserialized with the
         specified key and value field instances.
         """
-        return {
-            self.key._deserialize(k): self.value._deserialize(v)
+        return self.type(
+            (self.key._deserialize(k), self.value._deserialize(v))
             for k, v in value.items()
-        }
+        )
 
     def normalize(self, value):
         """
@@ -769,10 +772,10 @@ class Dict(Instance):
         Each key and value in the dictionary will be normalized with the
         specified key and value field instances.
         """
-        return {
-            self.key._normalize(k): self.value._normalize(v)
+        return self.type(
+            (self.key._normalize(k), self.value._normalize(v))
             for k, v in value.items()
-        }
+        )
 
     def validate(self, value):
         """
@@ -786,6 +789,25 @@ class Dict(Instance):
         for k, v in value.items():
             self.key._validate(k)
             self.value._validate(v)
+
+
+class OrderedDict(Dict):
+    """
+    An `~collections.OrderedDict` field.
+
+    Each key and value will be serialized, deserialized, normalized, and
+    validated with the specified key and value types. The key and value types
+    can be specified using `Field` classes, `Field` instances, `~serde.Model`
+    classes, or built-in types that have a corresponding field type in this
+    library.
+
+    Args:
+        key: the `Field` class or instance for keys in this `OrderedDict`.
+        value: the `Field` class or instance for values in this `OrderedDict`.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    type = collections.OrderedDict
 
 
 class List(Instance):
@@ -1244,6 +1266,9 @@ FIELD_CLASS_MAP = {
     set: Set,
     str: Str,
     tuple: Tuple,
+
+    # Collections
+    collections.OrderedDict: OrderedDict,
 
     # Datetimes
     datetime.datetime: DateTime,
