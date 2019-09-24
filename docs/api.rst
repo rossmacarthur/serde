@@ -27,6 +27,7 @@ Containers
 ^^^^^^^^^^
 
 .. autoclass:: serde.fields.Nested
+.. autoclass:: serde.fields.Optional
 .. autoclass:: serde.fields.Dict
 .. autoclass:: serde.fields.List
 .. autoclass:: serde.fields.Set
@@ -37,6 +38,7 @@ Standard library
 
 .. autoclass:: serde.fields.DateTime
 .. autoclass:: serde.fields.Date
+.. autoclass:: serde.fields.OrderedDict
 .. autoclass:: serde.fields.Time
 .. autoclass:: serde.fields.Uuid
 .. autoclass:: serde.fields.Regex
