@@ -42,7 +42,7 @@ class TestModel:
         assert not hasattr(Example, 'a')
         assert not hasattr(Example, 'b')
 
-        # But they should be in the _fields attribute
+        # But they should be in the `__fields__` attribute
         assert Example.__fields__.a == fields.Int()
         assert Example.__fields__.b == fields.Bool()
 
