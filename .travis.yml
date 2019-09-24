@@ -4,7 +4,6 @@ matrix:
   include:
     - python: 2.7
     - python: 3.5
-      env: LINT=true
     - python: 3.6
       env: LINT=true
     - python: 3.7

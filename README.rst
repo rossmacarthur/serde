@@ -30,6 +30,7 @@ Getting started
 
 Installation
 ^^^^^^^^^^^^
+
 Serde is available on PyPI, you can install it using
 
 .. code-block:: sh
@@ -47,9 +48,9 @@ Introduction
 ^^^^^^^^^^^^
 
 In Serde *models* are containers for *fields*. Data structures are defined by
-subclassing ``Model`` and assigning ``Field`` instances as class attributes.
+subclassing ``Model`` and assigning ``Field`` instances as class annotations.
 These fields handle serialization, deserialization, normalization, and
-validation for these attributes.
+validation for the corresponding model attributes.
 
 .. code-block:: python
 
@@ -57,12 +58,12 @@ validation for these attributes.
     from serde import Model, fields
 
     class Artist(Model):
-        name = fields.Str()
+        name: fields.Str()
 
     class Album(Model):
-        title = fields.Str()
-        release_date = fields.Optional(fields.Date)
-        artist = fields.Nested(Artist)
+        title: fields.Str()
+        release_date: fields.Optional(fields.Date)
+        artist: fields.Nested(Artist)
 
     album = Album(
         title='Dangerously in Love',
@@ -86,8 +87,8 @@ validation for these attributes.
 Basic usage
 -----------
 
-Below we create a ``User`` model by subclassing ``Model`` with ``name`` and
-``email`` fields.
+Below we create a ``User`` model by subclassing ``Model`` and adding the
+``name`` and ``email`` fields.
 
 .. code-block:: python
 
@@ -95,11 +96,11 @@ Below we create a ``User`` model by subclassing ``Model`` with ``name`` and
     >>> from serde import Model, fields
     >>>
     >>> class User(Model):
-    ...     name = fields.Str(rename='username')
-    ...     email = fields.Email()
+    ...     name: fields.Str(rename='username')
+    ...     email: fields.Email()
 
-The same attribute names are used to instantiate the model object and access the
-values on the model instance.
+The corresponding attribute names are used to instantiate the model object and
+access the values on the model instance.
 
 .. code-block:: python
 
@@ -173,9 +174,9 @@ instances.
 .. code-block:: python
 
     >>> class Blog(Model):
-    ...     title = fields.Str()
-    ...     author = fields.Nested(User)
-    ...     subscribers = fields.List(User)
+    ...     title: fields.Str()
+    ...     author: fields.Nested(User)
+    ...     subscribers: fields.List(User)
 
 When instantiating you have to supply instances of the nested models.
 
@@ -223,7 +224,7 @@ field.
 
     >>> class SuperUser(User):
     ...     # inherits name and email fields from User
-    ...     level = fields.Choice(['admin', 'read-only'])
+    ...     level: fields.Choice(['admin', 'read-only'])
 
 We instantiate a subclassed model as normal by passing in each field value.
 
@@ -262,16 +263,16 @@ tagged model.
     >>> from serde import Model, fields, tags
     >>>
     >>> class Pet(Model):
-    ...     name = fields.Str()
+    ...     name: fields.Str()
     ...
     ...     class Meta:
     ...         tag = tags.Internal(tag='species')
     ...
     >>> class Dog(Pet):
-    ...     hates_cats = fields.Bool()
+    ...     hates_cats: fields.Bool()
     ...
     >>> class Cat(Pet):
-    ...     hates_dogs = fields.Bool()
+    ...     hates_dogs: fields.Bool()
 
 We refer to the ``Dog`` and ``Cat`` subclasses as *variants* of ``Pet``. When
 serializing all parent model tag serialization is done after field
@@ -323,13 +324,13 @@ tagged example above.
 .. code-block:: python
 
     >>> class Pet(Model):
-    ...     name = fields.Str()
+    ...     name: fields.Str()
     ...
     ...     class Meta:
     ...         tag = tags.External()
     ...
     >>> class Dog(Pet):
-    ...     hates_cats = fields.Bool()
+    ...     hates_cats: fields.Bool()
     ...
     >>> Dog(name='Max', hates_cats=True).to_dict()
     OrderedDict([('Dog', OrderedDict([('name', 'Max'), ('hates_cats', True)]))])
@@ -344,13 +345,13 @@ example.
 .. code-block:: python
 
     >>> class Pet(Model):
-    ...     name = fields.Str()
+    ...     name: fields.Str()
     ...
     ...     class Meta:
     ...         tag = tags.Adjacent(tag='species', content='data')
     ...
     >>> class Dog(Pet):
-    ...     hates_cats = fields.Bool()
+    ...     hates_cats: fields.Bool()
     ...
     >>> Dog(name='Max', hates_cats=True).to_dict()
     OrderedDict([('species', 'Dog'), ('data', OrderedDict([('name', 'Max'), ('hates_cats', True)]))])
@@ -391,7 +392,7 @@ Consider an example where we use a class attribute ``code`` as the tag value.
     ...         return variant.code
     ...
     >>> class Pet(Model):
-    ...     name = fields.Str()
+    ...     name: fields.Str()
     ...
     ...     class Meta:
     ...         abstract = True
@@ -399,7 +400,7 @@ Consider an example where we use a class attribute ``code`` as the tag value.
     ...
     >>> class Dog(Pet):
     ...     code = 1
-    ...     hates_cats = fields.Bool()
+    ...     hates_cats: fields.Bool()
     ...
     >>> Dog(name='Max', hates_cats=True).to_dict()
     OrderedDict([('name', 'Max'), ('hates_cats', True), ('code', 1)])
@@ -424,8 +425,8 @@ of values without having to subclass ``Field``. For example
     from serde import Model, fields, validators
 
     class Album(Model):
-        title = fields.Str(normalizers=[str.strip])
-        released = fields.Date(
+        title: fields.Str(normalizers=[str.strip])
+        released: fields.Date(
             rename='release_date',
             validators=[validators.Min(datetime.date(1912, 4, 15))]
         )
@@ -464,6 +465,35 @@ can always subclass a ``Field`` and override the relevant methods.
     ...     def validate(self, value):
     ...         super().validate(value)
     ...         validators.Between(0.0, 100.0)(value)
+
+Python 2.7 and Python 3.5 compatibility
+---------------------------------------
+
+Class annotations were only added in Python 3.6, for this reason class
+attributes can be used for ``Field`` definitions for projects that require
+compatibility for these versions. For example
+
+.. code-block:: python
+
+    class Artist(Model):
+        name: fields.Str()
+
+    class Album(Model):
+        title: fields.Str()
+        release_date: fields.Optional(fields.Date)
+        artist: fields.Nested(Artist)
+
+is equivalent to
+
+.. code-block:: python
+
+    class Artist(Model):
+        name = fields.Str()
+
+    class Album(Model):
+        title = fields.Str()
+        release_date = fields.Optional(fields.Date)
+        artist = fields.Nested(Artist)
 
 Model states and processes
 --------------------------

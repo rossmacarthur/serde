@@ -9,13 +9,14 @@ from collections import OrderedDict
 from six import add_metaclass
 
 from serde.exceptions import (
+    ContextError,
     DeserializationError,
     InstantiationError,
     NormalizationError,
     ValidationError,
     map_errors
 )
-from serde.fields import Field
+from serde.fields import Field, _resolve_to_field_instance
 from serde.utils import dict_partition, zip_until_right
 
 
@@ -47,6 +48,23 @@ class ModelType(type):
     deserialize, normalize, and validate models.
     """
 
+    @staticmethod
+    def _pop_meta(attrs):
+        """
+        Handle the Meta class attributes.
+        """
+        abstract = False
+        tag = None
+
+        if 'Meta' in attrs:
+            meta = attrs.pop('Meta').__dict__
+            if 'abstract' in meta:
+                abstract = meta['abstract']
+            if 'tag' in meta:
+                tag = meta['tag']
+
+        return abstract, tag
+
     def __new__(cls, cname, bases, attrs):
         """
         Create a new `Model` class.
@@ -59,23 +77,25 @@ class ModelType(type):
         Returns:
             Model: a new model class.
         """
-        abstract = False
-        tag = None
         parent = None
-
-        # Handle the Meta class.
-        if 'Meta' in attrs:
-            meta = attrs.pop('Meta').__dict__
-            if 'abstract' in meta:
-                abstract = meta['abstract']
-            if 'tag' in meta:
-                tag = meta['tag']
+        abstract, tag = cls._pop_meta(attrs)
 
         # Split the attrs into Fields and non-Fields.
         fields, final_attrs = dict_partition(
             attrs,
             lambda k, v: isinstance(v, Field)
         )
+
+        if '__annotations__' in attrs:
+            if fields:
+                raise ContextError(
+                    'simultaneous use of annotations and class attributes '
+                    'for Field definitions'
+                )
+            fields = OrderedDict(
+                (k, _resolve_to_field_instance(v))
+                for k, v in attrs.pop('__annotations__').items()
+            )
 
         # Create our Model class.
         model_cls = super(ModelType, cls).__new__(

@@ -1,3 +1,5 @@
+import sys
+
 import mock
 import six
 
@@ -17,6 +19,15 @@ def py2_patch_str_with_basestring(f):
 def py3(f):
     def decorated_function(*args, **kwargs):
         if six.PY2:
+            return
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def py36(f):
+    def decorated_function(*args, **kwargs):
+        if sys.version_info[:2] < (3, 6):
             return
         return f(*args, **kwargs)
 
