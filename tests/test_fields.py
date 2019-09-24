@@ -32,6 +32,7 @@ from serde.fields import (
     Nested,
     Optional,
     Regex,
+    Set,
     Str,
     Time,
     Tuple,
@@ -829,6 +830,68 @@ class TestList:
 
         with raises(ValidationError):
             field.validate([10, 11, 12, 13])
+
+
+class TestSet:
+
+    def test___init___basic(self):
+        # Construct a basic Set and check values are set correctly.
+        field = Set()
+        assert field.element == Field()
+        assert field.validators == []
+
+    def test___init___options(self):
+        # Construct a Set with extra options and make sure values are passed to
+        # Field.
+        field = Set(element=Int, validators=[None])
+        assert field.element == Int()
+        assert field.validators == [None]
+
+    def test_serialize(self):
+        # A Set should serialize values based on the element Field.
+        field = Set(element=Reversed)
+        assert field.serialize({'test', 'hello'}) == {'tset', 'olleh'}
+
+    def test_serialize_extra(self):
+        # A Set should serialize values based on the element Field.
+        field = Set(element=Field(serializers=[lambda x: x[::-1]]))
+        assert field.serialize({'test', 'hello'}) == {'tset', 'olleh'}
+
+    def test_deserialize(self):
+        # A Set should deserialize values based on the element Field.
+        field = Set(element=Reversed)
+        assert field.deserialize({'tset', 'olleh'}) == {'test', 'hello'}
+
+    def test_deserialize_extra(self):
+        # A Set should deserialize values based on the element Field.
+        field = Set(element=Field(deserializers=[lambda x: x[::-1]]))
+        assert field.deserialize({'tset', 'olleh'}) == {'test', 'hello'}
+
+    def test_normalize(self):
+        # A Set should normalize values based on the element Field.
+        field = Set(element=Field)
+        assert field.normalize({'test', 'hello'}) == {'test', 'hello'}
+
+    def test_normalize_extra(self):
+        # A Set should normalize values based on the element Field.
+        field = Set(element=Field(normalizers=[lambda x: x[::-1]]))
+        assert field.normalize({'tset', 'olleh'}) == {'test', 'hello'}
+
+    def test_validate(self):
+        # A Set should validate values based on the element Field.
+        field = Set(element=Int)
+        field.validate({0, 1, 2, 3, 4})
+
+        with raises(ValidationError):
+            field.validate({'1', '2', 'a', 'string'})
+
+    def test_validate_extra(self):
+        # A Set should validate values based on the element Field.
+        field = Set(element=Field(validators=[validators.Between(10, 10)]))
+        field.validate({10, 10, 10})
+
+        with raises(ValidationError):
+            field.validate({10, 11, 12, 13})
 
 
 class TestTuple:

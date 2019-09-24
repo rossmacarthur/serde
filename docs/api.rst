@@ -29,6 +29,7 @@ Containers
 .. autoclass:: serde.fields.Nested
 .. autoclass:: serde.fields.Dict
 .. autoclass:: serde.fields.List
+.. autoclass:: serde.fields.Set
 .. autoclass:: serde.fields.Tuple
 
 Standard library

@@ -852,6 +852,70 @@ class List(Instance):
             self.element._validate(v)
 
 
+class Set(Instance):
+    """
+    This field represents the built-in `set` type.
+
+    Each element is serialized, deserialized, normalized and validated with the
+    specified element type. The element type can be specified using `Field`
+    classes, `Field` instances, `~serde.Model` classes, or built-in types that
+    have a corresponding field type in this library.
+
+    Args:
+        element: the `Field` class or instance for elements in the `Set`.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    def __init__(self, element=None, **kwargs):
+        """
+        Create a new `Set`.
+        """
+        super(Set, self).__init__(set, **kwargs)
+        self.element = _resolve_to_field_instance(element)
+
+    def serialize(self, value):
+        """
+        Serialize the given set.
+
+        Each element in the list will be serialized with the specified
+        element field instance.
+        """
+        value = {self.element._serialize(v) for v in value}
+        return super(Set, self).serialize(value)
+
+    def deserialize(self, value):
+        """
+        Deserialize the given set.
+
+        Each element in the set will be deserialized with the specified
+        element field instance.
+        """
+        value = super(Set, self).deserialize(value)
+        return {self.element._deserialize(v) for v in value}
+
+    def normalize(self, value):
+        """
+        Normalize the given set.
+
+        Each element in the set will be normalized with the specified
+        element field instance.
+        """
+        value = super(Set, self).normalize(value)
+        return {self.element._normalize(v) for v in value}
+
+    def validate(self, value):
+        """
+        Validate the given set.
+
+        Each element in the set will be validated with the specified
+        element field instance.
+        """
+        super(Set, self).validate(value)
+
+        for v in value:
+            self.element._validate(v)
+
+
 class Tuple(Instance):
     """
     This field represents the built-in `tuple` type.
@@ -1177,6 +1241,7 @@ FIELD_CLASS_MAP = {
     float: Float,
     int: Int,
     list: List,
+    set: Set,
     str: Str,
     tuple: Tuple,
 
@@ -1207,7 +1272,7 @@ except NameError:
 
 def create_from(foreign, name=None, human=None):
     """
-    Create a new `Field` class from a `validators` function.
+    Create a new `Str` class from a `validators` function.
     """
     suffix = foreign.split('.', 1)[1]
 
