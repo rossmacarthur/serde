@@ -1,6 +1,26 @@
 Releases
 ========
 
+0.7.1
+-----
+
+*Unreleased*
+
+- Add ``Text`` field (`#110`_, `#116`_)
+- Support annotations for specifying fields (`#99`_, `#115`_)
+- Add ``OrderedDict`` field (`#114`_)
+- Add ``Set`` field (`#113`_)
+- Fix contained ``Optional`` field (`#112`_)
+
+.. _#112: https://github.com/rossmacarthur/serde/pull/112
+.. _#113: https://github.com/rossmacarthur/serde/pull/113
+.. _#114: https://github.com/rossmacarthur/serde/pull/114
+.. _#115: https://github.com/rossmacarthur/serde/pull/115
+.. _#116: https://github.com/rossmacarthur/serde/pull/116
+
+.. _#99: https://github.com/rossmacarthur/serde/issues/99
+.. _#110: https://github.com/rossmacarthur/serde/issues/110
+
 0.7.0
 -----
 
