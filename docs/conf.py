@@ -27,6 +27,7 @@ extensions = [
     'sphinx.ext.viewcode'
 ]
 intersphinx_mapping = {
+    'chardet': ('https://chardet.readthedocs.io/en/latest/', None),
     'python': ('https://docs.python.org/3', None),
     'validators': ('https://validators.readthedocs.io/en/latest/', None)
 }

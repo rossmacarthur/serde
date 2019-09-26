@@ -34,6 +34,7 @@ from serde.fields import (
     Regex,
     Set,
     Str,
+    Text,
     Time,
     Tuple,
     Uuid,
@@ -960,6 +961,43 @@ class TestTuple:
 
         with raises(ValidationError):
             field.validate((20, 11))
+
+
+class TestText:
+
+    def test___init__(self):
+        # Construct a basic Text and check values are set correctly.
+        field = Text(encoding='utf-8', errors='ignore', validators=[None])
+        assert field.encoding == 'utf-8'
+        assert field.errors == 'ignore'
+        assert field.validators == [None]
+
+    def test_normalize(self):
+        # A Text should normalize bytes to a string, and pass through all other
+        # values.
+        field = Text(encoding='utf-8', errors='ignore')
+        field.normalize(None) is None
+        field.normalize('test') == u'test'
+        field.normalize(b'test') == u'test'
+        field.normalize(b'\xc3\xa9') == u'\xe9'
+
+    def test_normalize_detect(self):
+        # A Text should normalize arbitrary bytes to a string by detecting the
+        # encoding.
+        field = Text()
+        field.normalize(None) is None
+        field.normalize('test') == u'test'
+        field.normalize(b'test') == u'test'
+        field.normalize(b'\xc3\xa9') == u'\xe9'  # utf-8
+        field.normalize(b't\x00e\x00s\x00t\x00') == u'test'  # utf-16-le
+
+    def test_integrate(self):
+        # Check that the behaviour of a Text field makes sense on a Model.
+
+        class Example(Model):
+            a = Text(encoding='utf-8')
+
+        assert Example(a=b'test').a == u'test'
 
 
 class TestRegex:

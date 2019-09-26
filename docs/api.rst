@@ -22,6 +22,7 @@ Primitives
 .. autoclass:: serde.fields.Float
 .. autoclass:: serde.fields.Int
 .. autoclass:: serde.fields.Str
+.. autoclass:: serde.fields.Text
 
 Containers
 ^^^^^^^^^^

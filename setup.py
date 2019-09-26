@@ -43,6 +43,7 @@ install_requires = [
     'six >=1.0.0, <2.0.0'
 ]
 ext_requires = [
+    'chardet >=3.0.0, <4.0.0',
     'validators >=0.12.0, <0.15.0'
 ]
 

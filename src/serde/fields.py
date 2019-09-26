@@ -9,7 +9,7 @@ import uuid
 from functools import wraps
 
 import isodate
-from six import integer_types
+from six import binary_type, integer_types, text_type
 
 from serde.exceptions import (
     ContextError,
@@ -1186,6 +1186,45 @@ class Time(DateTime):
             return isodate.parse_time(value)
         else:
             return datetime.datetime.strptime(value, self.format).time()
+
+
+class Text(Instance):
+    """
+    A text field.
+
+    A `Text` is a string field in Python 3 and a unicode field in Python 2. It
+    will normalize byte strings into unicode strings using the given encoding.
+
+    Args:
+        encoding (str): the encoding with which to decode bytes. Passed
+            directly to `bytes.decode`. If not given then `chardet.detect` will
+            be used to detect the encoding.
+        errors (str): The error handling scheme to use for the handling of
+            decoding errors. Passed directly to `bytes.decode`.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    def __init__(self, encoding=None, errors='strict', **kwargs):
+        """
+        Create a new `Text`.
+        """
+        super(Text, self).__init__(text_type, **kwargs)
+        self.encoding = encoding
+        self.errors = errors
+        if self.encoding is None:
+            self._detect = try_lookup('chardet.detect')
+
+    def normalize(self, value):
+        """
+        Normalize byte strings to unicode strings.
+        """
+        if isinstance(value, binary_type):
+            if self.encoding is None:
+                value = value.decode(encoding=self._detect(value)['encoding'], errors=self.errors)
+            else:
+                value = value.decode(encoding=self.encoding, errors=self.errors)
+
+        return value
 
 
 class Regex(Str):
