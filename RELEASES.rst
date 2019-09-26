@@ -4,7 +4,7 @@ Releases
 0.7.1
 -----
 
-*Unreleased*
+*Released on September 26th, 2019*
 
 - Add ``Text`` field (`#110`_, `#116`_)
 - Support annotations for specifying fields (`#99`_, `#115`_)
