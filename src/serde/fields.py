@@ -1049,33 +1049,45 @@ except NameError:
 del create_primitive
 
 
-class Constant(Field):
+class Literal(Field):
     """
-    A constant field.
+    A literal field.
 
-    A `Constant` is a field that always has to be the specified value.
+    A `Literal` is a field that always has to be the specified value.
 
     Args:
-        value: the constant value that this `Constant` wraps.
+        value: the value that this `Literal` wraps.
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
     def __init__(self, value, **kwargs):
         """
-        Create a new `Constant`.
+        Create a new `Literal`.
         """
-        super(Constant, self).__init__(**kwargs)
+        super(Literal, self).__init__(**kwargs)
         self.value = value
 
     def validate(self, value):
         """
-        Validate that the given value is equal to the constant value.
+        Validate that the given value is equal to the value.
         """
         if value != self.value:
             raise ValidationError(
                 'expected {!r} but got {!r}'
                 .format(self.value, value)
             )
+
+
+class Constant(Literal):
+    """
+    Deprecated, use `Literal`.
+    """
+
+    def __init__(self, value, **kwargs):
+        """
+        Create a new `Constant`.
+        """
+        super(Constant, self).__init__(value, **kwargs)
 
 
 class Choice(Field):
