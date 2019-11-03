@@ -1,16 +1,25 @@
 Releases
 ========
 
+0.7.2
+-----
+
+*Unreleased*
+
+- Rename ``Constant`` field to ``Literal``. (`#118`_)
+
+.. _#118: https://github.com/rossmacarthur/serde/pull/118
+
 0.7.1
 -----
 
 *Released on September 26th, 2019*
 
-- Add ``Text`` field (`#110`_, `#116`_)
-- Support annotations for specifying fields (`#99`_, `#115`_)
-- Add ``OrderedDict`` field (`#114`_)
-- Add ``Set`` field (`#113`_)
-- Fix contained ``Optional`` field (`#112`_)
+- Add ``Text`` field. (`#110`_, `#116`_)
+- Support annotations for specifying fields. (`#99`_, `#115`_)
+- Add ``OrderedDict`` field. (`#114`_)
+- Add ``Set`` field. (`#113`_)
+- Fix contained ``Optional`` field. (`#112`_)
 
 .. _#112: https://github.com/rossmacarthur/serde/pull/112
 .. _#113: https://github.com/rossmacarthur/serde/pull/113
@@ -44,7 +53,7 @@ Releases
 *Released on July 20th, 2019*
 
 - Add ``Regex`` field. (`#95`_)
-- Drop Python 3.4 support (`#94`_)
+- Drop Python 3.4 support. (`#94`_)
 
 .. _#95: https://github.com/rossmacarthur/serde/pull/95
 .. _#94: https://github.com/rossmacarthur/serde/pull/94
@@ -54,7 +63,7 @@ Releases
 
 *Released on April 4th, 2019*
 
-- Fix some bugs in ``Model`` tagging (`#92`_)
+- Fix some bugs in ``Model`` tagging. (`#92`_)
 
 .. _#92: https://github.com/rossmacarthur/serde/pull/92
 
@@ -136,7 +145,7 @@ Releases
 - Fix a bug where ``Optional`` didn't call the inner ``Field.normalize()``.
   (`#65`_)
 - Use 'simplejson' package if available. (`#60`_, `#63`_)
-- Fix a bug where ``Choice`` fiel didn't call ``super().validate()``.
+- Fix a bug where ``Choice`` field didn't call ``super().validate()``.
   (`#62`_)
 
 .. _#65: https://github.com/rossmacarthur/serde/pull/65

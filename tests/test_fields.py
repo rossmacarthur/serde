@@ -29,6 +29,7 @@ from serde.fields import (
     Instance,
     Int,
     List,
+    Literal,
     Nested,
     Optional,
     Regex,
@@ -683,28 +684,37 @@ class TestNested:
             field.deserialize({'b': 0, 'c': 1})
 
 
-class TestConstant:
+class TestLiteral:
 
     def test___init___basic(self):
-        # Construct a basic Constant and check values are set correctly.
-        field = Constant(1)
+        # Construct a basic Literal and check values are set correctly.
+        field = Literal(1)
         assert field.value == 1
         assert field.validators == []
 
     def test___init___options(self):
-        # Construct a Constant with extra options and make sure values are
+        # Construct a Literal with extra options and make sure values are
         # passed to Field.
-        field = Constant(-1234, validators=[None])
+        field = Literal(-1234, validators=[None])
         assert field.value == -1234
         assert field.validators == [None]
 
     def test_validate(self):
         # Check that values must be equal to the constant value.
-        field = Constant(True)
+        field = Literal(True)
         field.validate(True)
 
         with raises(ValidationError):
             assert field.validate(False)
+
+
+class TestConstant:
+
+    def test___init__(self):
+        # Construct a basic Constant and check values are set correctly.
+        field = Constant(1)
+        assert field.value == 1
+        assert field.validators == []
 
 
 class TestDict:

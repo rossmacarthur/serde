@@ -47,8 +47,8 @@ Standard library
 Miscellanous
 ^^^^^^^^^^^^
 
-.. autoclass:: serde.fields.Constant
 .. autoclass:: serde.fields.Choice
+.. autoclass:: serde.fields.Literal
 
 Extended
 ^^^^^^^^
