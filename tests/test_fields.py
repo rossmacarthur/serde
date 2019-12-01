@@ -1155,6 +1155,12 @@ class TestUuid:
         value = uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e')
         assert field.serialize(value) == '2d7026c8-cc58-11e8-bd7a-784f4386978e'
 
+    def test_normalize_uuid(self):
+        # A Uuid should normalize a uuid.UUID as a uuid.UUID
+        field = Uuid()
+        value = uuid.uuid4()
+        assert field.normalize(value) is value
+
     def test_normalize_str(self):
         # A Uuid should normalize a string as a uuid.UUID.
         field = Uuid()

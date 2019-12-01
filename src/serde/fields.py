@@ -1209,6 +1209,7 @@ class Uuid(Instance):
         if not isinstance(value, uuid.UUID):
             input_form = 'int' if isinstance(value, integer_types) else 'hex'
             return uuid.UUID(**{input_form: value})
+        return value
 
 
 FIELD_CLASS_MAP = {

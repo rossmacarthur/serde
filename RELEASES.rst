@@ -6,6 +6,7 @@ Releases
 
 *Unreleased*
 
+- Fix bug in ``Uuid.normalize()``.
 - Rename ``Constant`` field to ``Literal``. (`#118`_)
 
 .. _#118: https://github.com/rossmacarthur/serde/pull/118
