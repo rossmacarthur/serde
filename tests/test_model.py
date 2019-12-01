@@ -153,8 +153,7 @@ InstantiationError: invalid keyword argument 'a'"""
         with raises(InstantiationError) as e:
             Example()
         assert e.value.pretty() == """\
-InstantiationError: expected attribute 'a'
-    Due to => NormalizationError: expected attribute 'a'
+InstantiationError: expected field 'a'
     Due to => field 'a' of type 'Int' on model 'Example'"""
 
     def test___init___abstract(self):
@@ -169,6 +168,15 @@ InstantiationError: expected attribute 'a'
         assert e.value.pretty() == """\
 InstantiationError: unable to instantiate abstract Model 'Example'"""
 
+    def test___init___default(self):
+        # Check that the default Field value is applied correctly.
+
+        class Example(Model):
+            a = fields.Int(default=0)
+
+        assert Example().a == 0
+        assert Example(a=5).a == 5
+
     def test___init___optional(self):
         # Check that an Optional Field behaves as it should.
 
@@ -178,8 +186,8 @@ InstantiationError: unable to instantiate abstract Model 'Example'"""
         assert Example().a is None
         assert Example(a=5).a == 5
 
-    def test___init___default(self):
-        # Check that the default Field value is applied correctly.
+    def test___init___optional_default(self):
+        # Check that the default Optional value is applied correctly.
 
         class Example(Model):
             a = fields.Optional(fields.Int, default=0)
@@ -515,6 +523,28 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         with raises(DeserializationError):
             Example.from_dict({})
 
+    def test_from_dict_default(self):
+        # Check that the default for normal fields is not applied when
+        # deserializing.
+
+        class Example(Model):
+            a = fields.Int(default=5)
+
+        assert Example.from_dict({'a': 5}) == Example(a=5)
+
+        with raises(DeserializationError) as e:
+            Example.from_dict({})
+        assert e.value.pretty() == """\
+DeserializationError: expected field 'a'
+    Due to => field 'a' of type 'Int' on model 'Example'"""
+
+        with raises(DeserializationError) as e:
+            Example.from_dict({'a': None})
+        assert e.value.pretty() == """\
+DeserializationError: expected 'int' but got 'NoneType'
+    Due to => ValidationError: expected 'int' but got 'NoneType'
+    Due to => field 'a' of type 'Int' on model 'Example'"""
+
     def test_from_dict_optional(self):
         # Check that optional Fields do not have to be present when
         # deserializing.
@@ -523,7 +553,19 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
             a = fields.Optional(fields.Int)
 
         assert Example.from_dict({'a': 5}) == Example(a=5)
+        assert Example.from_dict({'a': None}) == Example()
         assert Example.from_dict({}) == Example()
+
+    def test_from_dict_optional_default(self):
+        # Check that optional Fields do not have to be present when
+        # deserializing and defaults are set.
+
+        class Example(Model):
+            a = fields.Optional(fields.Int, default=5)
+
+        assert Example.from_dict({'a': 5}) == Example(a=5)
+        assert Example.from_dict({'a': None}) == Example(a=5)
+        assert Example.from_dict({}) == Example(a=5)
 
     def test_from_dict_rename(self):
         # Check that renaming a Field deserializes that value.

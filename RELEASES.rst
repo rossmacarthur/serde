@@ -6,10 +6,13 @@ Releases
 
 *Unreleased*
 
+- Add ``default`` keyword argument to ``Field``. (`#111`_)
 - Fix bug in ``Uuid.normalize()``.
 - Rename ``Constant`` field to ``Literal``. (`#118`_)
 
 .. _#118: https://github.com/rossmacarthur/serde/pull/118
+
+.. _#111: https://github.com/rossmacarthur/serde/pull/111
 
 0.7.1
 -----

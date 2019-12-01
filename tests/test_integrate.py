@@ -30,7 +30,7 @@ def test_base_0():
             assert isinstance(value, UUID)
 
     class Player(Model):
-        key = fields.Optional(MyUuid, default=uuid4)
+        key = MyUuid(default=uuid4)
         name = fields.Tuple(str, str)
         age = fields.Int()
         rating = fields.Float()

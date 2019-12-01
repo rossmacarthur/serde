@@ -199,6 +199,7 @@ class TestField:
         field = Field()
         assert field.id >= 0
         assert field.rename is None
+        assert field.default is None
         assert field.serializers == []
         assert field.deserializers == []
         assert field.normalizers == []
@@ -212,14 +213,25 @@ class TestField:
         # A Field with extra options set.
         field = Field(
             rename='test',
+            default=5,
             serializers=[1, 2, 3],
             deserializers=[0.5],
             validators=[None]
         )
         assert field.rename == 'test'
+        assert field.default == 5
         assert field.serializers == [1, 2, 3]
         assert field.deserializers == [0.5]
         assert field.validators == [None]
+
+    def test__default(self):
+        # Make sure default is correctly returned.
+        def returns_5():
+            return 5
+
+        assert Field(default=None)._default() is None
+        assert Field(default=5)._default() == 5
+        assert Field(default=returns_5)._default() == 5
 
     def test__bind(self):
         # Make sure _bind can't be called twice.
@@ -242,6 +254,36 @@ class TestField:
         field._bind(obj, 'test')
         assert field._attr_name == 'test'
         assert field._serde_name == 'hello'
+
+    def test__instantiate_with(self):
+        # Check a basic Field can instantiate a basic value.
+        model = Model()
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
+        kwargs = {'test': 'testing...'}
+        assert field._instantiate_with(model, kwargs) is None
+        assert kwargs == {}
+        assert model.test == 'testing...'
+
+    def test__instantiate_with_default(self):
+        # Check a basic Field can instantiate a default when not given.
+        model = Model()
+        field = Field(rename='hello', default='testing...')
+        field._bind(model.__class__, 'test')
+        kwargs = {}
+        assert field._instantiate_with(model, kwargs) is None
+        assert kwargs == {}
+        assert model.test == 'testing...'
+
+    def test__instantiate_with_none_and_default(self):
+        # Check a basic Field can instantiate a default.
+        model = Model()
+        field = Field(rename='hello', default='testing...')
+        field._bind(model.__class__, 'test')
+        kwargs = {'test': None}
+        assert field._instantiate_with(model, kwargs) is None
+        assert kwargs == {}
+        assert model.test == 'testing...'
 
     def test__serialize_with(self):
         # Check a basic Field simply serializes the attribute value.

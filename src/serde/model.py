@@ -215,9 +215,8 @@ class Model(object):
                 .format(len(self.__class__.__fields__) + 1, len(args) + 1),
             )
 
-        for name in self.__class__.__fields__.keys():
-            if name in kwargs:
-                setattr(self, name, kwargs.pop(name))
+        for field in self.__class__.__fields__.values():
+            field._instantiate_with(self, kwargs)
 
         if kwargs:
             raise InstantiationError(

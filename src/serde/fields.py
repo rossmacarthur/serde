@@ -14,6 +14,7 @@ from six import binary_type, integer_types, text_type
 from serde.exceptions import (
     ContextError,
     DeserializationError,
+    InstantiationError,
     NormalizationError,
     SerializationError,
     ValidationError,
@@ -211,6 +212,11 @@ class Field(BaseField):
     Args:
         rename (str): override the name for the field when serializing and
             expect this name when deserializing.
+        default: a value to use if there is no input field value or the input
+            value is `None`. This can also be a callable that generates the
+            default. The callable must take no positional arguments. This
+            default only applies to instantiated values. Field values are still
+            required on deserialization.
         serializers (list): a list of serializer functions taking the value to
             serialize as an argument. The functions need to raise an `Exception`
             if they fail. These serializer functions will be applied before the
@@ -231,6 +237,7 @@ class Field(BaseField):
     def __init__(
         self,
         rename=None,
+        default=None,
         serializers=None,
         deserializers=None,
         normalizers=None,
@@ -244,6 +251,7 @@ class Field(BaseField):
             deserializers=deserializers
         )
         self.rename = rename
+        self.default = default
         self.normalizers = normalizers or []
         self.validators = validators or []
 
@@ -256,6 +264,12 @@ class Field(BaseField):
             if name not in ('id', '_model_cls', '_attr_name', '_serde_name')
         }
 
+    def _default(self):
+        """
+        Call the default function or return the default value.
+        """
+        return self.default() if callable(self.default) else self.default
+
     def _bind(self, model_cls, name):
         """
         Bind the field to a model class with an attribute name.
@@ -263,6 +277,32 @@ class Field(BaseField):
         super(Field, self)._bind(model_cls)
         self._attr_name = name
         self._serde_name = self.rename if self.rename else name
+
+    def _instantiate_with(self, model, kwargs):
+        """
+        Instantiate the corresponding model attribute from the keyword args.
+
+        This method should .pop() from kwargs.
+        """
+        name = self._attr_name
+        value = kwargs.pop(name, None)
+
+        with map_errors(
+            InstantiationError,
+            value=value,
+            field=self,
+            model_cls=model.__class__
+        ):
+            value = self._instantiate(value)
+
+        if value is None:
+            raise InstantiationError(
+                'expected field {!r}'.format(name),
+                field=self,
+                model_cls=model.__class__
+            )
+
+        setattr(model, name, value)
 
     def _serialize_with(self, model, d):
         """
@@ -351,6 +391,12 @@ class Field(BaseField):
             model_cls=model.__class__
         ):
             self._validate(value)
+
+    def _instantiate(self, value):
+        if value is None:
+            return self._default()
+        else:
+            return value
 
     def _normalize(self, value):
         value = self.normalize(value)
@@ -529,13 +575,21 @@ class Optional(Field):
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
-    def __init__(self, inner=None, default=None, **kwargs):
+    def __init__(self, inner=None, **kwargs):
         """
         Create a new `Optional`.
         """
         super(Optional, self).__init__(**kwargs)
         self.inner = _resolve_to_field_instance(inner)
-        self.default = default
+
+    def _instantiate_with(self, model, kwargs):
+        """
+        Instantiate the corresponding model attribute from the keyword args.
+
+        This method should .pop() from kwargs.
+        """
+        name = self._attr_name
+        setattr(model, name, self._instantiate(kwargs.pop(name, None)))
 
     def _serialize_with(self, model, d):
         """
@@ -600,6 +654,9 @@ class Optional(Field):
         ):
             setattr(model, self._attr_name, self._normalize(value))
 
+    def _instantiate(self, value):
+        return value
+
     def _deserialize(self, value):
         if value is not None:
             value = self.deserialize(value)
@@ -610,13 +667,14 @@ class Optional(Field):
         return value
 
     def _normalize(self, value):
-        normalized = self.normalize(value)
-
         if value is not None:
+            value = self.normalize(value)
             for normalizer in self.normalizers:
-                normalized = normalizer(normalized)
+                value = normalizer(value)
+        else:
+            value = self._default()
 
-        return normalized
+        return value
 
     def _validate(self, value):
         if value is not None:
@@ -640,20 +698,8 @@ class Optional(Field):
     def normalize(self, value):
         """
         Normalize the given value using the inner `Field`.
-
-        If the value is `None` or not present then the value will be normalized
-        using the inner field's normalize method. Otherwise, if a default is
-        specified then it is set here.
         """
-        if value is not None:
-            return self.inner._normalize(value)
-        elif self.default is not None:
-            if callable(self.default):
-                return self.default()
-            else:
-                return self.default
-        else:
-            return None
+        return self.inner._normalize(value)
 
     def validate(self, value):
         """
