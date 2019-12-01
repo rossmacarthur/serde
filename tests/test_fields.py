@@ -1,7 +1,7 @@
+import collections
 import datetime
 import re
 import uuid
-from collections import OrderedDict
 
 from pytest import raises
 
@@ -32,6 +32,7 @@ from serde.fields import (
     Literal,
     Nested,
     Optional,
+    OrderedDict,
     Regex,
     Set,
     Str,
@@ -669,7 +670,7 @@ class TestNested:
             a = Field()
 
         field = Nested(Example)
-        assert field.serialize(Example(a=0)) == OrderedDict([('a', 0)])
+        assert field.serialize(Example(a=0)) == collections.OrderedDict([('a', 0)])
 
     def test_deserialize(self):
         # A Nested should deserialize as a dictionary representation of the
@@ -779,6 +780,24 @@ class TestDict:
 
         with raises(ValidationError):
             field.validate({'test': 11})
+
+
+class TestOrderedDict:
+
+    def test___init___basic(self):
+        # Construct a basic OrderedDict and check values are set correctly.
+        field = OrderedDict()
+        assert field.key == Field()
+        assert field.value == Field()
+        assert field.validators == []
+
+    def test___init___options(self):
+        # Construct a OrderedDict with extra options and make sure values are
+        # passed to Field.
+        field = OrderedDict(key=Str, value=Int, validators=[None])
+        assert field.key == Str()
+        assert field.value == Int()
+        assert field.validators == [None]
 
 
 class TestList:

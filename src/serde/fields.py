@@ -715,7 +715,66 @@ class Nested(Instance):
         return self.type.from_dict(d)
 
 
-class Dict(Instance):
+class _Container(Instance):
+    """
+    A base class for `Dict`, `List`, `Tuple`, and other container fields.
+    """
+
+    def _iter(self, value):
+        """
+        Iterate over the container.
+        """
+        return value
+
+    def _apply(self, stage, element):
+        """
+        Apply a stage to a particular element in the container.
+        """
+        return getattr(self.element, stage)(element)
+
+    def serialize(self, value):
+        """
+        Serialize the given container.
+
+        Each element in the container will be serialized with the specified
+        field instances.
+        """
+        value = self.type(self._apply('_serialize', element) for element in self._iter(value))
+        return super(_Container, self).serialize(value)
+
+    def deserialize(self, value):
+        """
+        Deserialize the given container.
+
+        Each element in the container will be deserialized with the specified
+        field instances.
+        """
+        value = super(_Container, self).deserialize(value)
+        return self.type(self._apply('_deserialize', element) for element in self._iter(value))
+
+    def normalize(self, value):
+        """
+        Deserialize the given container.
+
+        Each element in the container will be normalized with the specified
+        field instances.
+        """
+        value = super(_Container, self).normalize(value)
+        return self.type(self._apply('_normalize', element) for element in self._iter(value))
+
+    def validate(self, value):
+        """
+        Validate the given container.
+
+        Each element in the container will be validated with the specified field
+        instances.
+        """
+        super(_Container, self).validate(value)
+        for element in self._iter(value):
+            self._apply('_validate', element)
+
+
+class Dict(_Container):
     """
     This field represents the built-in `dict` type.
 
@@ -731,64 +790,26 @@ class Dict(Instance):
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
-    type = dict
-
     def __init__(self, key=None, value=None, **kwargs):
         """
         Create a new `Dict`.
         """
-        super(Dict, self).__init__(self.__class__.type, **kwargs)
+        super(Dict, self).__init__(dict, **kwargs)
         self.key = _resolve_to_field_instance(key)
         self.value = _resolve_to_field_instance(value)
 
-    def serialize(self, value):
+    def _iter(self, value):
         """
-        Serialize the given dictionary.
-
-        Each key and value in the dictionary will be serialized with the
-        specified key and value field instances.
+        Iterate over the dictionary items.
         """
-        return self.type(
-            (self.key._serialize(k), self.value._serialize(v))
-            for k, v in value.items()
-        )
+        return value.items()
 
-    def deserialize(self, value):
+    def _apply(self, stage, element):
         """
-        Deserialize the given dictionary.
-
-        Each key and value in the dictionary will be deserialized with the
-        specified key and value field instances.
+        Apply the key stage to each key, and the value stage to each value.
         """
-        return self.type(
-            (self.key._deserialize(k), self.value._deserialize(v))
-            for k, v in value.items()
-        )
-
-    def normalize(self, value):
-        """
-        Normalize the given dictionary.
-
-        Each key and value in the dictionary will be normalized with the
-        specified key and value field instances.
-        """
-        return self.type(
-            (self.key._normalize(k), self.value._normalize(v))
-            for k, v in value.items()
-        )
-
-    def validate(self, value):
-        """
-        Validate the given dictionary.
-
-        Each key and value in the dictionary will be validated with the
-        specified key and value field instances.
-        """
-        super(Dict, self).validate(value)
-
-        for k, v in value.items():
-            self.key._validate(k)
-            self.value._validate(v)
+        k, v = element
+        return (getattr(self.key, stage)(k), getattr(self.value, stage)(v))
 
 
 class OrderedDict(Dict):
@@ -807,10 +828,16 @@ class OrderedDict(Dict):
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
-    type = collections.OrderedDict
+    def __init__(self, key=None, value=None, **kwargs):
+        """
+        Create a new `OrderedDict`.
+        """
+        super(Dict, self).__init__(collections.OrderedDict, **kwargs)
+        self.key = _resolve_to_field_instance(key)
+        self.value = _resolve_to_field_instance(value)
 
 
-class List(Instance):
+class List(_Container):
     """
     This field represents the built-in `list` type.
 
@@ -831,50 +858,8 @@ class List(Instance):
         super(List, self).__init__(list, **kwargs)
         self.element = _resolve_to_field_instance(element)
 
-    def serialize(self, value):
-        """
-        Serialize the given list.
 
-        Each element in the list will be serialized with the specified element
-        field instance.
-        """
-        value = [self.element._serialize(v) for v in value]
-        return super(List, self).serialize(value)
-
-    def deserialize(self, value):
-        """
-        Deserialize the given list.
-
-        Each element in the list will be deserialized with the specified element
-        field instance.
-        """
-        value = super(List, self).deserialize(value)
-        return [self.element._deserialize(v) for v in value]
-
-    def normalize(self, value):
-        """
-        Normalize the given list.
-
-        Each element in the list will be normalized with the specified element
-        field instance.
-        """
-        value = super(List, self).normalize(value)
-        return [self.element._normalize(v) for v in value]
-
-    def validate(self, value):
-        """
-        Validate the given list.
-
-        Each element in the list will be validated with the specified element
-        field instance.
-        """
-        super(List, self).validate(value)
-
-        for v in value:
-            self.element._validate(v)
-
-
-class Set(Instance):
+class Set(_Container):
     """
     This field represents the built-in `set` type.
 
@@ -895,50 +880,8 @@ class Set(Instance):
         super(Set, self).__init__(set, **kwargs)
         self.element = _resolve_to_field_instance(element)
 
-    def serialize(self, value):
-        """
-        Serialize the given set.
 
-        Each element in the list will be serialized with the specified
-        element field instance.
-        """
-        value = {self.element._serialize(v) for v in value}
-        return super(Set, self).serialize(value)
-
-    def deserialize(self, value):
-        """
-        Deserialize the given set.
-
-        Each element in the set will be deserialized with the specified
-        element field instance.
-        """
-        value = super(Set, self).deserialize(value)
-        return {self.element._deserialize(v) for v in value}
-
-    def normalize(self, value):
-        """
-        Normalize the given set.
-
-        Each element in the set will be normalized with the specified
-        element field instance.
-        """
-        value = super(Set, self).normalize(value)
-        return {self.element._normalize(v) for v in value}
-
-    def validate(self, value):
-        """
-        Validate the given set.
-
-        Each element in the set will be validated with the specified
-        element field instance.
-        """
-        super(Set, self).validate(value)
-
-        for v in value:
-            self.element._validate(v)
-
-
-class Tuple(Instance):
+class Tuple(_Container):
     """
     This field represents the built-in `tuple` type.
 
@@ -962,55 +905,18 @@ class Tuple(Instance):
             for e in elements
         )
 
-    def serialize(self, value):
+    def _iter(self, value):
         """
-        Serialize the given tuple.
-
-        Each element in the tuple will be serialized with the specified element
-        Field instance.
+        Iterate over the fields and each element in the tuple.
         """
-        return tuple(
-            e._serialize(v)
-            for e, v in zip_equal(self.elements, value)
-        )
+        return zip_equal(self.elements, value)
 
-    def deserialize(self, value):
+    def _apply(self, stage, element):
         """
-        Deserialize the given tuple.
-
-        Each element in the tuple will be deserialized with the specified
-        element field instance.
+        Apply the element field stage to the corresponding element value.
         """
-        value = super(Tuple, self).deserialize(value)
-        return tuple(
-            e._deserialize(v)
-            for e, v in zip_equal(self.elements, value)
-        )
-
-    def normalize(self, value):
-        """
-        Normalize the given tuple.
-
-        Each element in the tuple will be normalized with the specified element
-        field instance.
-        """
-        value = super(Tuple, self).normalize(value)
-        return tuple(
-            e._normalize(v)
-            for e, v in zip_equal(self.elements, value)
-        )
-
-    def validate(self, value):
-        """
-        Validate the given tuple.
-
-        Each element in the tuple will be validated with the specified element
-        field instance.
-        """
-        super(Tuple, self).validate(value)
-
-        for e, v in zip_equal(self.elements, value):
-            e._validate(v)
+        f, v = element
+        return getattr(f, stage)(v)
 
 
 def create_primitive(name, type):
