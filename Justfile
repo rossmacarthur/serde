@@ -41,13 +41,13 @@ install-all: check-venv
 
 # Run all lints.
 lint:
-    $VIRTUAL_ENV/bin/black --skip-string-normalization --check .
+    $VIRTUAL_ENV/bin/black --target-version py27 --skip-string-normalization --check .
     $VIRTUAL_ENV/bin/flake8 --max-complexity 10 .
 
 # Blacken and sort import statements
 blacken:
     $VIRTUAL_ENV/bin/isort --recursive .
-    $VIRTUAL_ENV/bin/black --skip-string-normalization .
+    $VIRTUAL_ENV/bin/black --target-version py27 --skip-string-normalization .
 
 # Run tests excluding doctests.
 test:

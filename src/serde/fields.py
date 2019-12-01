@@ -739,6 +739,13 @@ class _Container(Instance):
     A base class for `Dict`, `List`, `Tuple`, and other container fields.
     """
 
+    def __init__(self, *args, **kwargs):
+        """
+        Create a new `_Container`.
+        """
+        super(_Container, self).__init__(*args, **kwargs)
+        self.kwargs = {}
+
     def _iter(self, value):
         """
         Iterate over the container.
@@ -759,7 +766,8 @@ class _Container(Instance):
         field instances.
         """
         value = self.type(
-            self._apply('_serialize', element) for element in self._iter(value)
+            (self._apply('_serialize', element) for element in self._iter(value)),
+            **self.kwargs
         )
         return super(_Container, self).serialize(value)
 
@@ -772,7 +780,8 @@ class _Container(Instance):
         """
         value = super(_Container, self).deserialize(value)
         return self.type(
-            self._apply('_deserialize', element) for element in self._iter(value)
+            (self._apply('_deserialize', element) for element in self._iter(value)),
+            **self.kwargs
         )
 
     def normalize(self, value):
@@ -784,7 +793,8 @@ class _Container(Instance):
         """
         value = super(_Container, self).normalize(value)
         return self.type(
-            self._apply('_normalize', element) for element in self._iter(value)
+            (self._apply('_normalize', element) for element in self._iter(value)),
+            **self.kwargs
         )
 
     def validate(self, value):
@@ -797,6 +807,47 @@ class _Container(Instance):
         super(_Container, self).validate(value)
         for element in self._iter(value):
             self._apply('_validate', element)
+
+
+class Deque(_Container):
+    """
+    A `~collections.deque` field.
+
+    Each element is serialized, deserialized, normalized and validated with the
+    specified element type. The element type can be specified using `Field`
+    classes, `Field` instances, `~serde.Model` classes, or built-in types that
+    have a corresponding field type in this library.
+
+    Args:
+        element: the `Field` class or instance for elements in the `Deque`.
+        maxlen (int): the maximum length of this `Deque`.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    def __init__(self, element=None, maxlen=None, **kwargs):
+        """
+        Create a new `Deque`.
+        """
+        super(Deque, self).__init__(collections.deque, **kwargs)
+        self.element = _resolve_to_field_instance(element)
+        self.kwargs = {'maxlen': maxlen}
+
+    @property
+    def maxlen(self):
+        """
+        The maximum length of this `Deque`.
+        """
+        return self.kwargs['maxlen']
+
+    def validate(self, value):
+        """
+        Validate the given deque.
+        """
+        super(Deque, self).validate(value)
+        if value.maxlen != self.maxlen:
+            raise ValidationError(
+                'expected max length of {} but got {}'.format(self.maxlen, value.maxlen)
+            )
 
 
 class Dict(_Container):
@@ -1248,6 +1299,7 @@ FIELD_CLASS_MAP = {
     str: Str,
     tuple: Tuple,
     # Collections
+    collections.deque: Deque,
     collections.OrderedDict: OrderedDict,
     # Datetimes
     datetime.datetime: DateTime,

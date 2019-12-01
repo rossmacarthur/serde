@@ -2,6 +2,7 @@ import collections
 import datetime
 import re
 import uuid
+from collections import deque
 
 from pytest import raises
 
@@ -23,6 +24,7 @@ from serde.fields import (
     Constant,
     Date,
     DateTime,
+    Deque,
     Dict,
     Field,
     Float,
@@ -781,6 +783,73 @@ class TestConstant:
         field = Constant(1)
         assert field.value == 1
         assert field.validators == []
+
+
+class TestDeque:
+    def test___init__(self):
+        # Construct a basic Deque and check values are set correctly.
+        field = Deque()
+        assert field.element == Field()
+        assert field.kwargs == {'maxlen': None}
+        assert field.validators == []
+
+    def test___init___options(self):
+        # Construct a Deque with extra options and make sure values are passed
+        # to Field.
+        field = Deque(element=Str, maxlen=5, validators=[None])
+        assert field.element == Str()
+        assert field.kwargs == {'maxlen': 5}
+        assert field.validators == [None]
+
+    def test_serialize(self):
+        # A Deque should serialize values based on the element Field.
+        field = Deque(element=Reversed, maxlen=1)
+        assert field.serialize(deque(['test', 'hello'])) == deque(['olleh'])
+
+    def test_serialize_extra(self):
+        # A Deque should serialize values based on the element Field.
+        field = Deque(element=Field(serializers=[lambda x: x[::-1]]))
+        assert field.serialize(deque(['test', 'hello'], maxlen=1)) == deque(
+            ['olleh'], maxlen=1
+        )
+
+    def test_deserialize(self):
+        # A Deque should deserialize values based on the element Field.
+        field = Deque(element=Reversed, maxlen=1)
+        assert field.deserialize(deque(['tset', 'olleh'])) == deque(['hello'], maxlen=1)
+
+    def test_deserialize_extra(self):
+        # A Deque should deserialize values based on the element Field.
+        field = Deque(element=Field(deserializers=[lambda x: x[::-1]]), maxlen=1)
+        assert field.deserialize(deque(['tset', 'olleh'])) == deque(['hello'], maxlen=1)
+
+    def test_normalize(self):
+        # A Deque should normalize values based on the element Field.
+        field = Deque(element=Field, maxlen=1)
+        assert field.normalize(deque(['test', 'hello'])) == deque(['hello'], maxlen=1)
+
+    def test_normalize_extra(self):
+        # A Deque should normalize values based on the element Field.
+        field = Deque(element=Field(normalizers=[lambda x: x[::-1]]), maxlen=1)
+        assert field.normalize(deque(['tset', 'olleh'])) == deque(['hello'], maxlen=1)
+
+    def test_validate(self):
+        # A Deque should validate values based on the element Field.
+        field = Deque(element=Int, maxlen=3)
+        field.validate(deque([0, 1, 2, 3, 4], maxlen=3))
+
+        with raises(ValidationError):
+            field.validate(deque(['1', '2', 'a', 'string']))
+        with raises(ValidationError):
+            field.validate(deque([0, 1], maxlen=2))
+
+    def test_validate_extra(self):
+        # A Deque should validate values based on the element Field.
+        field = Deque(element=Field(validators=[validators.Between(10, 10)]), maxlen=4)
+        field.validate(deque([10, 10, 10], maxlen=4))
+
+        with raises(ValidationError):
+            field.validate(deque([10, 11, 12, 13], maxlen=4))
 
 
 class TestDict:

@@ -6,6 +6,7 @@ Releases
 
 *Unreleased*
 
+- Add ``Deque`` field.
 - Add ``default`` keyword argument to ``Field``. (`#111`_)
 - Fix bug in ``Uuid.normalize()``.
 - Rename ``Constant`` field to ``Literal``. (`#118`_)
