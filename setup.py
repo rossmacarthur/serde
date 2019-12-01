@@ -23,8 +23,13 @@ def get_metadata():
     metadata = {
         key: re.search(r'__' + key + r"__ = '(.*?)'", about_text).group(1)
         for key in (
-            'title', 'version', 'url', 'author',
-            'author_email', 'license', 'description'
+            'title',
+            'version',
+            'url',
+            'author',
+            'author_email',
+            'license',
+            'description',
         )
     }
     metadata['name'] = metadata.pop('title')
@@ -38,30 +43,21 @@ def get_metadata():
 metadata = get_metadata()
 
 # Primary requirements
-install_requires = [
-    'isodate >=0.6.0, <0.7.0',
-    'six >=1.0.0, <2.0.0'
-]
-ext_requires = [
-    'chardet >=3.0.0, <4.0.0',
-    'validators >=0.12.0, <0.15.0'
-]
+install_requires = ['isodate >=0.6.0, <0.7.0', 'six >=1.0.0, <2.0.0']
+ext_requires = ['chardet >=3.0.0, <4.0.0', 'validators >=0.12.0, <0.15.0']
 
 setup(
     # Options
     install_requires=install_requires,
-    extras_require={
-        'ext': ext_requires
-    },
+    extras_require={'ext': ext_requires},
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
     packages=find_packages('src'),
     package_dir={'': 'src'},
-
     # Metadata
     download_url='{url}/archive/{version}.tar.gz'.format(**metadata),
     project_urls={
         'Documentation': 'https://ross.macarthur.io/project/serde/',
-        'Issue Tracker': '{url}/issues'.format(**metadata)
+        'Issue Tracker': '{url}/issues'.format(**metadata),
     },
     classifiers=[
         'License :: OSI Approved :: MIT License',

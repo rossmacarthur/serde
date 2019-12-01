@@ -17,6 +17,10 @@ Serde
     :target: https://codecov.io/gh/rossmacarthur/serde
     :alt: Code Coverage
 
+.. image:: https://img.shields.io/badge/code%20style-black-101010.svg?style=flat-square
+    :target: https://github.com/psf/black
+    :alt: Code Style
+
 Serde is a lightweight, general-purpose framework for defining, serializing,
 deserializing, and validating data structures in Python.
 

@@ -14,7 +14,7 @@ from serde.exceptions import (
     InstantiationError,
     NormalizationError,
     ValidationError,
-    map_errors
+    map_errors,
 )
 from serde.fields import Field, _resolve_to_field_instance
 from serde.utils import dict_partition, zip_until_right
@@ -81,10 +81,7 @@ class ModelType(type):
         abstract, tag = cls._pop_meta(attrs)
 
         # Split the attrs into Fields and non-Fields.
-        fields, final_attrs = dict_partition(
-            attrs,
-            lambda k, v: isinstance(v, Field)
-        )
+        fields, final_attrs = dict_partition(attrs, lambda k, v: isinstance(v, Field))
 
         if '__annotations__' in attrs:
             if fields:
@@ -98,12 +95,7 @@ class ModelType(type):
             )
 
         # Create our Model class.
-        model_cls = super(ModelType, cls).__new__(
-            cls,
-            cname,
-            bases,
-            final_attrs
-        )
+        model_cls = super(ModelType, cls).__new__(cls, cname, bases, final_attrs)
 
         # Bind the Model to the Fields.
         for name, field in fields.items():
@@ -118,10 +110,13 @@ class ModelType(type):
         # Loop though the base classes, and pull Fields and Tags off.
         for base in inspect.getmro(model_cls)[1:]:
             if getattr(base, '__class__', None) is cls:
-                fields.update([
-                    (name, field) for name, field in base.__fields__.items()
-                    if name not in attrs
-                ])
+                fields.update(
+                    [
+                        (name, field)
+                        for name, field in base.__fields__.items()
+                        if name not in attrs
+                    ]
+                )
                 tags = base.__tags__ + tags
 
                 if not parent:
@@ -130,9 +125,7 @@ class ModelType(type):
         # Assign all the things to the Model!
         model_cls._abstract = abstract
         model_cls._parent = parent
-        model_cls._fields = Fields(
-            sorted(fields.items(), key=lambda x: x[1].id)
-        )
+        model_cls._fields = Fields(sorted(fields.items(), key=lambda x: x[1].id))
         model_cls._tag = tag
         model_cls._tags = tags
 
@@ -192,27 +185,25 @@ class Model(object):
         """
         if self.__class__.__abstract__:
             raise InstantiationError(
-                'unable to instantiate abstract Model {!r}'
-                .format(self.__class__.__name__)
+                'unable to instantiate abstract Model {!r}'.format(
+                    self.__class__.__name__
+                )
             )
 
         try:
-            for name, value in zip_until_right(
-                self.__class__.__fields__.keys(),
-                args
-            ):
+            for name, value in zip_until_right(self.__class__.__fields__.keys(), args):
                 if name in kwargs:
                     raise InstantiationError(
                         '__init__() got multiple values '
-                        'for keyword argument {!r}'
-                        .format(name),
+                        'for keyword argument {!r}'.format(name)
                     )
                 kwargs[name] = value
         except ValueError:
             raise InstantiationError(
                 '__init__() takes a maximum of {!r} positional arguments'
-                ' but {!r} were given'
-                .format(len(self.__class__.__fields__) + 1, len(args) + 1),
+                ' but {!r} were given'.format(
+                    len(self.__class__.__fields__) + 1, len(args) + 1
+                )
             )
 
         for field in self.__class__.__fields__.values():
@@ -222,7 +213,7 @@ class Model(object):
             raise InstantiationError(
                 'invalid keyword argument{} {}'.format(
                     '' if len(kwargs.keys()) == 1 else 's',
-                    ', '.join('{!r}'.format(k) for k in kwargs.keys())
+                    ', '.join('{!r}'.format(k) for k in kwargs.keys()),
                 )
             )
 
@@ -234,22 +225,20 @@ class Model(object):
         """
         Whether two models are the same.
         """
-        return (
-            isinstance(other, self.__class__)
-            and all(
-                getattr(self, name) == getattr(other, name)
-                for name in self.__class__.__fields__.keys()
-            )
+        return isinstance(other, self.__class__) and all(
+            getattr(self, name) == getattr(other, name)
+            for name in self.__class__.__fields__.keys()
         )
 
     def __hash__(self):
         """
         Return a hash value for this model.
         """
-        return hash(tuple(
-            (name, getattr(self, name))
-            for name in self.__class__.__fields__.keys()
-        ))
+        return hash(
+            tuple(
+                (name, getattr(self, name)) for name in self.__class__.__fields__.keys()
+            )
+        )
 
     def __repr__(self):
         """
@@ -257,12 +246,8 @@ class Model(object):
         """
         return '<{module}.{name} model at 0x{id:x}>'.format(
             module=self.__class__.__module__,
-            name=getattr(
-                self.__class__,
-                '__qualname__',
-                self.__class__.__name__
-            ),
-            id=id(self)
+            name=getattr(self.__class__, '__qualname__', self.__class__.__name__),
+            id=id(self),
         )
 
     def to_dict(self):

@@ -10,13 +10,12 @@ from serde.exceptions import (
     NormalizationError,
     SerdeError,
     SerializationError,
-    ValidationError
+    ValidationError,
 )
 from tests import py3
 
 
 class TestModel:
-
     def test___new___empty(self):
         # Check that a Model with no Fields can be created. There should still
         # be a __fields__ attribute.
@@ -86,7 +85,6 @@ class TestModel:
             c = fields.Str()
 
         class Example2(Model):
-
             @property
             def a(self):
                 return 'is a'
@@ -113,7 +111,6 @@ class TestModel:
             a = fields.Int()
 
         class Example2(Example):
-
             def __init__(self):
                 super(Example2, self).__init__(a=5)
 
@@ -139,8 +136,11 @@ class TestModel:
 
         with raises(InstantiationError) as e:
             Example(a=None)
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 InstantiationError: invalid keyword argument 'a'"""
+        )
 
     def test___init___normal(self):
         # Check that a normal Field behaves as it should.
@@ -152,9 +152,12 @@ InstantiationError: invalid keyword argument 'a'"""
 
         with raises(InstantiationError) as e:
             Example()
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 InstantiationError: expected field 'a'
     Due to => field 'a' of type 'Int' on model 'Example'"""
+        )
 
     def test___init___abstract(self):
         # Check that you can't instantiate an abstract Model.
@@ -165,8 +168,11 @@ InstantiationError: expected field 'a'
 
         with raises(InstantiationError) as e:
             Example()
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 InstantiationError: unable to instantiate abstract Model 'Example'"""
+        )
 
     def test___init___default(self):
         # Check that the default Field value is applied correctly.
@@ -219,8 +225,11 @@ InstantiationError: unable to instantiate abstract Model 'Example'"""
 
         with raises(SerdeError) as e:
             Example(5, a=5)
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 InstantiationError: __init__() got multiple values for keyword argument 'a'"""
+        )
 
         with raises(SerdeError):
             Example(5, 6)
@@ -320,8 +329,12 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         class Example(Model):
             nested = fields.Nested(NestedExample)
 
-        assert hash(Example(NestedExample(5))) == hash(Example(nested=NestedExample(a=5)))
-        assert hash(Example(NestedExample(5))) != hash(Example(nested=NestedExample(a=4)))
+        assert hash(Example(NestedExample(5))) == hash(
+            Example(nested=NestedExample(a=5))
+        )
+        assert hash(Example(NestedExample(5))) != hash(
+            Example(nested=NestedExample(a=4))
+        )
 
     @py3
     def test___repr___basic(self):
@@ -534,16 +547,22 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         with raises(DeserializationError) as e:
             Example.from_dict({})
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 DeserializationError: expected field 'a'
     Due to => field 'a' of type 'Int' on model 'Example'"""
+        )
 
         with raises(DeserializationError) as e:
             Example.from_dict({'a': None})
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 DeserializationError: expected 'int' but got 'NoneType'
     Due to => ValidationError: expected 'int' but got 'NoneType'
     Due to => field 'a' of type 'Int' on model 'Example'"""
+        )
 
     def test_from_dict_optional(self):
         # Check that optional Fields do not have to be present when
@@ -598,7 +617,9 @@ DeserializationError: expected 'int' but got 'NoneType'
         class Example(Model):
             nested = fields.Nested(NestedExample)
 
-        assert Example.from_dict({'nested': {'a': 5}}) == Example(nested=NestedExample(a=5))
+        assert Example.from_dict({'nested': {'a': 5}}) == Example(
+            nested=NestedExample(a=5)
+        )
 
         with raises(DeserializationError):
             Example.from_dict({'nested': 'not the nested'})
@@ -609,6 +630,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         class Example(Model):
             class Meta:
                 tag = tags.External()
+
             a = fields.Int()
 
         class SubExample(Example):
@@ -616,7 +638,9 @@ DeserializationError: expected 'int' but got 'NoneType'
 
         # Deserializing tagged data from the parent (allowed)
         assert Example.from_dict({'Example': {'a': 5}}) == Example(a=5)
-        assert Example.from_dict({'SubExample': {'a': 5, 'b': 1.0}}) == SubExample(a=5, b=1.0)
+        assert Example.from_dict({'SubExample': {'a': 5, 'b': 1.0}}) == SubExample(
+            a=5, b=1.0
+        )
 
         # Deserializing untagged data from the parent (not allowed)
         with raises(DeserializationError):
@@ -644,6 +668,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         class Example(Model):
             class Meta:
                 tag = tags.Internal(tag='kind')
+
             a = fields.Int()
 
         class SubExample(Example):
@@ -673,6 +698,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         class Example(Model):
             class Meta:
                 tag = tags.Adjacent(tag='kind', content='data')
+
             a = fields.Int()
 
         class SubExample(Example):
@@ -714,6 +740,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         class Example(Model):
             class Meta:
                 tag = ExampleTag('kind')
+
             a = fields.Int()
 
         class SubExample(Example):
@@ -728,6 +755,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         def always_raise(e):
             def actual_function(value):
                 raise e()
+
             return actual_function
 
         class Example(Model):
@@ -840,6 +868,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         class Example(Model):
             class Meta:
                 tag = tags.External()
+
             a = fields.Int()
 
         class SubExample(Example):
@@ -857,6 +886,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         class Example(Model):
             class Meta:
                 tag = tags.Internal(tag='kind')
+
             a = fields.Int()
 
         class SubExample(Example):
@@ -866,7 +896,11 @@ DeserializationError: expected 'int' but got 'NoneType'
         assert Example(a=5).to_dict() == {'kind': 'Example', 'a': 5}
 
         # Serializing data from the variant
-        assert SubExample(a=5, b=1.0).to_dict() == {'kind': 'SubExample', 'a': 5, 'b': 1.0}
+        assert SubExample(a=5, b=1.0).to_dict() == {
+            'kind': 'SubExample',
+            'a': 5,
+            'b': 1.0,
+        }
 
     def test_to_dict_adjacently_tagged(self):
         # Check that adjacently tagged variants work correctly.
@@ -874,6 +908,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         class Example(Model):
             class Meta:
                 tag = tags.Adjacent(tag='kind', content='data')
+
             a = fields.Int()
 
         class SubExample(Example):
@@ -895,12 +930,17 @@ DeserializationError: expected 'int' but got 'NoneType'
         class Example(Model):
             class Meta:
                 tag = ExampleTag(tag='kind')
+
             a = fields.Int()
 
         class SubExample(Example):
             b = fields.Float()
 
-        assert SubExample(a=5, b=1.0).to_dict() == {'kind': 'subexample', 'a': 5, 'b': 1.0}
+        assert SubExample(a=5, b=1.0).to_dict() == {
+            'kind': 'subexample',
+            'a': 5,
+            'b': 1.0,
+        }
 
     def test_to_dict_errors(self):
         # Check that all exceptions are mapped to SerializationErrors.
@@ -908,6 +948,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         def always_raise(e):
             def actual_function(value):
                 raise e()
+
             return actual_function
 
         class Example(Model):

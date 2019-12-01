@@ -5,11 +5,7 @@ This module contains tag classes for use with `Models <serde.Model>`.
 from collections import OrderedDict
 
 from serde import fields, utils
-from serde.exceptions import (
-    DeserializationError,
-    SerializationError,
-    map_errors
-)
+from serde.exceptions import DeserializationError, SerializationError, map_errors
 
 
 class Tag(fields.BaseField):
@@ -33,10 +29,7 @@ class Tag(fields.BaseField):
         """
         Create a new `Tag`.
         """
-        super(Tag, self).__init__(
-            serializers=serializers,
-            deserializers=deserializers
-        )
+        super(Tag, self).__init__(serializers=serializers, deserializers=deserializers)
         self.recurse = recurse
 
     def variants(self):
@@ -98,7 +91,7 @@ class Tag(fields.BaseField):
                 'no variant found for tag {!r}'.format(value),
                 value=value,
                 field=self,
-                model_cls=self.__model__
+                model_cls=self.__model__,
             )
 
         return variant
@@ -116,10 +109,7 @@ class External(Tag):
         variant = model.__class__
 
         with map_errors(
-            SerializationError,
-            value=variant,
-            field=self,
-            model_cls=model.__class__
+            SerializationError, value=variant, field=self, model_cls=model.__class__
         ):
             d = OrderedDict([(self._serialize(variant), d)])
 
@@ -132,16 +122,10 @@ class External(Tag):
         try:
             tag = next(iter(d))
         except StopIteration:
-            raise DeserializationError(
-                'expected externally tagged data',
-                field=self
-            )
+            raise DeserializationError('expected externally tagged data', field=self)
 
         with map_errors(
-            DeserializationError,
-            value=tag,
-            field=self,
-            model_cls=model.__class__
+            DeserializationError, value=tag, field=self, model_cls=model.__class__
         ):
             model.__class__ = self._deserialize(tag)
 
@@ -170,10 +154,7 @@ class Internal(Tag):
         variant = model.__class__
 
         with map_errors(
-            SerializationError,
-            value=variant,
-            field=self,
-            model_cls=model.__class__
+            SerializationError, value=variant, field=self, model_cls=model.__class__
         ):
             d[self.tag] = self._serialize(variant)
 
@@ -186,16 +167,10 @@ class Internal(Tag):
         try:
             tag = d[self.tag]
         except KeyError:
-            raise DeserializationError(
-                'expected tag {!r}'.format(self.tag),
-                field=self
-            )
+            raise DeserializationError('expected tag {!r}'.format(self.tag), field=self)
 
         with map_errors(
-            DeserializationError,
-            value=tag,
-            field=self,
-            model_cls=model.__class__
+            DeserializationError, value=tag, field=self, model_cls=model.__class__
         ):
             model.__class__ = self._deserialize(tag)
 
@@ -225,15 +200,8 @@ class Adjacent(Tag):
         """
         variant = model.__class__
 
-        with map_errors(
-            SerializationError,
-            field=self,
-            model_cls=model.__class__
-        ):
-            d = OrderedDict([
-                (self.tag, self._serialize(variant)),
-                (self.content, d)
-            ])
+        with map_errors(SerializationError, field=self, model_cls=model.__class__):
+            d = OrderedDict([(self.tag, self._serialize(variant)), (self.content, d)])
 
         return d
 
@@ -244,30 +212,19 @@ class Adjacent(Tag):
         try:
             tag = d[self.tag]
         except KeyError:
-            raise DeserializationError(
-                'expected tag {!r}'.format(self.tag),
-                field=self
-            )
+            raise DeserializationError('expected tag {!r}'.format(self.tag), field=self)
 
         try:
             content = d[self.content]
         except KeyError:
             raise DeserializationError(
-                'expected content {!r}'.format(self.content),
-                field=self
+                'expected content {!r}'.format(self.content), field=self
             )
 
-        with map_errors(
-            DeserializationError,
-            field=self,
-            model_cls=model.__class__
-        ):
+        with map_errors(DeserializationError, field=self, model_cls=model.__class__):
             model.__class__ = self._deserialize(tag)
 
         return model, content
 
 
-__all__ = [
-    name for name, obj in globals().items()
-    if utils.is_subclass(obj, Tag)
-]
+__all__ = [name for name, obj in globals().items() if utils.is_subclass(obj, Tag)]

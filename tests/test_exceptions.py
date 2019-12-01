@@ -6,7 +6,7 @@ from serde.exceptions import (
     Context,
     DeserializationError,
     SerdeError,
-    ValidationError
+    ValidationError,
 )
 
 
@@ -18,14 +18,15 @@ class TestBaseError:
         assert BaseError('testing...').message == 'testing...'
 
     def test___repr__(self):
-        assert repr(BaseError('testing...')) == '<serde.exceptions.BaseError: testing...>'
+        assert (
+            repr(BaseError('testing...')) == '<serde.exceptions.BaseError: testing...>'
+        )
 
     def test___str__(self):
         assert str(BaseError('testing...')) == 'testing...'
 
 
 class TestContext:
-
     def test_pretty_basic(self):
         # Test that a Context object is correctly pretty formatted.
         class Example(Model):
@@ -35,7 +36,7 @@ class TestContext:
             cause=ValidationError('something failed'),
             value='test',
             field=Example.__fields__.a,
-            model_cls=Example
+            model_cls=Example,
         )
 
         assert context.pretty(separator='; ', prefix=':: ', indent=0) == (
@@ -55,7 +56,7 @@ class TestContext:
             cause=ValidationError('something failed'),
             value='test',
             field=Example.__tag__,
-            model_cls=Example
+            model_cls=Example,
         )
 
         assert context.pretty(separator=';', prefix='> ', indent=0) == (
@@ -75,7 +76,6 @@ class TestContext:
 
 
 class TestSerdeError:
-
     def test___init___basic(self):
         # You should be able to construct SerdeError without any context.
         error = SerdeError('something failed')

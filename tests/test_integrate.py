@@ -19,7 +19,6 @@ def test_base_0():
         return ''.join(s.split())
 
     class MyUuid(fields.Field):
-
         def serialize(self, value):
             return str(value)
 
@@ -99,12 +98,20 @@ def test_base_0():
     assert game.players[1].rating == 71.0
 
     assert game.board == {
-        'TL': -1, 'TC': 0, 'TR': 0,
-        'CL': 0, 'CC': 1, 'CR': 0,
-        'BL': 0, 'BC': 0, 'BR': 0
+        'TL': -1,
+        'TC': 0,
+        'TR': 0,
+        'CL': 0,
+        'CC': 1,
+        'CR': 0,
+        'BL': 0,
+        'BC': 0,
+        'BR': 0,
     }
 
-    assert strip_whitespace(game.to_json(indent=4, sort_keys=True)) == strip_whitespace(json)
+    assert strip_whitespace(game.to_json(indent=4, sort_keys=True)) == strip_whitespace(
+        json
+    )
 
 
 def test_base_1():
@@ -121,15 +128,17 @@ def test_base_1():
     assert user.to_dict() == {
         'username': 'John Smith',
         'age': 53,
-        'addresses': [{'email': 'john@smith.com'}]
+        'addresses': [{'email': 'john@smith.com'}],
     }
 
     # Deserialization
-    user = User.from_dict({
-        'username': 'John Smith',
-        'age': 53,
-        'addresses': [{'email': 'john@smith.com'}]
-    })
+    user = User.from_dict(
+        {
+            'username': 'John Smith',
+            'age': 53,
+            'addresses': [{'email': 'john@smith.com'}],
+        }
+    )
     assert user.name == 'John Smith'
     assert user.age == 53
     assert user.addresses == [Address(email='john@smith.com')]
@@ -155,21 +164,13 @@ def test_base_2():
     # Serialize the Model as a dictionary
     assert package.to_dict() == {
         'packageName': 'requests',
-        'version': {
-            'major': 2,
-            'minor': 19,
-            'patch': 1
-        }
+        'version': {'major': 2, 'minor': 19, 'patch': 1},
     }
 
     # Deserialize another Model from a dictionary
-    package = Package.from_dict({
-        'packageName': 'click',
-        'version': {
-            'major': 7,
-            'minor': 0
-        }
-    })
+    package = Package.from_dict(
+        {'packageName': 'click', 'version': {'major': 7, 'minor': 0}}
+    )
     assert package.name == 'click'
     assert package.version.major == 7
     assert package.version.minor == 0
@@ -177,9 +178,7 @@ def test_base_2():
 
 
 def test_base_3():
-
     class CustomTag(tags.Internal):
-
         def lookup_tag(self, variant):
             segments = ()
 
@@ -208,7 +207,7 @@ def test_base_3():
     for instance, data in [
         (Generatable(a=1, b=2), {'kind': 'generatable', 'a': 1, 'b': 2}),
         (Login(a=1, b=2, c=3), {'kind': 'generatable.login', 'a': 1, 'b': 2, 'c': 3}),
-        (Encrypted(a=1, d=2), {'kind': 'encrypted', 'a': 1, 'd': 2})
+        (Encrypted(a=1, d=2), {'kind': 'encrypted', 'a': 1, 'd': 2}),
     ]:
         assert instance.to_dict() == data
         assert Secret.from_dict(data) == instance

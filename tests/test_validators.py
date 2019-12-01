@@ -9,7 +9,7 @@ from serde.validators import (
     LengthMin,
     Max,
     Min,
-    Validator
+    Validator,
 )
 
 

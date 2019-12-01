@@ -7,11 +7,11 @@ matrix:
     - python: 3.6
       env: LINT=true
     - python: 3.7
-      dist: xenial
       env: LINT=true DOCTESTS=true COVERAGE=true PUBLISH=true
+    - python: 3.8
+      env: LINT=true
     - python: pypy
     - python: pypy3
-      env: LINT=true
 
 before_install:
   - bash ci/before_install.sh

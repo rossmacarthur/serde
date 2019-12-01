@@ -18,7 +18,7 @@ from serde.exceptions import (
     NormalizationError,
     SerializationError,
     ValidationError,
-    map_errors
+    map_errors,
 )
 from serde.utils import is_subclass, try_lookup, zip_equal
 
@@ -70,8 +70,7 @@ def _resolve_to_field_instance(thing, none_allowed=True):
 
     raise TypeError(
         '{!r} is not a Field, a Model class, an instance of a Field, '
-        'or a supported built-in type'
-        .format(thing)
+        'or a supported built-in type'.format(thing)
     )
 
 
@@ -100,8 +99,8 @@ class BaseField(object):
         """
         Create a new base field.
         """
-        self.id = Field._counter
-        Field._counter += 1
+        self.id = BaseField._counter
+        BaseField._counter += 1
         self.serializers = serializers or []
         self.deserializers = deserializers or []
 
@@ -109,10 +108,7 @@ class BaseField(object):
         """
         Whether two base fields are the same.
         """
-        return (
-            isinstance(other, self.__class__)
-            and self._attrs() == other._attrs()
-        )
+        return isinstance(other, self.__class__) and self._attrs() == other._attrs()
 
     @property
     def __model__(self):
@@ -126,7 +122,8 @@ class BaseField(object):
         Returns a dictionary of all public attributes on this base field.
         """
         return {
-            name: value for name, value in vars(self).items()
+            name: value
+            for name, value in vars(self).items()
             if name not in ('id', '_model_cls')
         }
 
@@ -136,8 +133,9 @@ class BaseField(object):
         """
         if hasattr(self, '_model_cls'):
             raise ContextError(
-                '{name!r} instance used multiple times'
-                .format(name=self.__class__.__name__),
+                '{name!r} instance used multiple times'.format(
+                    name=self.__class__.__name__
+                )
             )
 
         self._model_cls = model_cls
@@ -178,15 +176,12 @@ class BaseField(object):
     def _serialize(self, value):
         for serializer in self.serializers:
             value = serializer(value)
-
         return self.serialize(value)
 
     def _deserialize(self, value):
         value = self.deserialize(value)
-
         for deserializer in self.deserializers:
             value = deserializer(value)
-
         return value
 
     def serialize(self, value):
@@ -241,14 +236,13 @@ class Field(BaseField):
         serializers=None,
         deserializers=None,
         normalizers=None,
-        validators=None
+        validators=None,
     ):
         """
         Create a new `Field`.
         """
         super(Field, self).__init__(
-            serializers=serializers,
-            deserializers=deserializers
+            serializers=serializers, deserializers=deserializers
         )
         self.rename = rename
         self.default = default
@@ -260,7 +254,8 @@ class Field(BaseField):
         Returns a dictionary of all public attributes on this field.
         """
         return {
-            name: value for name, value in vars(self).items()
+            name: value
+            for name, value in vars(self).items()
             if name not in ('id', '_model_cls', '_attr_name', '_serde_name')
         }
 
@@ -288,10 +283,7 @@ class Field(BaseField):
         value = kwargs.pop(name, None)
 
         with map_errors(
-            InstantiationError,
-            value=value,
-            field=self,
-            model_cls=model.__class__
+            InstantiationError, value=value, field=self, model_cls=model.__class__
         ):
             value = self._instantiate(value)
 
@@ -299,7 +291,7 @@ class Field(BaseField):
             raise InstantiationError(
                 'expected field {!r}'.format(name),
                 field=self,
-                model_cls=model.__class__
+                model_cls=model.__class__,
             )
 
         setattr(model, name, value)
@@ -314,14 +306,11 @@ class Field(BaseField):
             raise SerializationError(
                 'expected attribute {!r}'.format(self._attr_name),
                 field=self,
-                model_cls=model.__class__
+                model_cls=model.__class__,
             )
 
         with map_errors(
-            SerializationError,
-            value=value,
-            field=self,
-            model_cls=model.__class__
+            SerializationError, value=value, field=self, model_cls=model.__class__
         ):
             d[self._serde_name] = self._serialize(value)
 
@@ -337,14 +326,11 @@ class Field(BaseField):
             raise DeserializationError(
                 'expected field {!r}'.format(self._serde_name),
                 field=self,
-                model_cls=model.__class__
+                model_cls=model.__class__,
             )
 
         with map_errors(
-            DeserializationError,
-            value=value,
-            field=self,
-            model_cls=model.__class__
+            DeserializationError, value=value, field=self, model_cls=model.__class__
         ):
             setattr(model, self._attr_name, self._deserialize(value))
 
@@ -360,14 +346,11 @@ class Field(BaseField):
             raise NormalizationError(
                 'expected attribute {!r}'.format(self._attr_name),
                 field=self,
-                model_cls=model.__class__
+                model_cls=model.__class__,
             )
 
         with map_errors(
-            NormalizationError,
-            value=value,
-            field=self,
-            model_cls=model.__class__
+            NormalizationError, value=value, field=self, model_cls=model.__class__
         ):
             setattr(model, self._attr_name, self._normalize(value))
 
@@ -381,34 +364,25 @@ class Field(BaseField):
             raise ValidationError(
                 'expected attribute {!r}'.format(self._attr_name),
                 field=self,
-                model_cls=model.__class__
+                model_cls=model.__class__,
             )
 
         with map_errors(
-            ValidationError,
-            value=value,
-            field=self,
-            model_cls=model.__class__
+            ValidationError, value=value, field=self, model_cls=model.__class__
         ):
             self._validate(value)
 
     def _instantiate(self, value):
-        if value is None:
-            return self._default()
-        else:
-            return value
+        return self._default() if value is None else value
 
     def _normalize(self, value):
         value = self.normalize(value)
-
         for normalizer in self.normalizers:
             value = normalizer(value)
-
         return value
 
     def _validate(self, value):
         self.validate(value)
-
         for validator in self.validators:
             validator(value)
 
@@ -433,12 +407,14 @@ def _create_serialize(cls, serializers):
     """
     Create a new serialize method with extra serializer functions.
     """
+
     @wraps(serializers[0])
     def serialize(self, value):
         for serializer in serializers:
             value = serializer(value)
         value = super(cls, self).serialize(value)
         return value
+
     return serialize
 
 
@@ -446,12 +422,14 @@ def _create_deserialize(cls, deserializers):
     """
     Create a new deserialize method with extra deserializer functions.
     """
+
     @wraps(deserializers[0])
     def deserialize(self, value):
         value = super(cls, self).deserialize(value)
         for deserializer in deserializers:
             value = deserializer(value)
         return value
+
     return deserialize
 
 
@@ -459,12 +437,14 @@ def _create_normalize(cls, normalizers):
     """
     Create a new normalize method with extra normalizer functions.
     """
+
     @wraps(normalizers[0])
     def normalize(self, value):
         value = super(cls, self).normalize(value)
         for normalizer in normalizers:
             value = normalizer(value)
         return value
+
     return normalize
 
 
@@ -472,11 +452,13 @@ def _create_validate(cls, validators):
     """
     Create a new validate method with extra validator functions.
     """
+
     @wraps(validators[0])
     def validate(self, value):
         super(cls, self).validate(value)
         for validator in validators:
             validator(value)
+
     return validate
 
 
@@ -488,7 +470,7 @@ def create(
     serializers=None,
     deserializers=None,
     normalizers=None,
-    validators=None
+    validators=None,
 ):
     """
     Create a new `Field` class.
@@ -531,11 +513,14 @@ def create(
 
 Args:
     **kwargs: keyword arguments for the `Field` constructor.
-""".format(description=description)
+""".format(
+        description=description
+    )
 
     field_cls = type(name, (base,), {'__doc__': doc})
 
     if args:
+
         def __init__(self, **kwargs):  # noqa: N807
             super(field_cls, self).__init__(*args, **kwargs)
 
@@ -603,14 +588,11 @@ class Optional(Field):
             raise SerializationError(
                 'expected attribute {!r}'.format(self._attr_name),
                 field=self,
-                model_cls=model.__class__
+                model_cls=model.__class__,
             )
 
         with map_errors(
-            SerializationError,
-            value=value,
-            field=self,
-            model_cls=model.__class__
+            SerializationError, value=value, field=self, model_cls=model.__class__
         ):
             value = self._serialize(value)
             if value is not None:
@@ -631,10 +613,7 @@ class Optional(Field):
             return model, d
 
         with map_errors(
-            DeserializationError,
-            value=value,
-            field=self,
-            model_cls=model.__class__
+            DeserializationError, value=value, field=self, model_cls=model.__class__
         ):
             setattr(model, self._attr_name, self._deserialize(value))
 
@@ -647,10 +626,7 @@ class Optional(Field):
         value = getattr(model, self._attr_name, None)
 
         with map_errors(
-            NormalizationError,
-            value=value,
-            field=self,
-            model_cls=model.__class__
+            NormalizationError, value=value, field=self, model_cls=model.__class__
         ):
             setattr(model, self._attr_name, self._normalize(value))
 
@@ -660,10 +636,8 @@ class Optional(Field):
     def _deserialize(self, value):
         if value is not None:
             value = self.deserialize(value)
-
             for deserializer in self.deserializers:
                 value = deserializer(value)
-
         return value
 
     def _normalize(self, value):
@@ -673,13 +647,11 @@ class Optional(Field):
                 value = normalizer(value)
         else:
             value = self._default()
-
         return value
 
     def _validate(self, value):
         if value is not None:
             self.validate(value)
-
             for validator in self.validators:
                 validator(value)
 
@@ -733,8 +705,9 @@ class Instance(Field):
         super(Instance, self).validate(value)
         if not isinstance(value, self.type):
             raise ValidationError(
-                'expected {!r} but got {!r}'
-                .format(self.type.__name__, value.__class__.__name__)
+                'expected {!r} but got {!r}'.format(
+                    self.type.__name__, value.__class__.__name__
+                )
             )
 
 
@@ -785,7 +758,9 @@ class _Container(Instance):
         Each element in the container will be serialized with the specified
         field instances.
         """
-        value = self.type(self._apply('_serialize', element) for element in self._iter(value))
+        value = self.type(
+            self._apply('_serialize', element) for element in self._iter(value)
+        )
         return super(_Container, self).serialize(value)
 
     def deserialize(self, value):
@@ -796,7 +771,9 @@ class _Container(Instance):
         field instances.
         """
         value = super(_Container, self).deserialize(value)
-        return self.type(self._apply('_deserialize', element) for element in self._iter(value))
+        return self.type(
+            self._apply('_deserialize', element) for element in self._iter(value)
+        )
 
     def normalize(self, value):
         """
@@ -806,7 +783,9 @@ class _Container(Instance):
         field instances.
         """
         value = super(_Container, self).normalize(value)
-        return self.type(self._apply('_normalize', element) for element in self._iter(value))
+        return self.type(
+            self._apply('_normalize', element) for element in self._iter(value)
+        )
 
     def validate(self, value):
         """
@@ -947,8 +926,7 @@ class Tuple(_Container):
         """
         super(Tuple, self).__init__(tuple, **kwargs)
         self.elements = tuple(
-            _resolve_to_field_instance(e, none_allowed=False)
-            for e in elements
+            _resolve_to_field_instance(e, none_allowed=False) for e in elements
         )
 
     def _iter(self, value):
@@ -969,9 +947,8 @@ def create_primitive(name, type):
     """
     Create a primitive `Field` class.
     """
-    description = (
-        'This field represents the built-in `{type}` type.'
-        .format(type=type.__name__)
+    description = 'This field represents the built-in `{type}` type.'.format(
+        type=type.__name__
     )
     return create(name, base=Instance, args=(type,), description=description)
 
@@ -1025,8 +1002,7 @@ class Literal(Field):
         """
         if value != self.value:
             raise ValidationError(
-                'expected {!r} but got {!r}'
-                .format(self.value, value)
+                'expected {!r} but got {!r}'.format(self.value, value)
             )
 
 
@@ -1184,7 +1160,9 @@ class Text(Instance):
         """
         if isinstance(value, binary_type):
             if self.encoding is None:
-                value = value.decode(encoding=self._detect(value)['encoding'], errors=self.errors)
+                value = value.decode(
+                    encoding=self._detect(value)['encoding'], errors=self.errors
+                )
             else:
                 value = value.decode(encoding=self.encoding, errors=self.errors)
 
@@ -1220,8 +1198,7 @@ class Regex(Str):
         super(Regex, self).validate(value)
         if not self._compiled.match(value):
             raise ValidationError(
-                '{!r} does not match regex {!r}'
-                .format(value, self.pattern)
+                '{!r} does not match regex {!r}'.format(value, self.pattern)
             )
 
 
@@ -1270,15 +1247,12 @@ FIELD_CLASS_MAP = {
     set: Set,
     str: Str,
     tuple: Tuple,
-
     # Collections
     collections.OrderedDict: OrderedDict,
-
     # Datetimes
     datetime.datetime: DateTime,
     datetime.date: Date,
     datetime.time: Time,
-
     # Others
     uuid.UUID: Uuid,
 }
@@ -1317,7 +1291,9 @@ The validation is delegated to `{}`.
 
 Args:
     **kwargs: keyword arguments for the `Field` constructor.
-""".format(human, foreign)
+""".format(
+        human, foreign
+    )
 
     field_cls = type(name, (Str,), {'__doc__': doc})
 
@@ -1339,9 +1315,15 @@ Args:
 # Generate string fields using functions in the 'validators' package.
 Domain = create_from('validators.domain')
 Email = create_from('validators.email')
-Ipv4Address = create_from('validators.ip_address.ipv4', name='Ipv4Address', human='IPv4 address')
-Ipv6Address = create_from('validators.ip_address.ipv6', name='Ipv6Address', human='IPv6 address')
-MacAddress = create_from('validators.mac_address', name='MacAddress', human='MAC address')
+Ipv4Address = create_from(
+    'validators.ip_address.ipv4', name='Ipv4Address', human='IPv4 address'
+)
+Ipv6Address = create_from(
+    'validators.ip_address.ipv6', name='Ipv6Address', human='IPv6 address'
+)
+MacAddress = create_from(
+    'validators.mac_address', name='MacAddress', human='MAC address'
+)
 Slug = create_from('validators.slug')
 Url = create_from('validators.url', human='URL')
 

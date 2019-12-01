@@ -41,11 +41,13 @@ install-all: check-venv
 
 # Run all lints.
 lint:
+    $VIRTUAL_ENV/bin/black --skip-string-normalization --check .
     $VIRTUAL_ENV/bin/flake8 --max-complexity 10 .
 
-# Sort import statements according to the isort configuration.
-sort-imports:
+# Blacken and sort import statements
+blacken:
     $VIRTUAL_ENV/bin/isort --recursive .
+    $VIRTUAL_ENV/bin/black --skip-string-normalization .
 
 # Run tests excluding doctests.
 test:

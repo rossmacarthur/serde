@@ -86,8 +86,9 @@ def try_lookup(name):
         obj = importlib.import_module(module)
     except ImportError:
         raise MissingDependency(
-            "{!r} is missing, did you forget to install the 'ext' feature?"
-            .format(module)
+            "{!r} is missing, did you forget to install the 'ext' feature?".format(
+                module
+            )
         )
 
     for attr in path.split('.'):

@@ -14,9 +14,7 @@ release = serde.__version__
 # General configuration
 default_role = 'obj'
 doctest_default_flags = (
-    doctest.DONT_ACCEPT_TRUE_FOR_1
-    | doctest.ELLIPSIS
-    | doctest.NORMALIZE_WHITESPACE
+    doctest.DONT_ACCEPT_TRUE_FOR_1 | doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE
 )
 doctest_global_setup = 'from serde import *'
 extensions = [
@@ -24,12 +22,12 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode'
+    'sphinx.ext.viewcode',
 ]
 intersphinx_mapping = {
     'chardet': ('https://chardet.readthedocs.io/en/latest/', None),
     'python': ('https://docs.python.org/3', None),
-    'validators': ('https://validators.readthedocs.io/en/latest/', None)
+    'validators': ('https://validators.readthedocs.io/en/latest/', None),
 }
 master_doc = 'index'
 autodoc_member_order = 'bysource'
@@ -41,14 +39,9 @@ html_theme_options = {
     'fixed_sidebar': True,
     'logo_name': True,
     'github_user': 'rossmacarthur',
-    'github_repo': 'serde'
+    'github_repo': 'serde',
 }
 html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'relations.html',
-        'searchbox.html'
-    ]
+    '**': ['about.html', 'navigation.html', 'relations.html', 'searchbox.html']
 }
 html_static_path = ['_static']

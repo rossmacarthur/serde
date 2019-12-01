@@ -4,7 +4,6 @@ from serde import Model, exceptions, fields
 
 
 class TestModel:
-
     def test___new___annotations_basic(self):
         # Check that basic annotations can be used.
 
@@ -42,6 +41,7 @@ class TestModel:
         # Check that you cannot use both annotations and class attributes.
 
         with raises(exceptions.ContextError):
+
             class Example(Model):
                 a: int
                 b = fields.Bool()

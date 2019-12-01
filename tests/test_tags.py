@@ -6,7 +6,6 @@ from serde.tags import Adjacent, External, Internal, Tag
 
 
 class TestTag:
-
     def test___init___basic(self):
         tag = Tag()
         assert tag.recurse is False
@@ -116,13 +115,15 @@ class TestTag:
         with raises(DeserializationError) as e:
             tag.deserialize('Example4')
 
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 DeserializationError: no variant found for tag 'Example4'
     Due to => value 'Example4' for tag 'Tag' on model 'Example'"""
+        )
 
 
 class TestExternal:
-
     def test__serialize_with(self):
         class Example(Model):
             pass
@@ -152,13 +153,15 @@ class TestExternal:
     def test__deserialize_with_untagged(self):
         with raises(DeserializationError) as e:
             External()._deserialize_with(object(), {})
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 DeserializationError: expected externally tagged data
     Due to => tag 'External'"""
+        )
 
 
 class TestInternal:
-
     def test___init___basic(self):
         tag = Internal()
         assert tag.tag == 'tag'
@@ -211,13 +214,15 @@ class TestInternal:
 
         with raises(DeserializationError) as e:
             tag._deserialize_with(object(), {'something': 1})
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 DeserializationError: expected tag 'kind'
     Due to => tag 'Internal'"""
+        )
 
 
 class TestAdjacent:
-
     def test___init___basic(self):
         tag = Adjacent()
         assert tag.tag == 'tag'
@@ -271,12 +276,18 @@ class TestAdjacent:
 
         with raises(DeserializationError) as e:
             tag._deserialize_with(object(), {'something': 1})
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 DeserializationError: expected tag 'kind'
     Due to => tag 'Adjacent'"""
+        )
 
         with raises(DeserializationError) as e:
             tag._deserialize_with(object(), {'kind': 'Example2', 'something': 1})
-        assert e.value.pretty() == """\
+        assert (
+            e.value.pretty()
+            == """\
 DeserializationError: expected content 'data'
     Due to => tag 'Adjacent'"""
+        )

@@ -13,7 +13,7 @@ __all__ = [
     'NormalizationError',
     'SerdeError',
     'SerializationError',
-    'ValidationError'
+    'ValidationError',
 ]
 
 
@@ -43,9 +43,7 @@ class BaseError(Exception):
         Return the canonical string representation.
         """
         return '<{}.{}: {}>'.format(
-            self.__class__.__module__,
-            self.__class__.__name__,
-            self.message
+            self.__class__.__module__, self.__class__.__name__, self.message
         )
 
     def __str__(self):
@@ -73,14 +71,7 @@ class SerdeError(BaseError):
         model_cls: the model class context.
     """
 
-    def __init__(
-        self,
-        message,
-        cause=None,
-        value=None,
-        field=None,
-        model_cls=None
-    ):
+    def __init__(self, message, cause=None, value=None, field=None, model_cls=None):
         """
         Create a new `SerdeError`.
         """
@@ -88,12 +79,7 @@ class SerdeError(BaseError):
         self.contexts = []
 
         if cause or value or field or model_cls:
-            self.add_context(
-                cause=cause,
-                value=value,
-                field=field,
-                model_cls=model_cls
-            )
+            self.add_context(cause=cause, value=value, field=field, model_cls=model_cls)
 
     def add_context(self, cause=None, value=None, field=None, model_cls=None):
         """
@@ -105,11 +91,8 @@ class SerdeError(BaseError):
             field (~serde.fields.Field): the Field context.
             model_cls (~serde.Model): the Model class context.
         """
-        self.contexts.append(Context(
-            cause=cause,
-            value=value,
-            field=field,
-            model_cls=model_cls)
+        self.contexts.append(
+            Context(cause=cause, value=value, field=field, model_cls=model_cls)
         )
 
     def iter_contexts(self):
@@ -139,11 +122,7 @@ class SerdeError(BaseError):
             return new
         else:
             return cls(
-                str(exception) or repr(exception),
-                exception,
-                value,
-                field,
-                model_cls
+                str(exception) or repr(exception), exception, value, field, model_cls
             )
 
     def __getattr__(self, name):
@@ -177,14 +156,12 @@ class SerdeError(BaseError):
         if self.message:
             lines[0] += ': ' + self.message
 
-        lines.extend([
-            context.pretty(
-                separator=separator,
-                prefix=prefix,
-                indent=indent
-            )
-            for context in self.iter_contexts()
-        ])
+        lines.extend(
+            [
+                context.pretty(separator=separator, prefix=prefix, indent=indent)
+                for context in self.iter_contexts()
+            ]
+        )
 
         return separator.join(lines)
 
@@ -268,11 +245,7 @@ class Context(object):
 
     def _pretty_cause(self, separator, prefix, indent):
         if isinstance(self.cause, SerdeError):
-            return self.cause.pretty(
-                separator=separator,
-                prefix=prefix,
-                indent=indent
-            )
+            return self.cause.pretty(separator=separator, prefix=prefix, indent=indent)
         else:
             return repr(self.cause)
 
@@ -286,10 +259,7 @@ class Context(object):
         if len(value) > 30:
             value = value[:26] + '... '
 
-        return msg.format(
-            value=value,
-            suffix='' if self.field is None else ' for '
-        )
+        return msg.format(value=value, suffix='' if self.field is None else ' for ')
 
     def _pretty_field(self):
         if not self.field:
@@ -303,9 +273,7 @@ class Context(object):
 
         if isinstance(self.field, Field):
             return 'field {field!r} of type {type!r}{suffix}'.format(
-                field=self.field._attr_name,
-                type=type_,
-                suffix=suffix
+                field=self.field._attr_name, type=type_, suffix=suffix
             )
         elif isinstance(self.field, Tag):
             return 'tag {type!r}{suffix}'.format(type=type_, suffix=suffix)
@@ -332,9 +300,7 @@ class Context(object):
 
         if self.value or self.field or self.model_cls:
             lines.append(
-                self._pretty_value()
-                + self._pretty_field()
-                + self._pretty_model_cls()
+                self._pretty_value() + self._pretty_field() + self._pretty_model_cls()
             )
 
         if self.cause:
@@ -361,9 +327,4 @@ def map_errors(error, value=None, field=None, model_cls=None):
         e.add_context(value=value, field=field, model_cls=model_cls)
         raise
     except Exception as e:
-        raise error.from_exception(
-            e,
-            value=value,
-            field=field,
-            model_cls=model_cls
-        )
+        raise error.from_exception(e, value=value, field=field, model_cls=model_cls)

@@ -15,17 +15,15 @@ class Validator(object):
         """
         Whether this validator is equal to another validator.
         """
-        return (
-            isinstance(other, self.__class__)
-            and self._attrs() == other._attrs()
-        )
+        return isinstance(other, self.__class__) and self._attrs() == other._attrs()
 
     def _attrs(self):
         """
         Returns a dictionary of all public attributes on this validator.
         """
         return {
-            name: value for name, value in vars(self).items()
+            name: value
+            for name, value in vars(self).items()
             if not name.startswith('_')
         }
 
@@ -53,14 +51,12 @@ class Min(Validator):
         if self.inclusive:
             if value < self.endpoint:
                 raise ValidationError(
-                    'expected at least {!r} but got {!r}'
-                    .format(self.endpoint, value)
+                    'expected at least {!r} but got {!r}'.format(self.endpoint, value)
                 )
         else:
             if value <= self.endpoint:
                 raise ValidationError(
-                    'expected more than {!r} but got {!r}'
-                    .format(self.endpoint, value)
+                    'expected more than {!r} but got {!r}'.format(self.endpoint, value)
                 )
 
 
@@ -81,14 +77,12 @@ class Max(Validator):
         if self.inclusive:
             if value > self.endpoint:
                 raise ValidationError(
-                    'expected at most {!r} but got {!r}'
-                    .format(self.endpoint, value)
+                    'expected at most {!r} but got {!r}'.format(self.endpoint, value)
                 )
         else:
             if value >= self.endpoint:
                 raise ValidationError(
-                    'expected less than {!r} but got {!r}'
-                    .format(self.endpoint, value)
+                    'expected less than {!r} but got {!r}'.format(self.endpoint, value)
                 )
 
 
@@ -121,8 +115,9 @@ class Length(Validator):
     def __call__(self, value):
         if len(value) != self.value:
             raise ValidationError(
-                'expected length {!r} but got length {!r} for value {!r}'
-                .format(self.value, len(value), value),
+                'expected length {!r} but got length {!r} for value {!r}'.format(
+                    self.value, len(value), value
+                )
             )
 
 
@@ -165,7 +160,4 @@ class LengthBetween(Between):
         return super(LengthBetween, self).__call__(len(value))
 
 
-__all__ = [
-    name for name, obj in globals().items()
-    if is_subclass(obj, Validator)
-]
+__all__ = [name for name, obj in globals().items() if is_subclass(obj, Validator)]
