@@ -4,7 +4,7 @@ Releases
 0.7.2
 -----
 
-*Unreleased*
+*Released on December 2nd, 2019*
 
 - Add ``FrozenSet`` field.
 - Add ``Deque`` field.
