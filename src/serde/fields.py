@@ -548,9 +548,7 @@ class Optional(Field):
 
     An `Optional` is a field that is allowed to be `None`. Serialization,
     normalization, deserialization, and validation using the wrapped field will
-    only be called if the value is not `None`. The wrapped Field can be
-    specified using `Field` classes, `Field` instances, `~serde.Model` classes,
-    or built-in types that have a corresponding field type in this library.
+    only be called if the value is not `None`.
 
     Args:
         inner: the `Field` class/instance that this `Optional` wraps.
@@ -813,11 +811,6 @@ class Deque(_Container):
     """
     A `~collections.deque` field.
 
-    Each element is serialized, deserialized, normalized and validated with the
-    specified element type. The element type can be specified using `Field`
-    classes, `Field` instances, `~serde.Model` classes, or built-in types that
-    have a corresponding field type in this library.
-
     Args:
         element: the `Field` class or instance for elements in the `Deque`.
         maxlen (int): the maximum length of this `Deque`.
@@ -854,12 +847,6 @@ class Dict(_Container):
     """
     This field represents the built-in `dict` type.
 
-    Each key and value will be serialized, deserialized, normalized, and
-    validated with the specified key and value types. The key and value types
-    can be specified using `Field` classes, `Field` instances, `~serde.Model`
-    classes, or built-in types that have a corresponding field type in this
-    library.
-
     Args:
         key: the `Field` class or instance for keys in this `Dict`.
         value: the `Field` class or instance for values in this `Dict`.
@@ -892,12 +879,6 @@ class OrderedDict(Dict):
     """
     An `~collections.OrderedDict` field.
 
-    Each key and value will be serialized, deserialized, normalized, and
-    validated with the specified key and value types. The key and value types
-    can be specified using `Field` classes, `Field` instances, `~serde.Model`
-    classes, or built-in types that have a corresponding field type in this
-    library.
-
     Args:
         key: the `Field` class or instance for keys in this `OrderedDict`.
         value: the `Field` class or instance for values in this `OrderedDict`.
@@ -917,11 +898,6 @@ class FrozenSet(_Container):
     """
     This field represents the built-in `frozenset` type.
 
-    Each element is serialized, deserialized, normalized and validated with the
-    specified element type. The element type can be specified using `Field`
-    classes, `Field` instances, `~serde.Model` classes, or built-in types that
-    have a corresponding field type in this library.
-
     Args:
         element: the `Field` class or instance for elements in the `Set`.
         **kwargs: keyword arguments for the `Field` constructor.
@@ -938,11 +914,6 @@ class FrozenSet(_Container):
 class List(_Container):
     """
     This field represents the built-in `list` type.
-
-    Each element is serialized, deserialized, normalized and validated with the
-    specified element type. The element type can be specified using `Field`
-    classes, `Field` instances, `~serde.Model` classes, or built-in types that
-    have a corresponding field type in this library.
 
     Args:
         element: the `Field` class or instance for elements in the `List`.
@@ -961,11 +932,6 @@ class Set(_Container):
     """
     This field represents the built-in `set` type.
 
-    Each element is serialized, deserialized, normalized and validated with the
-    specified element type. The element type can be specified using `Field`
-    classes, `Field` instances, `~serde.Model` classes, or built-in types that
-    have a corresponding field type in this library.
-
     Args:
         element: the `Field` class or instance for elements in the `Set`.
         **kwargs: keyword arguments for the `Field` constructor.
@@ -982,11 +948,6 @@ class Set(_Container):
 class Tuple(_Container):
     """
     This field represents the built-in `tuple` type.
-
-    Each element will be serialized, deserialized, normalized, and validated
-    with the specified element type. The given element types can be specified
-    using `Field` classes, `Field` instances, `~serde.Model` classes, or
-    built-in types that have a corresponding field type in this library.
 
     Args:
         *elements: the `Field` classes or instances for elements in this tuple.

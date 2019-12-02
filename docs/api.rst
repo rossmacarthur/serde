@@ -27,11 +27,19 @@ Primitives
 Containers
 ^^^^^^^^^^
 
+In container fields each element is serialized, deserialized, normalized and
+validated with the specified element type. The element type can be specified
+using `Field` classes, `Field` instances, `~serde.Model` classes, or built-in
+types that have a corresponding field type in this library.
+
 .. autoclass:: serde.fields.Nested
 .. autoclass:: serde.fields.Optional
 .. autoclass:: serde.fields.Dict
+.. autoclass:: serde.fields.OrderedDict
 .. autoclass:: serde.fields.List
+.. autoclass:: serde.fields.Deque
 .. autoclass:: serde.fields.Set
+.. autoclass:: serde.fields.FrozenSet
 .. autoclass:: serde.fields.Tuple
 
 Standard library
@@ -39,7 +47,6 @@ Standard library
 
 .. autoclass:: serde.fields.DateTime
 .. autoclass:: serde.fields.Date
-.. autoclass:: serde.fields.OrderedDict
 .. autoclass:: serde.fields.Time
 .. autoclass:: serde.fields.Uuid
 .. autoclass:: serde.fields.Regex
