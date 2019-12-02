@@ -913,6 +913,28 @@ class OrderedDict(Dict):
         self.value = _resolve_to_field_instance(value)
 
 
+class FrozenSet(_Container):
+    """
+    This field represents the built-in `frozenset` type.
+
+    Each element is serialized, deserialized, normalized and validated with the
+    specified element type. The element type can be specified using `Field`
+    classes, `Field` instances, `~serde.Model` classes, or built-in types that
+    have a corresponding field type in this library.
+
+    Args:
+        element: the `Field` class or instance for elements in the `Set`.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    def __init__(self, element=None, **kwargs):
+        """
+        Create a new `FrozenSet`.
+        """
+        super(FrozenSet, self).__init__(frozenset, **kwargs)
+        self.element = _resolve_to_field_instance(element)
+
+
 class List(_Container):
     """
     This field represents the built-in `list` type.

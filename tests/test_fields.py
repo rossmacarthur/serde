@@ -28,6 +28,7 @@ from serde.fields import (
     Dict,
     Field,
     Float,
+    FrozenSet,
     Instance,
     Int,
     List,
@@ -948,6 +949,79 @@ class TestOrderedDict:
         assert field.key == Str()
         assert field.value == Int()
         assert field.validators == [None]
+
+
+class TestFrozenSet:
+    def test___init___basic(self):
+        # Construct a basic FrozenSet and check values are set correctly.
+        field = FrozenSet()
+        assert field.element == Field()
+        assert field.validators == []
+
+    def test___init___options(self):
+        # Construct a FrozenSet with extra options and make sure values are passed to
+        # Field.
+        field = FrozenSet(element=Int, validators=[None])
+        assert field.element == Int()
+        assert field.validators == [None]
+
+    def test_serialize(self):
+        # A FrozenSet should serialize values based on the element Field.
+        field = FrozenSet(element=Reversed)
+        assert field.serialize(frozenset({'test', 'hello'})) == frozenset(
+            {'tset', 'olleh'}
+        )
+
+    def test_serialize_extra(self):
+        # A FrozenSet should serialize values based on the element Field.
+        field = FrozenSet(element=Field(serializers=[lambda x: x[::-1]]))
+        assert field.serialize(frozenset({'test', 'hello'})) == frozenset(
+            {'tset', 'olleh'}
+        )
+
+    def test_deserialize(self):
+        # A FrozenSet should deserialize values based on the element Field.
+        field = FrozenSet(element=Reversed)
+        assert field.deserialize(frozenset({'tset', 'olleh'})) == frozenset(
+            {'test', 'hello'}
+        )
+
+    def test_deserialize_extra(self):
+        # A FrozenSet should deserialize values based on the element Field.
+        field = FrozenSet(element=Field(deserializers=[lambda x: x[::-1]]))
+        assert field.deserialize(frozenset({'tset', 'olleh'})) == frozenset(
+            {'test', 'hello'}
+        )
+
+    def test_normalize(self):
+        # A FrozenSet should normalize values based on the element Field.
+        field = FrozenSet(element=Field)
+        assert field.normalize(frozenset({'test', 'hello'})) == frozenset(
+            {'test', 'hello'}
+        )
+
+    def test_normalize_extra(self):
+        # A FrozenSet should normalize values based on the element Field.
+        field = FrozenSet(element=Field(normalizers=[lambda x: x[::-1]]))
+        assert field.normalize(frozenset({'tset', 'olleh'})) == frozenset(
+            {'test', 'hello'}
+        )
+
+    def test_validate(self):
+        # A FrozenSet should validate values based on the element Field.
+        field = FrozenSet(element=Int)
+        field.validate(frozenset({0, 1, 2, 3, 4}))
+
+        with raises(ValidationError):
+            field.validate(frozenset({'1', '2', 'a', 'string'}))
+
+    def test_validate_extra(self):
+        # A FrozenSet should validate values based on the element Field.
+        field = FrozenSet(element=Field(validators=[validators.Between(10, 10)]))
+        field.validate(frozenset({10, 10, 10}))
+
+        with raises(ValidationError):
+            field.validate(frozenset({10, 11, 12, 13}))
 
 
 class TestList:

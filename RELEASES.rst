@@ -6,6 +6,7 @@ Releases
 
 *Unreleased*
 
+- Add ``FrozenSet`` field.
 - Add ``Deque`` field.
 - Add ``default`` keyword argument to ``Field``. (`#111`_)
 - Fix bug in ``Uuid.normalize()``.
