@@ -631,6 +631,13 @@ class Optional(Field):
     def _instantiate(self, value):
         return value
 
+    def _serialize(self, value):
+        if value is not None:
+            value = self.serialize(value)
+            for serializer in self.serializers:
+                value = serializer(value)
+        return value
+
     def _deserialize(self, value):
         if value is not None:
             value = self.deserialize(value)
