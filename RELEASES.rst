@@ -4,7 +4,7 @@ Releases
 0.7.3
 -----
 
-*Unreleased*
+*Released on January 12th, 2020*
 
 - Fix contained ``Optional`` field (again). (`#120`_)
 
