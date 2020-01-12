@@ -1,6 +1,15 @@
 Releases
 ========
 
+0.7.3
+-----
+
+*Unreleased*
+
+- Fix contained ``Optional`` field (again). (`#120`_)
+
+.. _#120: https://github.com/rossmacarthur/serde/pull/120
+
 0.7.2
 -----
 
