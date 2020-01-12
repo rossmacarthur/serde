@@ -6,7 +6,7 @@ from collections import deque
 
 from pytest import raises
 
-from serde import Model, fields, validators
+from serde import Model, fields, utils, validators
 from serde.exceptions import (
     ContextError,
     DeserializationError,
@@ -54,6 +54,19 @@ Reversed = create(  # noqa: N806
     serializers=[lambda x: x[::-1]],
     deserializers=[lambda x: x[::-1]],
 )
+
+
+def test_overridden_methods():
+    # If a Field overrides _serialize/_deserialize/_normalize/_validate then
+    # *all* need to be overridden.
+    methods = {'_instantiate', '_serialize', '_deserialize', '_normalize', '_validate'}
+
+    for obj in vars(fields).values():
+        if not utils.is_subclass(obj, Field) or obj is Field:
+            continue
+        for sub_name in vars(obj).keys():
+            if sub_name in methods:
+                assert all(method in vars(obj).keys() for method in methods)
 
 
 def test__resolve_to_field_instance_field():
@@ -622,11 +635,32 @@ ValidationError: expected attribute 'test'
         class Example(Model):
             a = Dict(key=str, value=Optional(int))
 
-        assert Example(a={'x': 1234, 'y': None, 'z': 0}).a == {
-            'x': 1234,
-            'y': None,
-            'z': 0,
+        assert Example(a={}).to_dict() == {'a': {}}
+        assert Example.from_dict({'a': {}}) == Example(a={})
+
+        assert Example(a={'x': 1234, 'y': None, 'z': 0}).to_dict() == {
+            'a': {'x': 1234, 'y': None, 'z': 0}
         }
+        assert Example.from_dict({'a': {'x': 1234, 'y': None, 'z': 0}}) == Example(
+            a={'x': 1234, 'y': None, 'z': 0}
+        )
+
+    def test_integrate_contained_model(self):
+        # An Optional should be able to contain nested Model.
+
+        class NestedExample(Model):
+            a = fields.Int()
+
+        class Example(Model):
+            nested = Optional(NestedExample)
+
+        assert Example().to_dict() == {}
+        assert Example.from_dict({}) == Example()
+
+        assert Example(nested=NestedExample(a=5)).to_dict() == {'nested': {'a': 5}}
+        assert Example.from_dict({'nested': {'a': 5}}) == Example(
+            nested=NestedExample(a=5)
+        )
 
     def test_integrate_contained_default(self):
         # An Optional with a default should be able to be contained by other
@@ -635,11 +669,30 @@ ValidationError: expected attribute 'test'
         class Example(Model):
             a = Dict(key=str, value=Optional(int, default=0))
 
-        assert Example(a={'x': 1234, 'y': None, 'z': 0}).a == {
-            'x': 1234,
-            'y': 0,
-            'z': 0,
+        assert Example(a={}).to_dict() == {'a': {}}
+        assert Example.from_dict({'a': {}}) == Example(a={})
+
+        assert Example(a={'x': 1234, 'y': None, 'z': 0}).to_dict() == {
+            'a': {'x': 1234, 'y': 0, 'z': 0}
         }
+        assert Example.from_dict({'a': {'x': 1234, 'y': None, 'z': 0}}) == Example(
+            a={'x': 1234, 'y': None, 'z': 0}
+        )
+
+    def test_integrate_contained_serializers(self):
+        # An Optional with extra serializers should be able to be contained by
+        # other container fields.
+
+        class Example(Model):
+            a = List(
+                Optional(int, serializers=[lambda x: x * 2]),
+                serializers=[lambda x: x[1:]],
+            )
+
+        assert Example(a=[1, 2, None, 3, 4]).to_dict() == {'a': [4, None, 6, 8]}
+        assert Example.from_dict({'a': [1, 2, None, 3, 4]}) == Example(
+            a=[1, 2, None, 3, 4]
+        )
 
     def test_integrate_contained_deserializers(self):
         # An Optional with extra deserializers should be able to be contained by
@@ -651,7 +704,10 @@ ValidationError: expected attribute 'test'
                 deserializers=[lambda x: x[1:]],
             )
 
-        assert Example.from_dict({'a': [1, 2, None, 3, 4]}).a == [4, None, 6, 8]
+        assert Example(a=[1, 2, None, 3, 4]).to_dict() == {'a': [1, 2, None, 3, 4]}
+        assert Example.from_dict({'a': [1, 2, None, 3, 4]}) == Example(
+            a=[4, None, 6, 8]
+        )
 
     def test_integrate_contained_normalizers(self):
         # An Optional with extra normalizers should be able to be contained by
