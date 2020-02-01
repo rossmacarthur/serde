@@ -48,18 +48,12 @@ def _resolve_to_field_instance(thing, none_allowed=True):
 
     # If the thing is a subclass of Field then attempt to create an instance.
     # This could fail the Field expects positional arguments.
-    try:
-        if issubclass(thing, Field):
-            return thing()
-    except TypeError:
-        pass
+    if is_subclass(thing, Field):
+        return thing()
 
     # If the thing is a subclass of Model then create a Nested instance.
-    try:
-        if issubclass(thing, Model):
-            return Nested(thing)
-    except TypeError:
-        pass
+    if is_subclass(thing, Model):
+        return Nested(thing)
 
     # If the thing is a built-in type that we support then create an Instance
     # with that type.
