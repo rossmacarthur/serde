@@ -1,0 +1,66 @@
+name: build
+
+on: [push]
+
+jobs:
+  test:
+    name: Test on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [2.7, pypy2, 3.5, 3.6, 3.7, 3.8, pypy3]
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - run: echo "::set-env name=VIRTUAL_ENV::$(printf ${{ env.pythonLocation }} | sed 's/\/bin$//g')"
+
+    - name: Install just
+      run: |
+        curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh \
+          | bash -s -- --repo casey/just --to $GITHUB_WORKSPACE/bin
+        echo "::add-path::$GITHUB_WORKSPACE/bin"
+
+    - name: Install dependencies
+      run: just install-all
+
+    - name: Lint
+      run: just lint
+
+    - name: Test
+      run: just test
+
+    - name: Upload coverage report to Codecov
+      if: matrix.python-version == 3.7
+      run: pip install codecov && codecov --slug=$GITHUB_REPOSITORY --branch=$GITHUB_REF --commit=$GITHUB_SHA
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  deploy:
+    needs: test
+    if: startsWith(github.event.ref, 'refs/tags')
+
+    name: Deploy Python package
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Install dependencies
+      run: pip install --upgrade setuptools twine wheel
+
+    - name: Build distribution
+      run: python setup.py sdist bdist_wheel
+
+    - name: Publish artefacts
+      run: twine upload dist/*
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}

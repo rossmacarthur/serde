@@ -9,8 +9,8 @@ Serde
     :target: https://ross.macarthur.io/project/serde/
     :alt: Documentation Status
 
-.. image:: https://img.shields.io/travis/rossmacarthur/serde/master.svg?style=flat-square
-    :target: https://travis-ci.org/rossmacarthur/serde
+.. image:: https://img.shields.io/github/workflow/status/rossmacarthur/serde/build/master?style=flat-square
+    :target: https://github.com/rossmacarthur/serde/actions?query=workflow%3Abuild
     :alt: Build Status
 
 .. image:: https://img.shields.io/codecov/c/github/rossmacarthur/serde.svg?style=flat-square

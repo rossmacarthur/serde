@@ -43,8 +43,8 @@ def get_metadata():
 metadata = get_metadata()
 
 # Primary requirements
-install_requires = ['isodate >=0.6.0, <0.7.0', 'six >=1.0.0, <2.0.0']
-ext_requires = ['chardet >=3.0.0, <4.0.0', 'validators >=0.12.0, <0.15.0']
+install_requires = ['isodate==0.6.*', 'six==1.*']
+ext_requires = ['chardet==3.*', 'validators>=0.12.0,<0.15.0']
 
 setup(
     # Options
