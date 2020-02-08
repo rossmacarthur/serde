@@ -285,7 +285,7 @@ serialization.
 .. code-block:: python
 
     >>> Cat(name='Fluffy', hates_dogs=True).to_dict()
-    OrderedDict([('name', 'Fluffy'), ('hates_dogs', True), ('species', 'Cat')])
+    OrderedDict([('name', 'Fluffy'), ('hates_dogs', True), ('species', '__main__.Cat')])
 
 When deserializing, tag deserialization is done first to determine which model
 to use for the deserialization.
@@ -295,7 +295,7 @@ to use for the deserialization.
     >>> milo = Pet.from_dict({
     ...     'name': 'Milo',
     ...     'hates_cats': False,
-    ...     'species': 'Dog'
+    ...     'species': '__main__.Dog'
     ... })
     >>> milo.__class__
     <class '__main__.Dog'>
@@ -313,10 +313,10 @@ An invalid or missing tag will raise a ``DeserializationError``.
     ...
     serde.exceptions.DeserializationError: expected tag 'species'
     >>>
-    >>> Pet.from_dict({'name': 'Duke', 'species': 'Horse'})
+    >>> Pet.from_dict({'name': 'Duke', 'species': '__main__.Horse'})
     Traceback (most recent call last):
     ...
-    serde.exceptions.DeserializationError: no variant found for tag 'Horse'
+    serde.exceptions.DeserializationError: no variant found for tag '__main__.Horse'
 
 Externally tagged
 ^^^^^^^^^^^^^^^^^
@@ -337,7 +337,7 @@ tagged example above.
     ...     hates_cats: fields.Bool()
     ...
     >>> Dog(name='Max', hates_cats=True).to_dict()
-    OrderedDict([('Dog', OrderedDict([('name', 'Max'), ('hates_cats', True)]))])
+    OrderedDict([('__main__.Dog', OrderedDict([('name', 'Max'), ('hates_cats', True)]))])
 
 Adjacently tagged
 ^^^^^^^^^^^^^^^^^
@@ -358,7 +358,7 @@ example.
     ...     hates_cats: fields.Bool()
     ...
     >>> Dog(name='Max', hates_cats=True).to_dict()
-    OrderedDict([('species', 'Dog'), ('data', OrderedDict([('name', 'Max'), ('hates_cats', True)]))])
+    OrderedDict([('species', '__main__.Dog'), ('data', OrderedDict([('name', 'Max'), ('hates_cats', True)]))])
 
 Abstract models
 ^^^^^^^^^^^^^^^

@@ -1,6 +1,13 @@
 Releases
 ========
 
+0.8.0
+-----
+
+*Unreleased*
+
+- Make ``Tag.lookup_tag`` default to module + qualname.
+
 0.7.3
 -----
 

@@ -1,3 +1,5 @@
+import mock
+import six
 from pytest import raises
 
 from serde import Model
@@ -70,7 +72,11 @@ class TestTag:
         class Example(Model):
             pass
 
-        assert Tag().lookup_tag(Example) == 'Example'
+        if six.PY2:
+            prefix = 'tests.test_tags'
+        else:
+            prefix = 'tests.test_tags.TestTag.test_lookup_tag.<locals>'
+        assert Tag().lookup_tag(Example) == prefix + '.Example'
 
     def test_lookup_variant(self):
         class Example(Model):
@@ -84,16 +90,24 @@ class TestTag:
 
         tag = Tag(recurse=True)
         tag._bind(Example)
-        assert tag.lookup_variant('Example') is Example
-        assert tag.lookup_variant('Example2') is Example2
-        assert tag.lookup_variant('Example3') is Example3
-        assert tag.lookup_variant('Example4') is None
+        if six.PY2:
+            prefix = 'tests.test_tags'
+        else:
+            prefix = 'tests.test_tags.TestTag.test_lookup_variant.<locals>'
+        assert tag.lookup_variant(prefix + '.Example') is Example
+        assert tag.lookup_variant(prefix + '.Example2') is Example2
+        assert tag.lookup_variant(prefix + '.Example3') is Example3
+        assert tag.lookup_variant(prefix + '.Example4') is None
 
     def test_serialize(self):
         class Example(Model):
             pass
 
-        assert Tag().serialize(Example) == 'Example'
+        if six.PY2:
+            prefix = 'tests.test_tags'
+        else:
+            prefix = 'tests.test_tags.TestTag.test_serialize.<locals>'
+        assert Tag().serialize(Example) == prefix + '.Example'
 
     def test_deserialize(self):
         class Example(Model):
@@ -107,22 +121,32 @@ class TestTag:
 
         tag = Tag(recurse=True)
         tag._bind(Example)
+        if six.PY2:
+            prefix = 'tests.test_tags'
+        else:
+            prefix = 'tests.test_tags.TestTag.test_deserialize.<locals>'
+        assert tag.deserialize(prefix + '.Example') is Example
+        assert tag.deserialize(prefix + '.Example2') is Example2
+        assert tag.deserialize(prefix + '.Example3') is Example3
 
-        assert tag.deserialize('Example') is Example
-        assert tag.deserialize('Example2') is Example2
-        assert tag.deserialize('Example3') is Example3
-
+        tag_value = prefix + '.Example4'
         with raises(DeserializationError) as e:
-            tag.deserialize('Example4')
+            tag.deserialize(tag_value)
 
         assert (
             e.value.pretty()
             == """\
-DeserializationError: no variant found for tag 'Example4'
-    Due to => value 'Example4' for tag 'Tag' on model 'Example'"""
+DeserializationError: no variant found for tag '{}'
+    Due to => value {} for tag 'Tag' on model 'Example'""".format(
+                tag_value,
+                "'tests.test_tags.Example4'"
+                if six.PY2
+                else "'tests.test_tags.TestTag.t... ",
+            )
         )
 
 
+@mock.patch('serde.tags.Tag.lookup_tag', lambda _, variant: variant.__name__)
 class TestExternal:
     def test__serialize_with(self):
         class Example(Model):
@@ -161,6 +185,7 @@ DeserializationError: expected externally tagged data
         )
 
 
+@mock.patch('serde.tags.Tag.lookup_tag', lambda _, variant: variant.__name__)
 class TestInternal:
     def test___init___basic(self):
         tag = Internal()
@@ -222,6 +247,7 @@ DeserializationError: expected tag 'kind'
         )
 
 
+@mock.patch('serde.tags.Tag.lookup_tag', lambda _, variant: variant.__name__)
 class TestAdjacent:
     def test___init___basic(self):
         tag = Adjacent()

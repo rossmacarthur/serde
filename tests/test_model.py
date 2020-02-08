@@ -15,6 +15,23 @@ from serde.exceptions import (
 from tests import py3
 
 
+class LookupTagMixin(object):
+    def lookup_tag(self, variant):
+        return variant.__name__
+
+
+class External(LookupTagMixin, tags.External):
+    pass
+
+
+class Internal(LookupTagMixin, tags.Internal):
+    pass
+
+
+class Adjacent(LookupTagMixin, tags.Adjacent):
+    pass
+
+
 class TestModel:
     def test___new___empty(self):
         # Check that a Model with no Fields can be created. There should still
@@ -122,9 +139,9 @@ class TestModel:
 
         class Example(Model):
             class Meta:
-                tag = tags.Internal(tag='kind')
+                tag = Internal(tag='kind')
 
-        assert Example.__tags__ == [tags.Internal(tag='kind')]
+        assert Example.__tags__ == [Internal(tag='kind')]
 
     def test___init___empty(self):
         # An empty Model with no Fields should work just fine.
@@ -483,7 +500,7 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         class Example(Model):
             class Meta:
-                tag = tags.External()
+                tag = External()
 
             nested = fields.Nested(NestedExample)
 
@@ -500,7 +517,7 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         class Example(Model):
             class Meta:
-                tag = tags.Internal(tag='kind')
+                tag = Internal(tag='kind')
 
             nested = fields.Nested(NestedExample)
 
@@ -517,7 +534,7 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         class Example(Model):
             class Meta:
-                tag = tags.Adjacent(tag='kind', content='data')
+                tag = Adjacent(tag='kind', content='data')
 
             nested = fields.Nested(NestedExample)
 
@@ -629,7 +646,7 @@ DeserializationError: expected 'int' but got 'NoneType'
 
         class Example(Model):
             class Meta:
-                tag = tags.External()
+                tag = External()
 
             a = fields.Int()
 
@@ -667,7 +684,7 @@ DeserializationError: expected 'int' but got 'NoneType'
 
         class Example(Model):
             class Meta:
-                tag = tags.Internal(tag='kind')
+                tag = Internal(tag='kind')
 
             a = fields.Int()
 
@@ -697,7 +714,7 @@ DeserializationError: expected 'int' but got 'NoneType'
 
         class Example(Model):
             class Meta:
-                tag = tags.Adjacent(tag='kind', content='data')
+                tag = Adjacent(tag='kind', content='data')
 
             a = fields.Int()
 
@@ -733,7 +750,7 @@ DeserializationError: expected 'int' but got 'NoneType'
     def test_from_dict_override_tag_for(self):
         # Check that from_dict() works when you modify the Meta.tag_for() method
 
-        class ExampleTag(tags.Internal):
+        class ExampleTag(Internal):
             def lookup_tag(self, variant):
                 return variant.__name__.lower()
 
@@ -867,7 +884,7 @@ DeserializationError: expected 'int' but got 'NoneType'
 
         class Example(Model):
             class Meta:
-                tag = tags.External()
+                tag = External()
 
             a = fields.Int()
 
@@ -885,7 +902,7 @@ DeserializationError: expected 'int' but got 'NoneType'
 
         class Example(Model):
             class Meta:
-                tag = tags.Internal(tag='kind')
+                tag = Internal(tag='kind')
 
             a = fields.Int()
 
@@ -907,7 +924,7 @@ DeserializationError: expected 'int' but got 'NoneType'
 
         class Example(Model):
             class Meta:
-                tag = tags.Adjacent(tag='kind', content='data')
+                tag = Adjacent(tag='kind', content='data')
 
             a = fields.Int()
 
@@ -923,7 +940,7 @@ DeserializationError: expected 'int' but got 'NoneType'
 
     def test_to_dict_override_tag_for(self):
         # Check that to_dict() works when you modify the Meta.tag_for() method
-        class ExampleTag(tags.Internal):
+        class ExampleTag(Internal):
             def lookup_tag(self, variant):
                 return variant.__name__.lower()
 
