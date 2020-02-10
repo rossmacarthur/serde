@@ -93,12 +93,6 @@ Exceptions
 
 .. automodule:: serde.exceptions
 
-.. autoexception:: serde.exceptions.SerdeError
-    :members: iter_contexts, pretty
-
-.. autoexception:: serde.exceptions.SerializationError
-.. autoexception:: serde.exceptions.DeserializationError
-.. autoexception:: serde.exceptions.InstantiationError
-.. autoexception:: serde.exceptions.NormalizationError
-.. autoexception:: serde.exceptions.ValidationError
+.. autoexception:: serde.exceptions.ContextError
 .. autoexception:: serde.exceptions.MissingDependency
+.. autoexception:: serde.exceptions.ValidationError

@@ -7,14 +7,7 @@ from collections import deque
 from pytest import raises
 
 from serde import Model, fields, utils, validators
-from serde.exceptions import (
-    ContextError,
-    DeserializationError,
-    InstantiationError,
-    NormalizationError,
-    SerializationError,
-    ValidationError,
-)
+from serde.exceptions import ContextError, ValidationError
 from serde.fields import (
     BaseField,
     Bool,
@@ -43,7 +36,10 @@ from serde.fields import (
     Time,
     Tuple,
     Uuid,
+    _Container,
+    _Mapping,
     _resolve_to_field_instance,
+    _Sequence,
     create,
 )
 
@@ -174,7 +170,7 @@ class TestBaseField:
         with raises(ContextError) as e:
             base._bind(object())
 
-        assert e.value.message == "'BaseField' instance used multiple times"
+        assert e.value.message == "attempted to use 'BaseField' instance more than once"
 
     def test__serialize_with(self):
         # Check that the Base field doesn't implement this method.
@@ -259,7 +255,7 @@ class TestField:
         with raises(ContextError) as e:
             field._bind(object(), 'test')
 
-        assert e.value.message == "'Field' instance used multiple times"
+        assert e.value.message == "attempted to use 'Field' instance more than once"
 
     def test__bind_with_rename(self):
         # Make sure _bind rename overrides the passed in name.
@@ -276,7 +272,6 @@ class TestField:
         field._bind(model.__class__, 'test')
         kwargs = {'test': 'testing...'}
         assert field._instantiate_with(model, kwargs) is None
-        assert kwargs == {}
         assert model.test == 'testing...'
 
     def test__instantiate_with_default(self):
@@ -286,7 +281,6 @@ class TestField:
         field._bind(model.__class__, 'test')
         kwargs = {}
         assert field._instantiate_with(model, kwargs) is None
-        assert kwargs == {}
         assert model.test == 'testing...'
 
     def test__instantiate_with_none_and_default(self):
@@ -296,8 +290,17 @@ class TestField:
         field._bind(model.__class__, 'test')
         kwargs = {'test': None}
         assert field._instantiate_with(model, kwargs) is None
-        assert kwargs == {}
         assert model.test == 'testing...'
+
+    def test__instantiate_with_type_error(self):
+        # Check that a basic Field raises a TypeError when instantiation fails.
+        model = Model()
+        field = Field(rename='hello')
+        field._bind(model.__class__, 'test')
+        for kwargs in [{'test': None}, {}]:
+            with raises(TypeError) as e:
+                field._instantiate_with(model, kwargs)
+            assert str(e.value) == "__init__() missing required argument 'test'"
 
     def test__serialize_with(self):
         # Check a basic Field simply serializes the attribute value.
@@ -306,22 +309,6 @@ class TestField:
         field = Field(rename='hello')
         field._bind(model.__class__, 'test')
         assert field._serialize_with(model, {}) == {'hello': 'testing...'}
-
-    def test__serialize_with_attribute_error(self):
-        # Check that the appropriate error is raised when the attr is missing.
-        model = Model()
-        field = Field(rename='hello')
-        field._bind(model.__class__, 'test')
-
-        with raises(SerializationError) as e:
-            field._serialize_with(model, {})
-
-        assert (
-            e.value.pretty()
-            == """\
-SerializationError: expected attribute 'test'
-    Due to => field 'test' of type 'Field' on model 'Model'"""
-        )
 
     def test__deserialize_with(self):
         # Check a basic Field simply deserializes the dictionary value.
@@ -339,15 +326,9 @@ SerializationError: expected attribute 'test'
         field = Field(rename='hello')
         field._bind(model.__class__, 'test')
 
-        with raises(DeserializationError) as e:
+        with raises(ValidationError) as e:
             field._deserialize_with(model, {})
-
-        assert (
-            e.value.pretty()
-            == """\
-DeserializationError: expected field 'hello'
-    Due to => field 'test' of type 'Field' on model 'Model'"""
-        )
+        assert e.value.messages() == "missing data, expected field 'hello'"
 
     def test__normalize_with(self):
         # Check a basic Field simply serializes the attribute value.
@@ -357,22 +338,6 @@ DeserializationError: expected field 'hello'
         field._bind(model.__class__, 'test')
         field._normalize_with(model)
 
-    def test__normalize_with_attribute_error(self):
-        # Check that the appropriate error is raised when the attr is missing.
-        model = Model()
-        field = Field(rename='hello')
-        field._bind(model.__class__, 'test')
-
-        with raises(NormalizationError) as e:
-            field._normalize_with(model)
-
-        assert (
-            e.value.pretty()
-            == """\
-NormalizationError: expected attribute 'test'
-    Due to => field 'test' of type 'Field' on model 'Model'"""
-        )
-
     def test__validate_with(self):
         # Check a basic Field simply serializes the attribute value.
         model = Model()
@@ -380,22 +345,6 @@ NormalizationError: expected attribute 'test'
         field = Field(rename='hello')
         field._bind(model.__class__, 'test')
         field._validate_with(model)
-
-    def test__validate_with_attribute_error(self):
-        # Check that the appropriate error is raised when the attr is missing.
-        model = Model()
-        field = Field(rename='hello')
-        field._bind(model.__class__, 'test')
-
-        with raises(ValidationError) as e:
-            field._validate_with(model)
-
-        assert (
-            e.value.pretty()
-            == """\
-ValidationError: expected attribute 'test'
-    Due to => field 'test' of type 'Field' on model 'Model'"""
-        )
 
     def test_normalize(self):
         # The base Field simply passes things through.
@@ -466,6 +415,8 @@ def test_create_validator():
     # You should be able to create a Field with an arbitrary validate method.
 
     def assert_is_not_derp(value):
+        if value == 'derp':
+            raise ValidationError("value is 'derp'")
         assert value != 'derp'
 
     NotDerp = create('NotDerp', Str, validators=[assert_is_not_derp])  # noqa: N806
@@ -475,8 +426,9 @@ def test_create_validator():
 
     assert Example('notderp').a == 'notderp'
 
-    with raises(InstantiationError):
-        Example('derp')
+    with raises(ValidationError) as e:
+        Example(a='derp')
+    assert e.value.messages() == {'a': "value is 'derp'"}
 
 
 class TestOptional:
@@ -504,22 +456,6 @@ class TestOptional:
         assert field._serialize_with(model, {}) == {'hello': 'testing...'}
         model.test = None
         assert field._serialize_with(model, {}) == {}
-
-    def test__serialize_with_attribute_error(self):
-        # Check that the appropriate error is raised when the attr is missing.
-        model = Model()
-        field = Optional(rename='hello')
-        field._bind(model.__class__, 'test')
-
-        with raises(SerializationError) as e:
-            field._serialize_with(model, {})
-
-        assert (
-            e.value.pretty()
-            == """\
-SerializationError: expected attribute 'test'
-    Due to => field 'test' of type 'Optional' on model 'Model'"""
-        )
 
     def test__deserialize_with(self):
         # Check an Optional deserializes using the inner Field.
@@ -575,22 +511,6 @@ SerializationError: expected attribute 'test'
         field = Optional(rename='hello')
         field._bind(model.__class__, 'test')
         field._validate_with(model)
-
-    def test__validate_with_attribute_error(self):
-        # Check that the appropriate error is raised when the attr is missing.
-        model = Model()
-        field = Optional(rename='hello')
-        field._bind(model.__class__, 'test')
-
-        with raises(ValidationError) as e:
-            field._validate_with(model)
-
-        assert (
-            e.value.pretty()
-            == """\
-ValidationError: expected attribute 'test'
-    Due to => field 'test' of type 'Optional' on model 'Model'"""
-        )
 
     def test_serialize(self):
         # An Optional should call the wrapped Field's _serialize method.
@@ -737,17 +657,9 @@ ValidationError: expected attribute 'test'
                 validators=[validators.LengthBetween(1, 5)],
             )
 
-        with raises(InstantiationError) as e:
+        with raises(ValidationError) as e:
             Example(a=['a', 'b', None, 'c', 'hello there'])
-
-        assert (
-            e.value.pretty()
-            == """\
-InstantiationError: expected length 1 but got length 11 for value 'hello there'
-    Due to => ValidationError: expected length 1 but got length 11 for value 'hello there'
-    Due to => value ['a', 'b', None, 'c', 'hel...  for field 'a' of type 'List' on model 'Example'\
-"""
-        )
+        assert e.value.messages() == {'a': 'expected length 1'}
 
 
 class TestInstance:
@@ -807,106 +719,46 @@ class TestNested:
         field = Nested(Example)
         assert field.deserialize({'a': 0}) == Example(a=0)
 
-        with raises(DeserializationError):
+        with raises(ValidationError):
             field.deserialize({'b': 0, 'c': 1})
 
+        with raises(ValidationError) as e:
+            field.deserialize([0])
+        assert e.value.message == "invalid type, expected 'mapping'"
 
-class TestLiteral:
+
+class TestContainer:
+    def test__iter(self):
+        with raises(NotImplementedError):
+            _Container(dict)._iter(object())
+
+
+class TestMapping:
     def test___init___basic(self):
-        # Construct a basic Literal and check values are set correctly.
-        field = Literal(1)
-        assert field.value == 1
+        # Construct a basic _Mapping and check values are set correctly.
+        field = _Mapping(dict)
+        assert field.type == dict
+        assert field.key == Field()
+        assert field.value == Field()
         assert field.validators == []
 
     def test___init___options(self):
-        # Construct a Literal with extra options and make sure values are
+        # Construct a _Mapping with extra options and make sure values are
         # passed to Field.
-        field = Literal(-1234, validators=[None])
-        assert field.value == -1234
+        field = _Mapping(dict, key=Str, value=Int, validators=[None])
+        assert field.type == dict
+        assert field.key == Str()
+        assert field.value == Int()
         assert field.validators == [None]
 
-    def test_validate(self):
-        # Check that values must be equal to the constant value.
-        field = Literal(True)
-        field.validate(True)
-
-        with raises(ValidationError):
-            assert field.validate(False)
-
-
-class TestConstant:
-    def test___init__(self):
-        # Construct a basic Constant and check values are set correctly.
-        field = Constant(1)
-        assert field.value == 1
-        assert field.validators == []
-
-
-class TestDeque:
-    def test___init__(self):
-        # Construct a basic Deque and check values are set correctly.
-        field = Deque()
-        assert field.element == Field()
-        assert field.kwargs == {'maxlen': None}
-        assert field.validators == []
-
-    def test___init___options(self):
-        # Construct a Deque with extra options and make sure values are passed
-        # to Field.
-        field = Deque(element=Str, maxlen=5, validators=[None])
-        assert field.element == Str()
-        assert field.kwargs == {'maxlen': 5}
-        assert field.validators == [None]
-
-    def test_serialize(self):
-        # A Deque should serialize values based on the element Field.
-        field = Deque(element=Reversed, maxlen=1)
-        assert field.serialize(deque(['test', 'hello'])) == deque(['olleh'])
-
-    def test_serialize_extra(self):
-        # A Deque should serialize values based on the element Field.
-        field = Deque(element=Field(serializers=[lambda x: x[::-1]]))
-        assert field.serialize(deque(['test', 'hello'], maxlen=1)) == deque(
-            ['olleh'], maxlen=1
-        )
-
-    def test_deserialize(self):
-        # A Deque should deserialize values based on the element Field.
-        field = Deque(element=Reversed, maxlen=1)
-        assert field.deserialize(deque(['tset', 'olleh'])) == deque(['hello'], maxlen=1)
-
-    def test_deserialize_extra(self):
-        # A Deque should deserialize values based on the element Field.
-        field = Deque(element=Field(deserializers=[lambda x: x[::-1]]), maxlen=1)
-        assert field.deserialize(deque(['tset', 'olleh'])) == deque(['hello'], maxlen=1)
-
-    def test_normalize(self):
-        # A Deque should normalize values based on the element Field.
-        field = Deque(element=Field, maxlen=1)
-        assert field.normalize(deque(['test', 'hello'])) == deque(['hello'], maxlen=1)
-
-    def test_normalize_extra(self):
-        # A Deque should normalize values based on the element Field.
-        field = Deque(element=Field(normalizers=[lambda x: x[::-1]]), maxlen=1)
-        assert field.normalize(deque(['tset', 'olleh'])) == deque(['hello'], maxlen=1)
-
-    def test_validate(self):
-        # A Deque should validate values based on the element Field.
-        field = Deque(element=Int, maxlen=3)
-        field.validate(deque([0, 1, 2, 3, 4], maxlen=3))
-
-        with raises(ValidationError):
-            field.validate(deque(['1', '2', 'a', 'string']))
-        with raises(ValidationError):
-            field.validate(deque([0, 1], maxlen=2))
-
-    def test_validate_extra(self):
-        # A Deque should validate values based on the element Field.
-        field = Deque(element=Field(validators=[validators.Between(10, 10)]), maxlen=4)
-        field.validate(deque([10, 10, 10], maxlen=4))
-
-        with raises(ValidationError):
-            field.validate(deque([10, 11, 12, 13], maxlen=4))
+    def test__iter_error(self):
+        # Check that an AttributeError on the bad dictionary is caught.
+        field = _Mapping(dict)
+        value = object()
+        with raises(ValidationError) as e:
+            list(field._iter(value))
+        assert e.value.value is value
+        assert e.value.message == "invalid type, expected 'dict'"
 
 
 class TestDict:
@@ -1005,6 +857,99 @@ class TestOrderedDict:
         assert field.key == Str()
         assert field.value == Int()
         assert field.validators == [None]
+
+
+class TestSequence:
+    def test___init___basic(self):
+        # Construct a basic _Sequence and check values are set correctly.
+        field = _Sequence(list)
+        assert field.type == list
+        assert field.element == Field()
+        assert field.validators == []
+
+    def test___init___options(self):
+        # Construct a _Sequence with extra options and make sure values are
+        # passed to Field.
+        field = _Sequence(list, element=Str, validators=[None])
+        assert field.type == list
+        assert field.element == Str()
+        assert field.validators == [None]
+
+    def test__iter_error(self):
+        # Check that an AttributeError on the bad dictionary is caught.
+        field = _Sequence(list)
+        value = object()
+        with raises(ValidationError) as e:
+            list(field._iter(value))
+        assert e.value.value is value
+        assert e.value.message == "invalid type, expected 'list'"
+
+
+class TestDeque:
+    def test___init__(self):
+        # Construct a basic Deque and check values are set correctly.
+        field = Deque()
+        assert field.element == Field()
+        assert field.kwargs == {'maxlen': None}
+        assert field.validators == []
+
+    def test___init___options(self):
+        # Construct a Deque with extra options and make sure values are passed
+        # to Field.
+        field = Deque(element=Str, maxlen=5, validators=[None])
+        assert field.element == Str()
+        assert field.kwargs == {'maxlen': 5}
+        assert field.validators == [None]
+
+    def test_serialize(self):
+        # A Deque should serialize values based on the element Field.
+        field = Deque(element=Reversed, maxlen=1)
+        assert field.serialize(deque(['test', 'hello'])) == deque(['olleh'])
+
+    def test_serialize_extra(self):
+        # A Deque should serialize values based on the element Field.
+        field = Deque(element=Field(serializers=[lambda x: x[::-1]]))
+        assert field.serialize(deque(['test', 'hello'], maxlen=1)) == deque(
+            ['olleh'], maxlen=1
+        )
+
+    def test_deserialize(self):
+        # A Deque should deserialize values based on the element Field.
+        field = Deque(element=Reversed, maxlen=1)
+        assert field.deserialize(deque(['tset', 'olleh'])) == deque(['hello'], maxlen=1)
+
+    def test_deserialize_extra(self):
+        # A Deque should deserialize values based on the element Field.
+        field = Deque(element=Field(deserializers=[lambda x: x[::-1]]), maxlen=1)
+        assert field.deserialize(deque(['tset', 'olleh'])) == deque(['hello'], maxlen=1)
+
+    def test_normalize(self):
+        # A Deque should normalize values based on the element Field.
+        field = Deque(element=Field, maxlen=1)
+        assert field.normalize(deque(['test', 'hello'])) == deque(['hello'], maxlen=1)
+
+    def test_normalize_extra(self):
+        # A Deque should normalize values based on the element Field.
+        field = Deque(element=Field(normalizers=[lambda x: x[::-1]]), maxlen=1)
+        assert field.normalize(deque(['tset', 'olleh'])) == deque(['hello'], maxlen=1)
+
+    def test_validate(self):
+        # A Deque should validate values based on the element Field.
+        field = Deque(element=Int, maxlen=3)
+        field.validate(deque([0, 1, 2, 3, 4], maxlen=3))
+
+        with raises(ValidationError):
+            field.validate(deque(['1', '2', 'a', 'string']))
+        with raises(ValidationError):
+            field.validate(deque([0, 1], maxlen=2))
+
+    def test_validate_extra(self):
+        # A Deque should validate values based on the element Field.
+        field = Deque(element=Field(validators=[validators.Between(10, 10)]), maxlen=4)
+        field.validate(deque([10, 10, 10], maxlen=4))
+
+        with raises(ValidationError):
+            field.validate(deque([10, 11, 12, 13], maxlen=4))
 
 
 class TestFrozenSet:
@@ -1269,6 +1214,166 @@ class TestTuple:
             field.validate((20, 11))
 
 
+class TestLiteral:
+    def test___init___basic(self):
+        # Construct a basic Literal and check values are set correctly.
+        field = Literal(1)
+        assert field.value == 1
+        assert field.validators == []
+
+    def test___init___options(self):
+        # Construct a Literal with extra options and make sure values are
+        # passed to Field.
+        field = Literal(-1234, validators=[None])
+        assert field.value == -1234
+        assert field.validators == [None]
+
+    def test_validate(self):
+        # Check that values must be equal to the constant value.
+        field = Literal(True)
+        field.validate(True)
+
+        with raises(ValidationError):
+            assert field.validate(False)
+
+
+class TestConstant:
+    def test___init__(self):
+        # Construct a basic Constant and check values are set correctly.
+        field = Constant(1)
+        assert field.value == 1
+        assert field.validators == []
+
+
+class TestChoice:
+    def test___init__(self):
+        # Construct a basic Choice and check values are set correctly.
+        field = Choice(range(5), validators=[None])
+        assert field.choices == range(5)
+        assert field.validators == [None]
+
+    def test_validate(self):
+        # A Choice simply validates the given value is in the choices.
+        field = Choice(range(5))
+        field.validate(0)
+        field.validate(4)
+        with raises(ValidationError):
+            field.validate(6)
+
+
+class TestDateTime:
+    def test___init__(self):
+        # Construct a basic DateTime and check values are set correctly.
+        field = DateTime(format='%Y%m%d %H:%M:%S')
+        assert field.format == '%Y%m%d %H:%M:%S'
+
+    def test_serialize_iso8601(self):
+        # A DateTime should serialize a datetime as a ISO 8601 formatted string.
+        field = DateTime()
+        value = datetime.datetime(2001, 9, 11, 12, 5, 48)
+        assert field.serialize(value) == '2001-09-11T12:05:48'
+
+    def test_serialize_custom(self):
+        # A DateTime should serialize a datetime with the given format.
+        field = DateTime(format='%Y%m%d %H:%M:%S')
+        value = datetime.datetime(2001, 9, 11, 12, 5, 48)
+        assert field.serialize(value) == '20010911 12:05:48'
+
+    def test_deserialize_iso8601(self):
+        # A DateTime should deserialize a datetime from a ISO 8601 formatted string.
+        field = DateTime()
+
+        value = '2001-09-11T12:05:48'
+        assert field.deserialize(value) == datetime.datetime(2001, 9, 11, 12, 5, 48)
+
+        value = '20010911 12:05:48'
+        with raises(ValidationError) as e:
+            field.deserialize(value)
+        assert e.value.value == value
+        assert e.value.message == 'invalid ISO 8601 datetime'
+
+    def test_deserialize_custom(self):
+        # A DateTime should deserialize a datetime with the given format.
+        field = DateTime(format='%Y%m%d %H:%M:%S')
+
+        value = '20010911 12:05:48'
+        assert field.deserialize(value) == datetime.datetime(2001, 9, 11, 12, 5, 48)
+
+        value = '2001-09-11T12:05:48'
+        with raises(ValidationError) as e:
+            field.deserialize(value)
+        assert e.value.value == value
+        assert e.value.message == "invalid datetime, expected format '%Y%m%d %H:%M:%S'"
+
+
+class TestDate:
+    def test_serialize_iso8601(self):
+        # A Date should serialize a date as a ISO 8601 formatted string.
+        field = Date()
+        assert field.serialize(datetime.date(2001, 9, 11)) == '2001-09-11'
+
+    def test_serialize_custom(self):
+        # A Date should serialize a date with the given format.
+        field = Date(format='%Y%m%d')
+        assert field.serialize(datetime.date(2001, 9, 11)) == '20010911'
+
+    def test_deserialize_iso8601(self):
+        # A Date should deserialize a date from a ISO 8601 formatted string.
+        field = Date()
+
+        assert field.deserialize('2001-09-11') == datetime.date(2001, 9, 11)
+
+        with raises(ValidationError) as e:
+            field.deserialize('2-00-1-01')
+        assert e.value.value == '2-00-1-01'
+        assert e.value.message == 'invalid ISO 8601 date'
+
+    def test_deserialize_custom(self):
+        # A Date should deserialize a datetime with the given format.
+        field = Date(format='%Y%m%d')
+
+        assert field.deserialize('20010911') == datetime.date(2001, 9, 11)
+
+        with raises(ValidationError) as e:
+            field.deserialize('2001-09-11')
+        assert e.value.value == '2001-09-11'
+        assert e.value.message == "invalid date, expected format '%Y%m%d'"
+
+
+class TestTime:
+    def test_serialize_iso8601(self):
+        # A Time should serialize a time as a ISO 8601 formatted string.
+        field = Time()
+        assert field.serialize(datetime.time(12, 5, 48)) == '12:05:48'
+
+    def test_serialize_custom(self):
+        # A Time should serialize a time with the given format.
+        field = Time(format='%H%M%S')
+        assert field.serialize(datetime.time(12, 5, 48)) == '120548'
+
+    def test_deserialize_iso8601(self):
+        # A Time should deserialize a time from a ISO 8601 formatted string.
+        field = Time()
+
+        assert field.deserialize('12:05:48') == datetime.time(12, 5, 48)
+
+        with raises(ValidationError) as e:
+            field.deserialize('1-20548')
+        assert e.value.value == '1-20548'
+        assert e.value.message == 'invalid ISO 8601 time'
+
+    def test_deserialize_custom(self):
+        # A Time should deserialize a time with the given format.
+        field = Time(format='%H%M%S')
+
+        assert field.deserialize('120548') == datetime.time(12, 5, 48)
+
+        with raises(ValidationError) as e:
+            field.deserialize('12:05:48')
+        assert e.value.value == '12:05:48'
+        assert e.value.message == "invalid time, expected format '%H%M%S'"
+
+
 class TestText:
     def test___init__(self):
         # Construct a basic Text and check values are set correctly.
@@ -1320,97 +1425,6 @@ class TestRegex:
         field.validate('tset')
         with raises(ValidationError):
             field.validate('btesttest')
-
-
-class TestChoice:
-    def test___init__(self):
-        # Construct a basic Choice and check values are set correctly.
-        field = Choice(range(5), validators=[None])
-        assert field.choices == range(5)
-        assert field.validators == [None]
-
-    def test_validate(self):
-        # A Choice simply validates the given value is in the choices.
-        field = Choice(range(5))
-        field.validate(0)
-        field.validate(4)
-        with raises(ValidationError):
-            field.validate(6)
-
-
-class TestDateTime:
-    def test___init__(self):
-        # Construct a basic DateTime and check values are set correctly.
-        field = DateTime(format='%Y%m%d %H:%M:%S')
-        assert field.format == '%Y%m%d %H:%M:%S'
-
-    def test_serialize_iso8601(self):
-        # A DateTime should serialize a datetime as a ISO 8601 formatted string.
-        field = DateTime()
-        value = datetime.datetime(2001, 9, 11, 12, 5, 48)
-        assert field.serialize(value) == '2001-09-11T12:05:48'
-
-    def test_serialize_custom(self):
-        # A DateTime should serialize a datetime with the given format.
-        field = DateTime(format='%Y%m%d %H:%M:%S')
-        value = datetime.datetime(2001, 9, 11, 12, 5, 48)
-        assert field.serialize(value) == '20010911 12:05:48'
-
-    def test_deserialize_iso8601(self):
-        # A DateTime should deserialize a datetime from a ISO 8601 formatted string.
-        field = DateTime()
-        value = '2001-09-11T12:05:48'
-        assert field.deserialize(value) == datetime.datetime(2001, 9, 11, 12, 5, 48)
-
-    def test_deserialize_custom(self):
-        # A DateTime should deserialize a datetime with the given format.
-        field = DateTime(format='%Y%m%d %H:%M:%S')
-        value = '20010911 12:05:48'
-        assert field.deserialize(value) == datetime.datetime(2001, 9, 11, 12, 5, 48)
-
-
-class TestDate:
-    def test_serialize_iso8601(self):
-        # A Date should serialize a date as a ISO 8601 formatted string.
-        field = Date()
-        assert field.serialize(datetime.date(2001, 9, 11)) == '2001-09-11'
-
-    def test_serialize_custom(self):
-        # A Date should serialize a date with the given format.
-        field = Date(format='%Y%m%d')
-        assert field.serialize(datetime.date(2001, 9, 11)) == '20010911'
-
-    def test_deserialize_iso8601(self):
-        # A Date should deserialize a date from a ISO 8601 formatted string.
-        field = Date()
-        assert field.deserialize('2001-09-11') == datetime.date(2001, 9, 11)
-
-    def test_deserialize_custom(self):
-        # A Date should deserialize a datetime with the given format.
-        field = Date(format='%Y%m%d')
-        assert field.deserialize('20010911') == datetime.date(2001, 9, 11)
-
-
-class TestTime:
-    def test_serialize_iso8601(self):
-        # A Time should serialize a time as a ISO 8601 formatted string.
-        field = Time()
-        assert field.serialize(datetime.time(12, 5, 48)) == '12:05:48'
-
-    def test_serialize_custom(self):
-        # A Time should serialize a time with the given format.
-        field = Time(format='%H%M%S')
-        assert field.serialize(datetime.time(12, 5, 48)) == '120548'
-
-    def test_deserialize_iso8601(self):
-        # A Time should deserialize a time from a ISO 8601 formatted string.
-        field = Time()
-        assert field.deserialize('12:05:48') == datetime.time(12, 5, 48)
-
-    def test_deserialize_custom(self):
-        # A Time should deserialize a time with the given format.
-        field = Time(format='%H%M%S')
-        assert field.deserialize('120548') == datetime.time(12, 5, 48)
 
 
 class TestUuid:

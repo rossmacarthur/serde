@@ -114,7 +114,7 @@ access the values on the model instance.
     >>> user.email
     'torvalds@linuxfoundation.org'
 
-Models are validated when they are instantiated and an ``InstantiationError`` is
+Models are validated when they are instantiated and a ``ValidationError`` is
 raised if you provide invalid values.
 
 .. code-block:: python
@@ -122,7 +122,7 @@ raised if you provide invalid values.
     >>> User(name='Linus Torvalds', email='not an email')
     Traceback (most recent call last):
     ...
-    serde.exceptions.InstantiationError: 'not an email' is not a valid email
+    serde.exceptions.ValidationError: {'email': 'invalid email'}
 
 Models are serialized into primitive Python types using the ``to_dict()`` method
 on the model instance.
@@ -158,15 +158,14 @@ Or from JSON using the ``from_json()`` method.
     ...     "email": "noreply@stanford.edu"
     ... }''')
 
-Attempting to deserialize invalid data will result in a
-``DeserializationError``.
+Attempting to deserialize invalid data will result in a ``ValidationError``.
 
 .. code-block:: python
 
     >>> User.from_dict({'username': 'Donald Knuth'})
     Traceback (most recent call last):
     ...
-    serde.exceptions.DeserializationError: expected field 'email'
+    serde.exceptions.ValidationError: {'email': "missing data, expected field 'email'"}
 
 Models
 ------
@@ -304,19 +303,19 @@ to use for the deserialization.
     >>> milo.hates_cats
     False
 
-An invalid or missing tag will raise a ``DeserializationError``.
+An invalid or missing tag will raise a ``ValidationError``.
 
 .. code-block:: python
 
     >>> Pet.from_dict({'name': 'Milo', 'hates_cats': False})
     Traceback (most recent call last):
     ...
-    serde.exceptions.DeserializationError: expected tag 'species'
+    serde.exceptions.ValidationError: missing data, expected tag 'species'
     >>>
     >>> Pet.from_dict({'name': 'Duke', 'species': '__main__.Horse'})
     Traceback (most recent call last):
     ...
-    serde.exceptions.DeserializationError: no variant found for tag '__main__.Horse'
+    serde.exceptions.ValidationError: no variant found
 
 Externally tagged
 ^^^^^^^^^^^^^^^^^
@@ -377,7 +376,7 @@ won't be included in the variant list during deserialization.
     >>> Fruit()
     Traceback (most recent call last):
     ...
-    serde.exceptions.InstantiationError: unable to instantiate abstract Model 'Fruit'
+    TypeError: unable to instantiate abstract model 'Fruit'
 
 Custom tags
 ^^^^^^^^^^^

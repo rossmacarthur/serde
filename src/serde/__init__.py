@@ -3,10 +3,11 @@ Serde is a lightweight, general-purpose framework for defining, serializing,
 deserializing, and validating data structures in Python.
 """
 
+from serde.exceptions import ValidationError
 from serde.model import Model
 
 
-__all__ = ['Model', 'exceptions', 'fields', 'tags', 'validators']
+__all__ = ['Model', 'ValidationError', 'fields', 'tags', 'validators']
 __title__ = 'serde'
 __version__ = '0.7.3'
 __url__ = 'https://github.com/rossmacarthur/serde'

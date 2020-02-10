@@ -26,13 +26,11 @@ def dict_partition(d, keyfunc, dict=OrderedDict):
     """
     left = dict()
     right = dict()
-
     for key, value in d.items():
         if keyfunc(key, value):
             left[key] = value
         else:
             right[key] = value
-
     return left, right
 
 
@@ -60,10 +58,8 @@ def subclasses(cls):
     """
     subs = cls.__subclasses__()
     variants = []
-
     for sub in subs:
         variants.extend(subclasses(sub))
-
     return subs + variants
 
 
@@ -78,22 +74,19 @@ def try_lookup(name):
         the object at the path.
 
     Raises:
-        serde.exceptions.MissingDepenency: if the path could not be imported.
+        serde.exceptions.MissingDependency: if the path could not be imported.
     """
     module, path = name.split('.', 1)
-
     try:
         obj = importlib.import_module(module)
     except ImportError:
         raise MissingDependency(
-            "{!r} is missing, did you forget to install the 'ext' feature?".format(
+            "{!r} is missing, did you forget to install the serde 'ext' feature?".format(
                 module
             )
         )
-
     for attr in path.split('.'):
         obj = getattr(obj, attr)
-
     return obj
 
 
@@ -111,11 +104,9 @@ def zip_equal(*iterables):
         ValueError: if one of the iterables is the wrong length.
     """
     sentinel = object()
-
     for element in zip_longest(*iterables, fillvalue=sentinel):
         if sentinel in element:
             raise ValueError('iterables have different lengths')
-
         yield element
 
 
@@ -135,12 +126,10 @@ def zip_until_right(*iterables):
     lefts = iterables[:-1]
     right = iter(iterables[-1])
     iterables = lefts + (right,)
-
     for item in zip(*iterables):
         yield item
-
     try:
         next(right)
-        raise ValueError('the rightmost iterable was not consumed')
+        raise ValueError('the right-most iterable was not consumed')
     except StopIteration:
         pass

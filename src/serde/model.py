@@ -8,14 +8,7 @@ from collections import OrderedDict
 
 from six import add_metaclass
 
-from serde.exceptions import (
-    ContextError,
-    DeserializationError,
-    InstantiationError,
-    NormalizationError,
-    ValidationError,
-    map_errors,
-)
+from serde.exceptions import ContextError, add_context
 from serde.fields import Field, _resolve_to_field_instance
 from serde.utils import dict_partition, zip_until_right
 
@@ -87,7 +80,7 @@ class ModelType(type):
             if fields:
                 raise ContextError(
                     'simultaneous use of annotations and class attributes '
-                    'for Field definitions'
+                    'for field definitions'
                 )
             fields = OrderedDict(
                 (k, _resolve_to_field_instance(v))
@@ -118,7 +111,6 @@ class ModelType(type):
                     ]
                 )
                 tags = base.__tags__ + tags
-
                 if not parent:
                     parent = base
 
@@ -184,8 +176,8 @@ class Model(object):
             **kwargs: keyword argument values for each field on the model.
         """
         if self.__class__.__abstract__:
-            raise InstantiationError(
-                'unable to instantiate abstract Model {!r}'.format(
+            raise TypeError(
+                'unable to instantiate abstract model {!r}'.format(
                     self.__class__.__name__
                 )
             )
@@ -193,13 +185,13 @@ class Model(object):
         try:
             for name, value in zip_until_right(self.__class__.__fields__.keys(), args):
                 if name in kwargs:
-                    raise InstantiationError(
+                    raise TypeError(
                         '__init__() got multiple values '
                         'for keyword argument {!r}'.format(name)
                     )
                 kwargs[name] = value
         except ValueError:
-            raise InstantiationError(
+            raise TypeError(
                 '__init__() takes a maximum of {!r} positional arguments'
                 ' but {!r} were given'.format(
                     len(self.__class__.__fields__) + 1, len(args) + 1
@@ -207,19 +199,18 @@ class Model(object):
             )
 
         for field in self.__class__.__fields__.values():
-            field._instantiate_with(self, kwargs)
+            with add_context(field):
+                field._instantiate_with(self, kwargs)
 
         if kwargs:
-            raise InstantiationError(
-                'invalid keyword argument{} {}'.format(
-                    '' if len(kwargs.keys()) == 1 else 's',
-                    ', '.join('{!r}'.format(k) for k in kwargs.keys()),
+            raise TypeError(
+                '__init__() got an unexpected keyword argument {!r}'.format(
+                    next(iter(kwargs.keys()))
                 )
             )
 
-        with map_errors(InstantiationError):
-            self._normalize()
-            self._validate()
+        self._normalize()
+        self._validate()
 
     def __eq__(self, other):
         """
@@ -260,10 +251,12 @@ class Model(object):
         d = OrderedDict()
 
         for field in self.__class__.__fields__.values():
-            d = field._serialize_with(self, d)
+            with add_context(field):
+                d = field._serialize_with(self, d)
 
         for tag in reversed(self.__class__.__tags__):
-            d = tag._serialize_with(self, d)
+            with add_context(tag):
+                d = tag._serialize_with(self, d)
 
         return d
 
@@ -293,16 +286,19 @@ class Model(object):
         model = cls.__new__(cls)
 
         model_cls = None
-        while model.__class__.__tag__ and model_cls is not model.__class__:
+        tag = model.__class__.__tag__
+        while tag and model_cls is not model.__class__:
             model_cls = model.__class__
-            model, d = model.__class__.__tag__._deserialize_with(model, d)
+            with add_context(tag):
+                model, d = tag._deserialize_with(model, d)
+            tag = model.__class__.__tag__
 
         for field in reversed(model.__class__.__fields__.values()):
-            model, d = field._deserialize_with(model, d)
+            with add_context(field):
+                model, d = field._deserialize_with(model, d)
 
-        with map_errors(DeserializationError):
-            model._normalize()
-            model._validate()
+        model._normalize()
+        model._validate()
 
         return model
 
@@ -329,10 +325,9 @@ class Model(object):
         the model instance.
         """
         for field in self.__class__.__fields__.values():
-            field._normalize_with(self)
-
-        with map_errors(NormalizationError):
-            self.normalize()
+            with add_context(field):
+                field._normalize_with(self)
+        self.normalize()
 
     def normalize(self):
         """
@@ -352,10 +347,9 @@ class Model(object):
         the model instance.
         """
         for field in self.__class__.__fields__.values():
-            field._validate_with(self)
-
-        with map_errors(ValidationError):
-            self.validate()
+            with add_context(field):
+                field._validate_with(self)
+        self.validate()
 
     def validate(self):
         """

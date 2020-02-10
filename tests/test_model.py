@@ -4,14 +4,7 @@ from collections import OrderedDict
 from pytest import raises
 
 from serde import Model, fields, tags, validators
-from serde.exceptions import (
-    DeserializationError,
-    InstantiationError,
-    NormalizationError,
-    SerdeError,
-    SerializationError,
-    ValidationError,
-)
+from serde.exceptions import ValidationError
 from tests import py3
 
 
@@ -151,13 +144,9 @@ class TestModel:
 
         assert Example().__dict__ == {}
 
-        with raises(InstantiationError) as e:
+        with raises(TypeError) as e:
             Example(a=None)
-        assert (
-            e.value.pretty()
-            == """\
-InstantiationError: invalid keyword argument 'a'"""
-        )
+        assert str(e.value) == "__init__() got an unexpected keyword argument 'a'"
 
     def test___init___normal(self):
         # Check that a normal Field behaves as it should.
@@ -167,14 +156,9 @@ InstantiationError: invalid keyword argument 'a'"""
 
         assert Example(a=5).a == 5
 
-        with raises(InstantiationError) as e:
+        with raises(TypeError) as e:
             Example()
-        assert (
-            e.value.pretty()
-            == """\
-InstantiationError: expected field 'a'
-    Due to => field 'a' of type 'Int' on model 'Example'"""
-        )
+        assert str(e.value) == "__init__() missing required argument 'a'"
 
     def test___init___abstract(self):
         # Check that you can't instantiate an abstract Model.
@@ -183,13 +167,9 @@ InstantiationError: expected field 'a'
             class Meta:
                 abstract = True
 
-        with raises(InstantiationError) as e:
+        with raises(TypeError) as e:
             Example()
-        assert (
-            e.value.pretty()
-            == """\
-InstantiationError: unable to instantiate abstract Model 'Example'"""
-        )
+        assert str(e.value) == "unable to instantiate abstract model 'Example'"
 
     def test___init___default(self):
         # Check that the default Field value is applied correctly.
@@ -240,16 +220,13 @@ InstantiationError: unable to instantiate abstract Model 'Example'"""
         class Example(Model):
             a = fields.Int()
 
-        with raises(SerdeError) as e:
+        with raises(TypeError) as e:
             Example(5, a=5)
-        assert (
-            e.value.pretty()
-            == """\
-InstantiationError: __init__() got multiple values for keyword argument 'a'"""
-        )
+        assert str(e.value) == "__init__() got multiple values for keyword argument 'a'"
 
-        with raises(SerdeError):
+        with raises(TypeError):
             Example(5, 6)
+        assert str(e.value) == "__init__() got multiple values for keyword argument 'a'"
 
     def test___init___normalizers(self):
         # The __init__() method should apply custom normalizers.
@@ -269,14 +246,17 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         Example(a=5, b=None)
 
-        with raises(InstantiationError):
+        with raises(TypeError) as e:
             Example(a=None)
+        assert str(e.value) == "__init__() missing required argument 'a'"
 
-        with raises(InstantiationError):
+        with raises(ValidationError) as e:
             Example(a='test')
+        assert e.value.messages() == {'a': "invalid type, expected 'int'"}
 
-        with raises(InstantiationError):
+        with raises(TypeError) as e:
             Example(b=5)
+        assert str(e.value) == "__init__() missing required argument 'a'"
 
     def test___init___validators(self):
         # Check that extra validators work.
@@ -286,7 +266,7 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         assert Example(a=101).a == 101
 
-        with raises(InstantiationError):
+        with raises(ValidationError):
             Example(a=5)
 
     def test___init___nested(self):
@@ -362,7 +342,6 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
             b = fields.Str()
 
         r = repr(Example(a=5, b='test'))
-        print(r)
         assert r.startswith(
             '<tests.test_model.TestModel.'
             'test___repr___basic.<locals>.Example model at'
@@ -396,37 +375,6 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         model._normalize()
         assert model.a == 'tset'
 
-    def test__normalize_bad_normalizers(self):
-        # _normalize() should raise normalization exceptions.
-
-        def raises_exception(value):
-            raise ValueError
-
-        class Example(Model):
-            a = fields.Str()
-
-        model = Example(a='test')
-        model.__class__._fields.a.normalizers = [raises_exception]
-
-        with raises(NormalizationError):
-            model._normalize()
-
-    def test__normalize_bad_normalize(self):
-        # _normalize() should raise a NormalizationError that will be mapped
-        # to an InstantiationError.
-
-        class Example(Model):
-            a = fields.Str()
-
-        def normalize(self):
-            raise ValueError
-
-        model = Example(a='test')
-        Example.normalize = normalize
-
-        with raises(NormalizationError):
-            model._normalize()
-
     def test__validate(self):
         # _validate() should revalidate the Model so that if we have changed
         # values they are validated.
@@ -447,15 +395,19 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
             a = fields.Int()
 
             def validate(self):
+                if self.a == 0:
+                    raise ValidationError('invalid value')
                 assert self.a != 0
 
-        with raises(InstantiationError):
+        with raises(ValidationError) as e:
             Example(a=0)
+        assert e.value.messages() == 'invalid value'
 
         model = Example(a=5)
         model.a = 0
-        with raises(ValidationError):
+        with raises(ValidationError) as e:
             model._validate()
+        assert e.value.messages() == 'invalid value'
 
     def test_validation_error_context(self):
         # Check that error context is added to ValidationErrors.
@@ -463,12 +415,9 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
         class Example(Model):
             a = fields.Int()
 
-        try:
+        with raises(ValidationError) as e:
             Example(a='not an integer')
-        except InstantiationError as e:
-            assert e.model_cls is Example
-            assert e.field is Example.__fields__.a
-            assert e.value == 'not an integer'
+        assert e.value.messages() == {'a': "invalid type, expected 'int'"}
 
     def test_from_dict_empty(self):
         # Check that an empty Model deserializes from empty dictionary.
@@ -550,7 +499,7 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         assert Example.from_dict({'a': 5}) == Example(a=5)
 
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({})
 
     def test_from_dict_default(self):
@@ -562,24 +511,13 @@ InstantiationError: __init__() got multiple values for keyword argument 'a'"""
 
         assert Example.from_dict({'a': 5}) == Example(a=5)
 
-        with raises(DeserializationError) as e:
+        with raises(ValidationError) as e:
             Example.from_dict({})
-        assert (
-            e.value.pretty()
-            == """\
-DeserializationError: expected field 'a'
-    Due to => field 'a' of type 'Int' on model 'Example'"""
-        )
+        assert e.value.messages() == {'a': "missing data, expected field 'a'"}
 
-        with raises(DeserializationError) as e:
+        with raises(ValidationError) as e:
             Example.from_dict({'a': None})
-        assert (
-            e.value.pretty()
-            == """\
-DeserializationError: expected 'int' but got 'NoneType'
-    Due to => ValidationError: expected 'int' but got 'NoneType'
-    Due to => field 'a' of type 'Int' on model 'Example'"""
-        )
+        assert e.value.messages() == {'a': "invalid type, expected 'int'"}
 
     def test_from_dict_optional(self):
         # Check that optional Fields do not have to be present when
@@ -611,7 +549,7 @@ DeserializationError: expected 'int' but got 'NoneType'
 
         assert Example.from_dict({'b': 5}) == Example(a=5)
 
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({'a': 5})
 
     def test_from_dict_modified___init__(self):
@@ -638,8 +576,9 @@ DeserializationError: expected 'int' but got 'NoneType'
             nested=NestedExample(a=5)
         )
 
-        with raises(DeserializationError):
+        with raises(ValidationError) as e:
             Example.from_dict({'nested': 'not the nested'})
+        assert e.value.messages() == {'nested': "invalid type, expected 'mapping'"}
 
     def test_from_dict_externally_tagged(self):
         # Check that externally tagged variants work correctly.
@@ -660,23 +599,23 @@ DeserializationError: expected 'int' but got 'NoneType'
         )
 
         # Deserializing untagged data from the parent (not allowed)
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({'a': 5, 'b': 1.0})
 
         # Deserializing tagged data from the variant (not allowed)
-        with raises(DeserializationError):
+        with raises(ValidationError):
             SubExample.from_dict({'SubExample': {'a': 5, 'b': 1.0}})
 
         # Deserializing untagged data from the variant (allowed)
         assert SubExample.from_dict({'a': 5, 'b': 1.0}) == SubExample(a=5, b=1.0)
 
         # Edge case: empty data no tag
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({})
 
         # Edge case: abstract externally tagged
         Example._abstract = True
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({'Example': {'a': 5}})
 
     def test_from_dict_internally_tagged(self):
@@ -698,7 +637,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         assert Example.from_dict(serialized) == SubExample(a=5, b=1.0)
 
         # Deserializing untagged data from the parent (not allowed)
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({'a': 5, 'b': 1.0})
 
         # Deserializing untagged data from the variant (allowed)
@@ -706,7 +645,7 @@ DeserializationError: expected 'int' but got 'NoneType'
 
         # Edge case: abstract externally tagged
         Example._abstract = True
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({'kind': 'Example', 'a': 5})
 
     def test_from_dict_adjacently_tagged(self):
@@ -728,23 +667,23 @@ DeserializationError: expected 'int' but got 'NoneType'
         assert Example.from_dict(serialized) == SubExample(a=5, b=1.0)
 
         # Deserializing untagged data from the parent (not allowed)
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({'a': 5, 'b': 1.0})
 
         # Deserializing tagged data from the variant (not allowed)
-        with raises(DeserializationError):
+        with raises(ValidationError):
             SubExample.from_dict({'kind': 'SubExample', 'data': {'a': 5, 'b': 1.0}})
 
         # Deserializing untagged data from the variant (allowed)
         assert SubExample.from_dict({'a': 5, 'b': 1.0}) == SubExample(a=5, b=1.0)
 
         # Edge case: if the tag is correct but there is no content field
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({'kind': 'SubExample', 'content': {'a': 5, 'b': 1.0}})
 
         # Edge case: abstract adjacently tagged
         Example._abstract = True
-        with raises(DeserializationError):
+        with raises(ValidationError):
             Example.from_dict({'kind': 'Example', 'data': {'a': 5}})
 
     def test_from_dict_override_tag_for(self):
@@ -766,42 +705,16 @@ DeserializationError: expected 'int' but got 'NoneType'
         serialized = {'kind': 'subexample', 'a': 5, 'b': 1.0}
         assert Example.from_dict(serialized) == SubExample(a=5, b=1.0)
 
-    def test_from_dict_errors(self):
-        # Check that all exceptions are mapped to DeserializationErrors.
-
-        def always_raise(e):
-            def actual_function(value):
-                raise e()
-
-            return actual_function
-
-        class Example(Model):
-            a = fields.Int()
-
-        Example.__fields__.a.deserialize = always_raise(AssertionError)
-        with raises(DeserializationError):
-            Example.from_dict({'a': 5})
-
-        Example.__fields__.a.deserialize = always_raise(DeserializationError)
-        with raises(DeserializationError):
-            Example.from_dict({'a': 5})
-
-        Example.__fields__.a.deserialize = always_raise(Exception)
-        with raises(DeserializationError):
-            Example.from_dict({'a': 5})
-
     def test_deserialization_error_context(self):
-        # Check that error context is added to DeserializationErrors.
+        # Check that error context is added to ValidationErrors.
 
         class Example(Model):
             a = fields.DateTime()
 
-        try:
+        with raises(ValidationError) as e:
             Example.from_dict({'a': 'not a datetime'})
-        except DeserializationError as e:
-            assert e.model_cls is Example
-            assert e.field is Example.__fields__.a
-            assert e.value == 'not a datetime'
+        assert e.value.messages() == {'a': 'invalid ISO 8601 datetime'}
+        assert e.value.value == 'not a datetime'
 
     def test_from_dict_deserializers(self):
         # Check that custom deserializers are applied.
@@ -959,32 +872,8 @@ DeserializationError: expected 'int' but got 'NoneType'
             'b': 1.0,
         }
 
-    def test_to_dict_errors(self):
-        # Check that all exceptions are mapped to SerializationErrors.
-
-        def always_raise(e):
-            def actual_function(value):
-                raise e()
-
-            return actual_function
-
-        class Example(Model):
-            a = fields.Int()
-
-        Example.__fields__.a.serialize = always_raise(AssertionError)
-        with raises(SerializationError):
-            Example(a=5).to_dict()
-
-        Example.__fields__.a.serialize = always_raise(SerializationError)
-        with raises(SerializationError):
-            Example(a=5).to_dict()
-
-        Example.__fields__.a.serialize = always_raise(Exception)
-        with raises(SerializationError):
-            Example(a=5).to_dict()
-
     def test_serialization_error_context(self):
-        # Check that error context is added to SerializationErrors.
+        # Check that error context is added to ValidationErrors.
 
         class Example(Model):
             a = fields.DateTime()
@@ -992,7 +881,7 @@ DeserializationError: expected 'int' but got 'NoneType'
         try:
             model = Example(a=datetime.datetime.utcnow())
             model.a = 'not a datetime'
-        except SerializationError as e:
+        except ValidationError as e:
             assert e.model_cls is Example
             assert e.field is Example.__fields__.a
             assert e.value == 'not a datetime'

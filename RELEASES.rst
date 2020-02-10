@@ -6,6 +6,7 @@ Releases
 
 *Unreleased*
 
+- Completely rework error handling.
 - Make ``Tag.lookup_tag`` default to module + qualname.
 
 0.7.3

@@ -35,7 +35,7 @@ def test_try_lookup():
         utils.try_lookup('not_a_real_pkg.not_a_real_module')
 
     assert e.value.message == (
-        "'not_a_real_pkg' is missing, " "did you forget to install the 'ext' feature?"
+        "'not_a_real_pkg' is missing, did you forget to install the serde 'ext' feature?"
     )
 
 

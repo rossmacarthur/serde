@@ -3,7 +3,7 @@ import six
 from pytest import raises
 
 from serde import Model
-from serde.exceptions import DeserializationError
+from serde.exceptions import ValidationError
 from serde.tags import Adjacent, External, Internal, Tag
 
 
@@ -130,20 +130,9 @@ class TestTag:
         assert tag.deserialize(prefix + '.Example3') is Example3
 
         tag_value = prefix + '.Example4'
-        with raises(DeserializationError) as e:
+        with raises(ValidationError) as e:
             tag.deserialize(tag_value)
-
-        assert (
-            e.value.pretty()
-            == """\
-DeserializationError: no variant found for tag '{}'
-    Due to => value {} for tag 'Tag' on model 'Example'""".format(
-                tag_value,
-                "'tests.test_tags.Example4'"
-                if six.PY2
-                else "'tests.test_tags.TestTag.t... ",
-            )
-        )
+        assert e.value.messages() == 'no variant found'
 
 
 @mock.patch('serde.tags.Tag.lookup_tag', lambda _, variant: variant.__name__)
@@ -175,14 +164,9 @@ class TestExternal:
         assert result[1] is d
 
     def test__deserialize_with_untagged(self):
-        with raises(DeserializationError) as e:
+        with raises(ValidationError) as e:
             External()._deserialize_with(object(), {})
-        assert (
-            e.value.pretty()
-            == """\
-DeserializationError: expected externally tagged data
-    Due to => tag 'External'"""
-        )
+        assert e.value.messages() == 'missing data, expected externally tagged data'
 
 
 @mock.patch('serde.tags.Tag.lookup_tag', lambda _, variant: variant.__name__)
@@ -237,14 +221,9 @@ class TestInternal:
 
         tag = Internal(tag='kind')
 
-        with raises(DeserializationError) as e:
+        with raises(ValidationError) as e:
             tag._deserialize_with(object(), {'something': 1})
-        assert (
-            e.value.pretty()
-            == """\
-DeserializationError: expected tag 'kind'
-    Due to => tag 'Internal'"""
-        )
+        assert e.value.messages() == "missing data, expected tag 'kind'"
 
 
 @mock.patch('serde.tags.Tag.lookup_tag', lambda _, variant: variant.__name__)
@@ -300,20 +279,10 @@ class TestAdjacent:
 
         tag = Adjacent(tag='kind', content='data')
 
-        with raises(DeserializationError) as e:
+        with raises(ValidationError) as e:
             tag._deserialize_with(object(), {'something': 1})
-        assert (
-            e.value.pretty()
-            == """\
-DeserializationError: expected tag 'kind'
-    Due to => tag 'Adjacent'"""
-        )
+        assert e.value.messages() == "missing data, expected tag 'kind'"
 
-        with raises(DeserializationError) as e:
+        with raises(ValidationError) as e:
             tag._deserialize_with(object(), {'kind': 'Example2', 'something': 1})
-        assert (
-            e.value.pretty()
-            == """\
-DeserializationError: expected content 'data'
-    Due to => tag 'Adjacent'"""
-        )
+        assert e.value.messages() == "missing data, expected content 'data'"

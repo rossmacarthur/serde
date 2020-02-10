@@ -10,16 +10,9 @@ from functools import wraps
 
 import isodate
 from six import binary_type, integer_types, text_type
+from six.moves.collections_abc import Mapping as MappingType
 
-from serde.exceptions import (
-    ContextError,
-    DeserializationError,
-    InstantiationError,
-    NormalizationError,
-    SerializationError,
-    ValidationError,
-    map_errors,
-)
+from serde.exceptions import ContextError, ValidationError
 from serde.utils import is_subclass, try_lookup, zip_equal
 
 
@@ -62,10 +55,7 @@ def _resolve_to_field_instance(thing, none_allowed=True):
     if field_class is not None:
         return field_class()
 
-    raise TypeError(
-        '{!r} is not a Field, a Model class, an instance of a Field, '
-        'or a supported built-in type'.format(thing)
-    )
+    raise TypeError('failed to resolve {!r} into a field'.format(thing))
 
 
 class BaseField(object):
@@ -127,11 +117,10 @@ class BaseField(object):
         """
         if hasattr(self, '_model_cls'):
             raise ContextError(
-                '{name!r} instance used multiple times'.format(
-                    name=self.__class__.__name__
+                'attempted to use {!r} instance more than once'.format(
+                    self.__class__.__name__
                 )
             )
-
         self._model_cls = model_cls
 
     def _serialize_with(self, model, d):
@@ -273,41 +262,18 @@ class Field(BaseField):
 
         This method should .pop() from kwargs.
         """
-        name = self._attr_name
-        value = kwargs.pop(name, None)
-
-        with map_errors(
-            InstantiationError, value=value, field=self, model_cls=model.__class__
-        ):
-            value = self._instantiate(value)
-
+        value = self._instantiate(kwargs.pop(self._attr_name, None))
         if value is None:
-            raise InstantiationError(
-                'expected field {!r}'.format(name),
-                field=self,
-                model_cls=model.__class__,
+            raise TypeError(
+                '__init__() missing required argument {!r}'.format(self._attr_name)
             )
-
-        setattr(model, name, value)
+        setattr(model, self._attr_name, value)
 
     def _serialize_with(self, model, d):
         """
         Serialize the corresponding model attribute to a dictionary.
         """
-        try:
-            value = getattr(model, self._attr_name)
-        except AttributeError:
-            raise SerializationError(
-                'expected attribute {!r}'.format(self._attr_name),
-                field=self,
-                model_cls=model.__class__,
-            )
-
-        with map_errors(
-            SerializationError, value=value, field=self, model_cls=model.__class__
-        ):
-            d[self._serde_name] = self._serialize(value)
-
+        d[self._serde_name] = self._serialize(getattr(model, self._attr_name))
         return d
 
     def _deserialize_with(self, model, d):
@@ -317,54 +283,24 @@ class Field(BaseField):
         try:
             value = d[self._serde_name]
         except KeyError:
-            raise DeserializationError(
-                'expected field {!r}'.format(self._serde_name),
-                field=self,
-                model_cls=model.__class__,
+            raise ValidationError(
+                'missing data, expected field {!r}'.format(self._serde_name)
             )
-
-        with map_errors(
-            DeserializationError, value=value, field=self, model_cls=model.__class__
-        ):
-            setattr(model, self._attr_name, self._deserialize(value))
-
+        setattr(model, self._attr_name, self._deserialize(value))
         return model, d
 
     def _normalize_with(self, model):
         """
         Normalize the model attribute according to this field's specification.
         """
-        try:
-            value = getattr(model, self._attr_name)
-        except AttributeError:
-            raise NormalizationError(
-                'expected attribute {!r}'.format(self._attr_name),
-                field=self,
-                model_cls=model.__class__,
-            )
-
-        with map_errors(
-            NormalizationError, value=value, field=self, model_cls=model.__class__
-        ):
-            setattr(model, self._attr_name, self._normalize(value))
+        value = getattr(model, self._attr_name)
+        setattr(model, self._attr_name, self._normalize(value))
 
     def _validate_with(self, model):
         """
         Validate the model attribute according to this field's specification.
         """
-        try:
-            value = getattr(model, self._attr_name)
-        except AttributeError:
-            raise ValidationError(
-                'expected attribute {!r}'.format(self._attr_name),
-                field=self,
-                model_cls=model.__class__,
-            )
-
-        with map_errors(
-            ValidationError, value=value, field=self, model_cls=model.__class__
-        ):
-            self._validate(value)
+        self._validate(getattr(model, self._attr_name))
 
     def _instantiate(self, value):
         return self._default() if value is None else value
@@ -574,22 +510,9 @@ class Optional(Field):
 
         The value will only be added to the dictionary if it is not `None`.
         """
-        try:
-            value = getattr(model, self._attr_name)
-        except AttributeError:
-            raise SerializationError(
-                'expected attribute {!r}'.format(self._attr_name),
-                field=self,
-                model_cls=model.__class__,
-            )
-
-        with map_errors(
-            SerializationError, value=value, field=self, model_cls=model.__class__
-        ):
-            value = self._serialize(value)
-            if value is not None:
-                d[self._serde_name] = value
-
+        value = self._serialize(getattr(model, self._attr_name))
+        if value is not None:
+            d[self._serde_name] = value
         return d
 
     def _deserialize_with(self, model, d):
@@ -603,24 +526,15 @@ class Optional(Field):
             value = d[self._serde_name]
         except KeyError:
             return model, d
-
-        with map_errors(
-            DeserializationError, value=value, field=self, model_cls=model.__class__
-        ):
-            setattr(model, self._attr_name, self._deserialize(value))
-
+        setattr(model, self._attr_name, self._deserialize(value))
         return model, d
 
     def _normalize_with(self, model):
         """
         Normalize the model attribute.
         """
-        value = getattr(model, self._attr_name, None)
-
-        with map_errors(
-            NormalizationError, value=value, field=self, model_cls=model.__class__
-        ):
-            setattr(model, self._attr_name, self._normalize(value))
+        value = self._normalize(getattr(model, self._attr_name, None))
+        setattr(model, self._attr_name, value)
 
     def _instantiate(self, value):
         return value
@@ -701,12 +615,9 @@ class Instance(Field):
         """
         Validate the given value is an instance of the specified type.
         """
-        super(Instance, self).validate(value)
         if not isinstance(value, self.type):
             raise ValidationError(
-                'expected {!r} but got {!r}'.format(
-                    self.type.__name__, value.__class__.__name__
-                )
+                'invalid type, expected {!r}'.format(self.type.__name__), value=value
             )
 
 
@@ -730,6 +641,8 @@ class Nested(Instance):
         """
         Deserialize the given dictionary to a `~serde.Model` instance.
         """
+        if not isinstance(d, MappingType):
+            raise ValidationError("invalid type, expected 'mapping'", value=d)
         return self.type.from_dict(d)
 
 
@@ -738,18 +651,18 @@ class _Container(Instance):
     A base class for `Dict`, `List`, `Tuple`, and other container fields.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, type, **kwargs):
         """
         Create a new `_Container`.
         """
-        super(_Container, self).__init__(*args, **kwargs)
+        super(_Container, self).__init__(type, **kwargs)
         self.kwargs = {}
 
     def _iter(self, value):
         """
         Iterate over the container.
         """
-        return value
+        raise NotImplementedError()
 
     def _apply(self, stage, element):
         """
@@ -808,7 +721,95 @@ class _Container(Instance):
             self._apply('_validate', element)
 
 
-class Deque(_Container):
+class _Mapping(_Container):
+    """
+    A mapping field to be used as the base class for `Dict` and `OrderedDict`.
+    """
+
+    def __init__(self, type, key=None, value=None, **kwargs):
+        super(_Mapping, self).__init__(type, **kwargs)
+        self.key = _resolve_to_field_instance(key)
+        self.value = _resolve_to_field_instance(value)
+
+    def _iter(self, value):
+        """
+        Iterate over the mapping's items.
+        """
+        try:
+            for element in value.items():
+                yield element
+        except (AttributeError, TypeError):
+            raise ValidationError(
+                'invalid type, expected {!r}'.format(self.type.__name__), value=value
+            )
+
+    def _apply(self, stage, element):
+        """
+        Apply the key stage to each key, and the value stage to each value.
+        """
+        k, v = element
+        return (getattr(self.key, stage)(k), getattr(self.value, stage)(v))
+
+
+class Dict(_Mapping):
+    """
+    This field represents the built-in `dict` type.
+
+    Args:
+        key: the `Field` class or instance for keys in this `Dict`.
+        value: the `Field` class or instance for values in this `Dict`.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    def __init__(self, key=None, value=None, **kwargs):
+        """
+        Create a new `Dict`.
+        """
+        super(Dict, self).__init__(dict, key=key, value=value, **kwargs)
+
+
+class OrderedDict(_Mapping):
+    """
+    An `~collections.OrderedDict` field.
+
+    Args:
+        key: the `Field` class or instance for keys in this `OrderedDict`.
+        value: the `Field` class or instance for values in this `OrderedDict`.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    def __init__(self, key=None, value=None, **kwargs):
+        """
+        Create a new `OrderedDict`.
+        """
+        super(OrderedDict, self).__init__(
+            collections.OrderedDict, key=key, value=value, **kwargs
+        )
+
+
+class _Sequence(_Container):
+    """
+    A sequence field to be used as the base class for fields such as `List` and `Set`
+    """
+
+    def __init__(self, type, element=None, **kwargs):
+        super(_Sequence, self).__init__(type, **kwargs)
+        self.element = _resolve_to_field_instance(element)
+
+    def _iter(self, value):
+        """
+        Iterate over the sequence.
+        """
+        try:
+            for element in value:
+                yield element
+        except TypeError:
+            raise ValidationError(
+                'invalid type, expected {!r}'.format(self.type.__name__), value=value
+            )
+
+
+class Deque(_Sequence):
     """
     A `~collections.deque` field.
 
@@ -822,8 +823,7 @@ class Deque(_Container):
         """
         Create a new `Deque`.
         """
-        super(Deque, self).__init__(collections.deque, **kwargs)
-        self.element = _resolve_to_field_instance(element)
+        super(Deque, self).__init__(collections.deque, element=element, **kwargs)
         self.kwargs = {'maxlen': maxlen}
 
     @property
@@ -840,62 +840,11 @@ class Deque(_Container):
         super(Deque, self).validate(value)
         if value.maxlen != self.maxlen:
             raise ValidationError(
-                'expected max length of {} but got {}'.format(self.maxlen, value.maxlen)
+                'invalid max length, expected {}'.format(self.maxlen), value=value
             )
 
 
-class Dict(_Container):
-    """
-    This field represents the built-in `dict` type.
-
-    Args:
-        key: the `Field` class or instance for keys in this `Dict`.
-        value: the `Field` class or instance for values in this `Dict`.
-        **kwargs: keyword arguments for the `Field` constructor.
-    """
-
-    def __init__(self, key=None, value=None, **kwargs):
-        """
-        Create a new `Dict`.
-        """
-        super(Dict, self).__init__(dict, **kwargs)
-        self.key = _resolve_to_field_instance(key)
-        self.value = _resolve_to_field_instance(value)
-
-    def _iter(self, value):
-        """
-        Iterate over the dictionary items.
-        """
-        return value.items()
-
-    def _apply(self, stage, element):
-        """
-        Apply the key stage to each key, and the value stage to each value.
-        """
-        k, v = element
-        return (getattr(self.key, stage)(k), getattr(self.value, stage)(v))
-
-
-class OrderedDict(Dict):
-    """
-    An `~collections.OrderedDict` field.
-
-    Args:
-        key: the `Field` class or instance for keys in this `OrderedDict`.
-        value: the `Field` class or instance for values in this `OrderedDict`.
-        **kwargs: keyword arguments for the `Field` constructor.
-    """
-
-    def __init__(self, key=None, value=None, **kwargs):
-        """
-        Create a new `OrderedDict`.
-        """
-        super(Dict, self).__init__(collections.OrderedDict, **kwargs)
-        self.key = _resolve_to_field_instance(key)
-        self.value = _resolve_to_field_instance(value)
-
-
-class FrozenSet(_Container):
+class FrozenSet(_Sequence):
     """
     This field represents the built-in `frozenset` type.
 
@@ -908,11 +857,10 @@ class FrozenSet(_Container):
         """
         Create a new `FrozenSet`.
         """
-        super(FrozenSet, self).__init__(frozenset, **kwargs)
-        self.element = _resolve_to_field_instance(element)
+        super(FrozenSet, self).__init__(frozenset, element=element, **kwargs)
 
 
-class List(_Container):
+class List(_Sequence):
     """
     This field represents the built-in `list` type.
 
@@ -925,11 +873,10 @@ class List(_Container):
         """
         Create a new `List`.
         """
-        super(List, self).__init__(list, **kwargs)
-        self.element = _resolve_to_field_instance(element)
+        super(List, self).__init__(list, element=element, **kwargs)
 
 
-class Set(_Container):
+class Set(_Sequence):
     """
     This field represents the built-in `set` type.
 
@@ -942,11 +889,10 @@ class Set(_Container):
         """
         Create a new `Set`.
         """
-        super(Set, self).__init__(set, **kwargs)
-        self.element = _resolve_to_field_instance(element)
+        super(Set, self).__init__(set, element=element, **kwargs)
 
 
-class Tuple(_Container):
+class Tuple(_Sequence):
     """
     This field represents the built-in `tuple` type.
 
@@ -959,16 +905,17 @@ class Tuple(_Container):
         """
         Create a new `Tuple`.
         """
-        super(Tuple, self).__init__(tuple, **kwargs)
+        super(_Sequence, self).__init__(tuple, **kwargs)
         self.elements = tuple(
             _resolve_to_field_instance(e, none_allowed=False) for e in elements
         )
+        assert not hasattr(self, 'element')
 
     def _iter(self, value):
         """
         Iterate over the fields and each element in the tuple.
         """
-        return zip_equal(self.elements, value)
+        return zip_equal(self.elements, super(Tuple, self)._iter(value))
 
     def _apply(self, stage, element):
         """
@@ -1037,7 +984,7 @@ class Literal(Field):
         """
         if value != self.value:
             raise ValidationError(
-                'expected {!r} but got {!r}'.format(self.value, value)
+                'invalid literal, expected {!r}'.format(self.value), value=value
             )
 
 
@@ -1078,7 +1025,7 @@ class Choice(Field):
         """
         super(Choice, self).validate(value)
         if value not in self.choices:
-            raise ValidationError('{!r} is not a valid choice'.format(value))
+            raise ValidationError('invalid choice', value=value)
 
 
 class DateTime(Instance):
@@ -1120,9 +1067,18 @@ class DateTime(Instance):
         Deserialize the given string as a `~datetime.datetime`.
         """
         if self.format == 'iso8601':
-            return isodate.parse_datetime(value)
+            try:
+                return isodate.parse_datetime(value)
+            except isodate.ISO8601Error:
+                raise ValidationError('invalid ISO 8601 datetime', value=value)
         else:
-            return datetime.datetime.strptime(value, self.format)
+            try:
+                return datetime.datetime.strptime(value, self.format)
+            except (TypeError, ValueError):
+                raise ValidationError(
+                    'invalid datetime, expected format {!r}'.format(self.format),
+                    value=value,
+                )
 
 
 class Date(DateTime):
@@ -1139,9 +1095,18 @@ class Date(DateTime):
         Deserialize the given string as a `~datetime.date`.
         """
         if self.format == 'iso8601':
-            return isodate.parse_date(value)
+            try:
+                return isodate.parse_date(value)
+            except isodate.ISO8601Error:
+                raise ValidationError('invalid ISO 8601 date', value=value)
         else:
-            return datetime.datetime.strptime(value, self.format).date()
+            try:
+                return datetime.datetime.strptime(value, self.format).date()
+            except (TypeError, ValueError):
+                raise ValidationError(
+                    'invalid date, expected format {!r}'.format(self.format),
+                    value=value,
+                )
 
 
 class Time(DateTime):
@@ -1158,9 +1123,18 @@ class Time(DateTime):
         Deserialize the given string as a `~datetime.time`.
         """
         if self.format == 'iso8601':
-            return isodate.parse_time(value)
+            try:
+                return isodate.parse_time(value)
+            except isodate.ISO8601Error:
+                raise ValidationError('invalid ISO 8601 time', value=value)
         else:
-            return datetime.datetime.strptime(value, self.format).time()
+            try:
+                return datetime.datetime.strptime(value, self.format).time()
+            except (TypeError, ValueError):
+                raise ValidationError(
+                    'invalid time, expected format {!r}'.format(self.format),
+                    value=value,
+                )
 
 
 class Text(Instance):
@@ -1233,7 +1207,10 @@ class Regex(Str):
         super(Regex, self).validate(value)
         if not self._compiled.match(value):
             raise ValidationError(
-                '{!r} does not match regex {!r}'.format(value, self.pattern)
+                'invalid string, expected to match regex pattern {!r}'.format(
+                    self.pattern
+                ),
+                value=value,
             )
 
 
@@ -1340,7 +1317,7 @@ Args:
     def validate(self, value):
         super(field_cls, self).validate(value)
         if not self._validator(value):
-            raise ValidationError('{!r} is not a valid {}'.format(value, human))
+            raise ValidationError('invalid {}'.format(human), value=value)
 
     field_cls.__init__ = __init__
     field_cls.validate = validate

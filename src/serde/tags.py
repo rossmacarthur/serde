@@ -5,7 +5,7 @@ This module contains tag classes for use with `Models <serde.Model>`.
 from collections import OrderedDict
 
 from serde import fields, utils
-from serde.exceptions import DeserializationError, SerializationError, map_errors
+from serde.exceptions import ValidationError
 
 
 class Tag(fields.BaseField):
@@ -86,15 +86,8 @@ class Tag(fields.BaseField):
         Deserialize a tag value into a Model variant.
         """
         variant = self.lookup_variant(value)
-
         if not variant:
-            raise DeserializationError(
-                'no variant found for tag {!r}'.format(value),
-                value=value,
-                field=self,
-                model_cls=self.__model__,
-            )
-
+            raise ValidationError('no variant found', value=value)
         return variant
 
 
@@ -108,12 +101,7 @@ class External(Tag):
         Serialize the model variant by externally tagging the given dictionary.
         """
         variant = model.__class__
-
-        with map_errors(
-            SerializationError, value=variant, field=self, model_cls=model.__class__
-        ):
-            d = OrderedDict([(self._serialize(variant), d)])
-
+        d = OrderedDict([(self._serialize(variant), d)])
         return d
 
     def _deserialize_with(self, model, d):
@@ -123,12 +111,9 @@ class External(Tag):
         try:
             tag = next(iter(d))
         except StopIteration:
-            raise DeserializationError('expected externally tagged data', field=self)
+            raise ValidationError('missing data, expected externally tagged data')
 
-        with map_errors(
-            DeserializationError, value=tag, field=self, model_cls=model.__class__
-        ):
-            model.__class__ = self._deserialize(tag)
+        model.__class__ = self._deserialize(tag)
 
         return model, d[tag]
 
@@ -153,12 +138,7 @@ class Internal(Tag):
         Serialize the model variant by internally tagging the given dictionary.
         """
         variant = model.__class__
-
-        with map_errors(
-            SerializationError, value=variant, field=self, model_cls=model.__class__
-        ):
-            d[self.tag] = self._serialize(variant)
-
+        d[self.tag] = self._serialize(variant)
         return d
 
     def _deserialize_with(self, model, d):
@@ -168,12 +148,9 @@ class Internal(Tag):
         try:
             tag = d[self.tag]
         except KeyError:
-            raise DeserializationError('expected tag {!r}'.format(self.tag), field=self)
+            raise ValidationError('missing data, expected tag {!r}'.format(self.tag))
 
-        with map_errors(
-            DeserializationError, value=tag, field=self, model_cls=model.__class__
-        ):
-            model.__class__ = self._deserialize(tag)
+        model.__class__ = self._deserialize(tag)
 
         return model, d
 
@@ -200,10 +177,7 @@ class Adjacent(Tag):
         Serialize the model variant by adjacently tagging the given dictionary.
         """
         variant = model.__class__
-
-        with map_errors(SerializationError, field=self, model_cls=model.__class__):
-            d = OrderedDict([(self.tag, self._serialize(variant)), (self.content, d)])
-
+        d = OrderedDict([(self.tag, self._serialize(variant)), (self.content, d)])
         return d
 
     def _deserialize_with(self, model, d):
@@ -213,17 +187,16 @@ class Adjacent(Tag):
         try:
             tag = d[self.tag]
         except KeyError:
-            raise DeserializationError('expected tag {!r}'.format(self.tag), field=self)
+            raise ValidationError('missing data, expected tag {!r}'.format(self.tag))
 
         try:
             content = d[self.content]
         except KeyError:
-            raise DeserializationError(
-                'expected content {!r}'.format(self.content), field=self
+            raise ValidationError(
+                'missing data, expected content {!r}'.format(self.content)
             )
 
-        with map_errors(DeserializationError, field=self, model_cls=model.__class__):
-            model.__class__ = self._deserialize(tag)
+        model.__class__ = self._deserialize(tag)
 
         return model, content
 
