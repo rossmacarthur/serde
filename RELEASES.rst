@@ -6,7 +6,8 @@ Releases
 
 *Unreleased*
 
-- Improve ``Uuid`` field normalization.
+- Add ``Flatten`` field.
+- Improve ``Uuid`` field normalization. (`34783b0`_)
 - Add ``IpAddress`` field. (`667ca96`_)
 - Extended string types now subclass ``Text`` not ``Str``. (`5862375`_)
 - Remove `fields.create()` method. (`2a54886`_)
@@ -18,6 +19,7 @@ Releases
 .. _2a54886: https://github.com/rossmacarthur/serde/commit/2a548865106b1cfc98f5dea8bf00084f62e6334e
 .. _5862375: https://github.com/rossmacarthur/serde/commit/5862375ac82a98364d7cf7ef82c6bb668d9abded
 .. _667ca96: https://github.com/rossmacarthur/serde/commit/667ca9629028b29a6d420a9ce4eb14460baca448
+.. _34783b0: https://github.com/rossmacarthur/serde/commit/34783b03084acffc1fd1cddf4c987d3855d45330
 
 0.7.3
 -----

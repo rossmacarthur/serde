@@ -20,6 +20,7 @@ from serde.fields import (
     Deque,
     Dict,
     Field,
+    Flatten,
     Float,
     FrozenSet,
     Instance,
@@ -654,6 +655,28 @@ class TestNested:
         with raises(ValidationError) as e:
             field.deserialize([0])
         assert e.value.message == "invalid type, expected 'mapping'"
+
+
+class TestFlatten:
+    def test_integrate_basic(self):
+        # A Flatten should serialize and deserialize into the containing Model.
+
+        class NestedExample(Model):
+            a = Field()
+            b = Field()
+
+        class Example(Model):
+            nested = Flatten(NestedExample)
+            c = Field()
+
+        assert Example(nested=NestedExample(a='.', b='..'), c='...').to_dict() == {
+            'a': '.',
+            'b': '..',
+            'c': '...',
+        }
+        assert Example.from_dict({'a': '.', 'b': '..', 'c': '...'}) == Example(
+            nested=NestedExample(a='.', b='..'), c='...'
+        )
 
 
 class TestContainer:

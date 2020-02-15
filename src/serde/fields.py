@@ -489,6 +489,10 @@ class Nested(Instance):
     serialize and deserialize methods call the `~serde.Model.to_dict()` and
     `~serde.Model.from_dict()` methods on the model class. This allows complex
     nested models.
+
+    Args:
+        model_cls (serde.Model): the nested model class.
+        **kwargs: keyword arguments for the `Field` constructor.
     """
 
     def serialize(self, model):
@@ -504,6 +508,38 @@ class Nested(Instance):
         if not isinstance(d, MappingType):
             raise ValidationError("invalid type, expected 'mapping'", value=d)
         return self.ty.from_dict(d)
+
+
+class Flatten(Nested):
+    """
+    A field that flattens the serialized version of the wrapped `~serde.Model`
+    into the parent dictionary.
+
+    This effectively removes one level of structure between the serialized
+    representation and the Python model representation.
+
+    Warning:
+        this field cannot be contained by another like an `Optional`, or a
+        `List` or `Dict`.
+
+    Args:
+        model_cls (serde.Model): the nested model class.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    def _serialize_with(self, model, d):
+        """
+        Serialize the corresponding nested model attribute to a dictionary.
+        """
+        d.update(self._serialize(getattr(model, self._attr_name)))
+        return d
+
+    def _deserialize_with(self, model, d):
+        """
+        Deserialize the corresponding model attribute from a dictionary.
+        """
+        setattr(model, self._attr_name, self._deserialize(d))
+        return model, d
 
 
 class _Container(Instance):
