@@ -53,6 +53,9 @@ jobs:
       with:
         python-version: 3.7
 
+    - name: Check tag against package version
+      run: grep '__version__' src/serde/__init__.py | grep -q "'${GITHUB_REF#refs/tags/}'"
+
     - name: Install dependencies
       run: pip install --upgrade setuptools twine wheel
 
