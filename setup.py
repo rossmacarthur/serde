@@ -60,6 +60,7 @@ setup(
         'Issue Tracker': '{url}/issues'.format(**metadata),
     },
     classifiers=[
+        'License :: OSI Approved :: Apache Software License',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Operating System :: OS Independent',

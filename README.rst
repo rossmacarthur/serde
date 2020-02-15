@@ -537,4 +537,9 @@ in with each other.
 License
 -------
 
-This project is licensed under the MIT License.
+Serde is licensed under either of
+
+- Apache License, Version 2.0 (`LICENSE-APACHE <LICENSE-APACHE>`_ or https://www.apache.org/licenses/LICENSE-2.0)
+- MIT License (`LICENSE-MIT <LICENSE-MIT>`_ or https://opensource.org/licenses/MIT)
+
+at your option.
