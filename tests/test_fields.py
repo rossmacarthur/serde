@@ -1357,16 +1357,43 @@ class TestRegex:
 
 
 class TestUuid:
-    def test___init__(self):
+    def test___init___basic(self):
         # Construct a basic Uuid and check values are set correctly.
         field = Uuid()
         assert field.ty == uuid.UUID
+        assert field.output_form == 'str'
+
+    def test___init___options(self):
+        # Construct a Uuid with extra options and check values are set correctly.
+        field = Uuid(output_form='hex', validators=[None])
+        assert field.ty == uuid.UUID
+        assert field.output_form == 'hex'
+
+    def test___init___invalid_output_form(self):
+        # Check that an invalid output form is denied.
+        with raises(ValueError):
+            Uuid(output_form='invalid')
 
     def test_serialize(self):
         # A Uuid should serialize a uuid.UUID as a string.
         field = Uuid()
         value = uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e')
         assert field.serialize(value) == '2d7026c8-cc58-11e8-bd7a-784f4386978e'
+
+    def test_serialize_output_form(self):
+        # A Uuid should serialize a uuid.UUID based on the output form.
+        value = uuid.UUID('c07fb668-b3cb-4719-9b3d-0881d5eeba3b')
+        cases = [
+            ('str', 'c07fb668-b3cb-4719-9b3d-0881d5eeba3b'),
+            ('urn', 'urn:uuid:c07fb668-b3cb-4719-9b3d-0881d5eeba3b'),
+            ('hex', 'c07fb668b3cb47199b3d0881d5eeba3b'),
+            ('int', 255874896585658101253640125750883301947),
+            ('bytes', b'\xc0\x7f\xb6h\xb3\xcbG\x19\x9b=\x08\x81\xd5\xee\xba;'),
+            ('fields', (3229595240, 46027, 18201, 155, 61, 9353732995643)),
+        ]
+        for output_form, expected in cases:
+            field = Uuid(output_form=output_form)
+            assert field.serialize(value) == expected
 
     def test_normalize_uuid(self):
         # A Uuid should normalize a uuid.UUID as a uuid.UUID
@@ -1382,13 +1409,36 @@ class TestUuid:
             '2d7026c8-cc58-11e8-bd7a-784f4386978e'
         )
 
+    def test_normalize_bytes(self):
+        # A Uuid should normalize a byte string a a uuid.UUID.
+        field = Uuid()
+        value = b'\x99\x1a\xf7\xc7\xee\x17G\x02\xb6C\xe2\x93<\xe8:\x01'
+        field.normalize(value) == uuid.UUID('991af7c7-ee17-4702-b643-e2933ce83a01')
+
     def test_normalize_int(self):
-        # A Uuid should normalize a string as a uuid.UUID.
+        # A Uuid should normalize an integer as a uuid.UUID.
         field = Uuid()
         value = 255874896585658101253640125750883301947
         assert field.normalize(value) == uuid.UUID(
             'c07fb668-b3cb-4719-9b3d-0881d5eeba3b'
         )
+
+    def test_normalize_fields(self):
+        # A Uuid should normalize a tuple/list as a uuid.UUID.
+        field = Uuid()
+        value = (3375074170, 20614, 19730, 172, 202, 2390245548685)
+        assert field.normalize(value) == uuid.UUID(
+            'c92b8b7a-5086-4d12-acca-022c85bca28d'
+        )
+        assert field.normalize(list(value)) == uuid.UUID(
+            'c92b8b7a-5086-4d12-acca-022c85bca28d'
+        )
+
+    def test_normalize_invalid(self):
+        # A Uuid should not raise an error on a normalization failure.
+        field = Uuid()
+        value = b'\x99'
+        assert field.normalize(value) == value
 
     def test_validate(self):
         # A Uuid should validate that the value is an instance of uuid.UUID.

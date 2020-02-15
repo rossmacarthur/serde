@@ -6,11 +6,18 @@ Releases
 
 *Unreleased*
 
-- Add ``IpAddress`` field.
-- Extended string types now subclass ``Text`` not ``Str``.
-- Remove `fields.create()` method
-- Completely rework error handling.
-- Make ``Tag.lookup_tag`` default to module + qualname.
+- Improve ``Uuid`` field normalization.
+- Add ``IpAddress`` field. (`667ca96`_)
+- Extended string types now subclass ``Text`` not ``Str``. (`5862375`_)
+- Remove `fields.create()` method. (`2a54886`_)
+- Completely rework error handling. (`c95b6b3`_)
+- Make ``Tag.lookup_tag`` default to module + qualname. (`26963d6`_)
+
+.. _26963d6: https://github.com/rossmacarthur/serde/commit/26963d65b45229db50444665a3160bd0f1358421
+.. _c95b6b3: https://github.com/rossmacarthur/serde/commit/c95b6b329125164e3301a7e43292c7a858d5e34f
+.. _2a54886: https://github.com/rossmacarthur/serde/commit/2a548865106b1cfc98f5dea8bf00084f62e6334e
+.. _5862375: https://github.com/rossmacarthur/serde/commit/5862375ac82a98364d7cf7ef82c6bb668d9abded
+.. _667ca96: https://github.com/rossmacarthur/serde/commit/667ca9629028b29a6d420a9ce4eb14460baca448
 
 0.7.3
 -----
@@ -26,15 +33,18 @@ Releases
 
 *Released on December 2nd, 2019*
 
-- Add ``FrozenSet`` field.
-- Add ``Deque`` field.
+- Add ``FrozenSet`` field. (`1d2f0cd`_)
+- Add ``Deque`` field. (`ec44671`_)
 - Add ``default`` keyword argument to ``Field``. (`#111`_)
-- Fix bug in ``Uuid.normalize()``.
+- Fix bug in ``Uuid.normalize()``. (`408bc83`_)
 - Rename ``Constant`` field to ``Literal``. (`#118`_)
 
-.. _#118: https://github.com/rossmacarthur/serde/pull/118
+.. _408bc83: https://github.com/rossmacarthur/serde/commit/408bc834ee8c4dbf92438ebcc6e94989927e2d89
+.. _ec44671: https://github.com/rossmacarthur/serde/commit/ec44671704529aca505fc10716cde030c9295188
+.. _1d2f0cd: https://github.com/rossmacarthur/serde/commit/1d2f0cd09cc49e350ac36ba2697e8023a2f9e47f
 
 .. _#111: https://github.com/rossmacarthur/serde/pull/111
+.. _#118: https://github.com/rossmacarthur/serde/pull/118
 
 0.7.1
 -----
@@ -201,8 +211,8 @@ Releases
 
 *Released on December 19th, 2018*
 
-- Fix a bug where overriding ``Model.__init__()`` method affected ``Model.from_dict``.
-  (`#45`_, `#46`_)
+- Fix a bug where overriding ``Model.__init__()`` method affected
+  ``Model.from_dict``. (`#45`_, `#46`_)
 
 .. _#46: https://github.com/rossmacarthur/serde/pull/46
 
@@ -300,11 +310,11 @@ Releases
 
 *Released on October 27th, 2018*
 
-- Initial release
+- Initial release, fixed.
 
 0.1.0
 -----
 
 *Released on October 27th, 2018*
 
-- This release is broken and was yanked.
+- Initial release, yanked.

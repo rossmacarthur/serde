@@ -8,7 +8,7 @@ import re
 import uuid
 
 import isodate
-from six import binary_type, integer_types, text_type
+from six import PY3, binary_type, integer_types, text_type
 from six.moves.collections_abc import Mapping as MappingType
 
 from serde.exceptions import ContextError, ValidationError
@@ -1090,31 +1090,52 @@ class Uuid(Instance):
     A `~uuid.UUID` field.
 
     A `Uuid` field validates that the input data is a UUID. It serializes the
-    UUID as a hex string, and deserializes hex strings or integers as UUIDs.
+    UUID into the specified output form and deserializes hex strings, bytes,
+    fields, or integers as UUIDs.
 
     Args:
+        output_form (str): the type of output form to serialize to. Possible
+            values include 'str', 'urn', 'hex', 'int', 'bytes', or 'fields'.
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, output_form='str', **kwargs):
         """
         Create a new `Uuid`.
         """
+        if output_form not in ('str', 'urn', 'hex', 'int', 'bytes', 'fields'):
+            raise ValueError('invalid output form')
         super(Uuid, self).__init__(uuid.UUID, **kwargs)
+        self.output_form = output_form
 
     def serialize(self, value):
         """
         Serialize the given `~uuid.UUID` as a string.
         """
-        return str(value)
+        if self.output_form == 'str':
+            return str(value)
+        else:
+            return getattr(value, self.output_form)
 
     def normalize(self, value):
         """
         Normalize the value into a `~uuid.UUID`.
         """
         if not isinstance(value, uuid.UUID):
-            input_form = 'int' if isinstance(value, integer_types) else 'hex'
-            return uuid.UUID(**{input_form: value})
+            input_form = None
+            if isinstance(value, text_type):
+                input_form = 'hex'
+            elif isinstance(value, binary_type):
+                input_form = 'bytes' if PY3 or len(value) == 16 else 'hex'
+            elif isinstance(value, integer_types):
+                input_form = 'int'
+            elif isinstance(value, (list, tuple)):
+                input_form = 'fields'
+            if input_form:
+                try:
+                    return uuid.UUID(**{input_form: value})
+                except ValueError:
+                    pass
         return value
 
 
