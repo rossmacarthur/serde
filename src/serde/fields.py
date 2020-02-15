@@ -1118,6 +1118,28 @@ class Uuid(Instance):
         return value
 
 
+class IpAddress(Text):
+    """
+    A text field that asserts the text is a valid IP address.
+
+    The validation is delegated to `validators.ip_address.ipv4` and
+    `validators.ip_address.ipv6`.
+
+    Args:
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    def __init__(self, **kwargs):
+        super(IpAddress, self).__init__(**kwargs)
+        self._validator_ipv4 = try_lookup('validators.ip_address.ipv4')
+        self._validator_ipv6 = try_lookup('validators.ip_address.ipv6')
+
+    def validate(self, value):
+        super(IpAddress, self).validate(value)
+        if not self._validator_ipv4(value) and not self._validator_ipv6(value):
+            raise ValidationError('invalid IP address', value=value)
+
+
 def create_from(foreign, name=None, human=None):
     """
     Create a new `Text` class from a `validators` function.

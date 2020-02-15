@@ -6,6 +6,9 @@ Releases
 
 *Unreleased*
 
+- Add ``IpAddress`` field.
+- Extended string types now subclass ``Text`` not ``Str``.
+- Remove `fields.create()` method
 - Completely rework error handling.
 - Make ``Tag.lookup_tag`` default to module + qualname.
 

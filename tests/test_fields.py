@@ -24,6 +24,7 @@ from serde.fields import (
     FrozenSet,
     Instance,
     Int,
+    IpAddress,
     List,
     Literal,
     Nested,
@@ -1395,3 +1396,18 @@ class TestUuid:
         field.validate(uuid.UUID('2d7026c8-cc58-11e8-bd7a-784f4386978e'))
         with raises(ValidationError):
             field.validate('2d7026c8-cc58-11e8-bd7a-784f4386978e')
+
+
+class TestIpAddress:
+    def test___init__(self):
+        # Construct a basic IpAddress and check values are set correctly.
+        field = IpAddress(validators=[None])
+        assert field.validators == [None]
+
+    def test_validate(self):
+        # An IpAddress simply validates that the text is an IP address.
+        field = IpAddress()
+        field.validate(u'123.0.0.7')
+        field.validate(u'::ffff:192.0.2.12')
+        with raises(ValidationError):
+            field.validate(u'900.80.70.11')
