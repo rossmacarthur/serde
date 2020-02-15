@@ -464,20 +464,20 @@ class Instance(Field):
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
-    def __init__(self, type, **kwargs):
+    def __init__(self, ty, **kwargs):
         """
         Create a new `Instance`.
         """
         super(Instance, self).__init__(**kwargs)
-        self.type = type
+        self.ty = ty
 
     def validate(self, value):
         """
         Validate the given value is an instance of the specified type.
         """
-        if not isinstance(value, self.type):
+        if not isinstance(value, self.ty):
             raise ValidationError(
-                'invalid type, expected {!r}'.format(self.type.__name__), value=value
+                'invalid type, expected {!r}'.format(self.ty.__name__), value=value
             )
 
 
@@ -503,7 +503,7 @@ class Nested(Instance):
         """
         if not isinstance(d, MappingType):
             raise ValidationError("invalid type, expected 'mapping'", value=d)
-        return self.type.from_dict(d)
+        return self.ty.from_dict(d)
 
 
 class _Container(Instance):
@@ -511,11 +511,11 @@ class _Container(Instance):
     A base class for `Dict`, `List`, `Tuple`, and other container fields.
     """
 
-    def __init__(self, type, **kwargs):
+    def __init__(self, ty, **kwargs):
         """
         Create a new `_Container`.
         """
-        super(_Container, self).__init__(type, **kwargs)
+        super(_Container, self).__init__(ty, **kwargs)
         self.kwargs = {}
 
     def _iter(self, value):
@@ -537,7 +537,7 @@ class _Container(Instance):
         Each element in the container will be serialized with the specified
         field instances.
         """
-        value = self.type(
+        value = self.ty(
             (self._apply('_serialize', element) for element in self._iter(value)),
             **self.kwargs
         )
@@ -551,7 +551,7 @@ class _Container(Instance):
         field instances.
         """
         value = super(_Container, self).deserialize(value)
-        return self.type(
+        return self.ty(
             (self._apply('_deserialize', element) for element in self._iter(value)),
             **self.kwargs
         )
@@ -564,7 +564,7 @@ class _Container(Instance):
         field instances.
         """
         value = super(_Container, self).normalize(value)
-        return self.type(
+        return self.ty(
             (self._apply('_normalize', element) for element in self._iter(value)),
             **self.kwargs
         )
@@ -586,8 +586,8 @@ class _Mapping(_Container):
     A mapping field to be used as the base class for `Dict` and `OrderedDict`.
     """
 
-    def __init__(self, type, key=None, value=None, **kwargs):
-        super(_Mapping, self).__init__(type, **kwargs)
+    def __init__(self, ty, key=None, value=None, **kwargs):
+        super(_Mapping, self).__init__(ty, **kwargs)
         self.key = _resolve_to_field_instance(key)
         self.value = _resolve_to_field_instance(value)
 
@@ -600,7 +600,7 @@ class _Mapping(_Container):
                 yield element
         except (AttributeError, TypeError):
             raise ValidationError(
-                'invalid type, expected {!r}'.format(self.type.__name__), value=value
+                'invalid type, expected {!r}'.format(self.ty.__name__), value=value
             )
 
     def _apply(self, stage, element):
@@ -652,8 +652,8 @@ class _Sequence(_Container):
     A sequence field to be used as the base class for fields such as `List` and `Set`
     """
 
-    def __init__(self, type, element=None, **kwargs):
-        super(_Sequence, self).__init__(type, **kwargs)
+    def __init__(self, ty, element=None, **kwargs):
+        super(_Sequence, self).__init__(ty, **kwargs)
         self.element = _resolve_to_field_instance(element)
 
     def _iter(self, value):
@@ -665,7 +665,7 @@ class _Sequence(_Container):
                 yield element
         except TypeError:
             raise ValidationError(
-                'invalid type, expected {!r}'.format(self.type.__name__), value=value
+                'invalid type, expected {!r}'.format(self.ty.__name__), value=value
             )
 
 
@@ -785,21 +785,21 @@ class Tuple(_Sequence):
         return getattr(f, stage)(v)
 
 
-def create_primitive(name, type_):
+def create_primitive(name, ty):
     """
     Create a primitive `Field` class.
     """
     doc = """\
-This field represents the built-in `{type}` type.
+This field represents the built-in `{ty}` type.
 
 Args:
     **kwargs: keyword arguments for the `Field` constructor.
 """.format(
-        type=type_
+        ty=ty
     )
 
     def __init__(self, **kwargs):  # noqa: N807
-        Instance.__init__(self, type_, **kwargs)
+        Instance.__init__(self, ty, **kwargs)
 
     __init__.__doc__ = 'Create a new `{name}`.'.format(name=name)
 
@@ -915,13 +915,13 @@ class DateTime(Instance):
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
-    type = datetime.datetime
+    ty = datetime.datetime
 
     def __init__(self, format='iso8601', **kwargs):
         """
         Create a new `DateTime`.
         """
-        super(DateTime, self).__init__(self.__class__.type, **kwargs)
+        super(DateTime, self).__init__(self.__class__.ty, **kwargs)
         self.format = format
 
     def serialize(self, value):
@@ -959,7 +959,7 @@ class Date(DateTime):
     This field behaves in a similar fashion to the `DateTime` field.
     """
 
-    type = datetime.date
+    ty = datetime.date
 
     def deserialize(self, value):
         """
@@ -987,7 +987,7 @@ class Time(DateTime):
     This field behaves in a similar fashion to the `DateTime` field.
     """
 
-    type = datetime.time
+    ty = datetime.time
 
     def deserialize(self, value):
         """

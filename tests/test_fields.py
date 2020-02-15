@@ -594,13 +594,13 @@ class TestInstance:
     def test___init___basic(self):
         # Construct a basic Instance and check values are set correctly.
         field = Instance(int)
-        assert field.type == int
+        assert field.ty == int
         assert field.validators == []
 
     def test___init___options(self):
         # Construct an Instance and make sure values are passed to Field.
         field = Instance(int, validators=[None])
-        assert field.type == int
+        assert field.ty == int
         assert field.validators == [None]
 
     def test_validate(self):
@@ -620,14 +620,14 @@ class TestNested:
     def test___init___basic(self):
         # Construct a basic Nested and check values are set correctly.
         field = Nested(Model)
-        assert field.type == Model
+        assert field.ty == Model
         assert field.validators == []
 
     def test___init___options(self):
         # Construct a Nested with extra options and make sure values are passed
         # to Field.
         field = Nested(Model, validators=[None])
-        assert field.type == Model
+        assert field.ty == Model
         assert field.validators == [None]
 
     def test_serialize(self):
@@ -665,7 +665,7 @@ class TestMapping:
     def test___init___basic(self):
         # Construct a basic _Mapping and check values are set correctly.
         field = _Mapping(dict)
-        assert field.type == dict
+        assert field.ty == dict
         assert field.key == Field()
         assert field.value == Field()
         assert field.validators == []
@@ -674,7 +674,7 @@ class TestMapping:
         # Construct a _Mapping with extra options and make sure values are
         # passed to Field.
         field = _Mapping(dict, key=Str, value=Int, validators=[None])
-        assert field.type == dict
+        assert field.ty == dict
         assert field.key == Str()
         assert field.value == Int()
         assert field.validators == [None]
@@ -791,7 +791,7 @@ class TestSequence:
     def test___init___basic(self):
         # Construct a basic _Sequence and check values are set correctly.
         field = _Sequence(list)
-        assert field.type == list
+        assert field.ty == list
         assert field.element == Field()
         assert field.validators == []
 
@@ -799,7 +799,7 @@ class TestSequence:
         # Construct a _Sequence with extra options and make sure values are
         # passed to Field.
         field = _Sequence(list, element=Str, validators=[None])
-        assert field.type == list
+        assert field.ty == list
         assert field.element == Str()
         assert field.validators == [None]
 
@@ -1359,7 +1359,7 @@ class TestUuid:
     def test___init__(self):
         # Construct a basic Uuid and check values are set correctly.
         field = Uuid()
-        assert field.type == uuid.UUID
+        assert field.ty == uuid.UUID
 
     def test_serialize(self):
         # A Uuid should serialize a uuid.UUID as a string.
