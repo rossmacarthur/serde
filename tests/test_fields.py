@@ -1349,10 +1349,10 @@ class TestRegex:
     def test_validate(self):
         # A Regex simply validates the given value matches the regex.
         field = Regex(r'[est]{4}')
-        field.validate('test')
-        field.validate('tset')
+        field.validate(u'test')
+        field.validate(u'tset')
         with raises(ValidationError):
-            field.validate('btesttest')
+            field.validate(u'btesttest')
 
 
 class TestUuid:
