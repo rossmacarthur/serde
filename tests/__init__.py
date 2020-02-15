@@ -1,9 +1,13 @@
+import os
 import sys
 
 import mock
 import six
 
 from serde import fields
+
+
+REPO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 
 def py2_patch_str_with_basestring(f):

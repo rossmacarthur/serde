@@ -1,16 +1,7 @@
-import doctest
 from uuid import UUID, uuid4
 
 from serde import Model, fields, tags
-from tests import py2_patch_str_with_basestring, py36
-
-
-@py36
-def test_readme():
-    failures, _ = doctest.testfile('../README.rst')
-
-    if failures:
-        raise Exception('doctests in README.rst failed')
+from tests import py2_patch_str_with_basestring
 
 
 @py2_patch_str_with_basestring
