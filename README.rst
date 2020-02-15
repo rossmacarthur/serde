@@ -442,23 +442,6 @@ to only accept dates after 15th April 1912. Note: the ``rename`` argument only
 applies to the serializing and deserializing of the data, the ``Album`` class
 would still be instantiated using ``Album(released=...)``.
 
-The ``create()`` method can be used to generate a new ``Field`` class from
-arbitrary functions without having to manually subclass a ``Field``. For example
-if we wanted a ``Percent`` field we would do the following.
-
-.. code-block:: python
-
-    >>> from serde import fields, validators
-    >>>
-    >>> Percent = fields.create(
-    ...     'Percent',
-    ...     fields.Float,
-    ...     validators=[validators.Between(0.0, 100.0)]
-    ... )
-    >>>
-    >>> issubclass(Percent, fields.Float)
-    True
-
 If these methods of creating custom ``Field`` classes are not satisfactory, you
 can always subclass a ``Field`` and override the relevant methods.
 

@@ -6,7 +6,6 @@ import collections
 import datetime
 import re
 import uuid
-from functools import wraps
 
 import isodate
 from six import binary_type, integer_types, text_type
@@ -331,145 +330,6 @@ class Field(BaseField):
         By default this method does not do anything.
         """
         pass
-
-
-def _create_serialize(cls, serializers):
-    """
-    Create a new serialize method with extra serializer functions.
-    """
-
-    @wraps(serializers[0])
-    def serialize(self, value):
-        for serializer in serializers:
-            value = serializer(value)
-        value = super(cls, self).serialize(value)
-        return value
-
-    return serialize
-
-
-def _create_deserialize(cls, deserializers):
-    """
-    Create a new deserialize method with extra deserializer functions.
-    """
-
-    @wraps(deserializers[0])
-    def deserialize(self, value):
-        value = super(cls, self).deserialize(value)
-        for deserializer in deserializers:
-            value = deserializer(value)
-        return value
-
-    return deserialize
-
-
-def _create_normalize(cls, normalizers):
-    """
-    Create a new normalize method with extra normalizer functions.
-    """
-
-    @wraps(normalizers[0])
-    def normalize(self, value):
-        value = super(cls, self).normalize(value)
-        for normalizer in normalizers:
-            value = normalizer(value)
-        return value
-
-    return normalize
-
-
-def _create_validate(cls, validators):
-    """
-    Create a new validate method with extra validator functions.
-    """
-
-    @wraps(validators[0])
-    def validate(self, value):
-        super(cls, self).validate(value)
-        for validator in validators:
-            validator(value)
-
-    return validate
-
-
-def create(
-    name,
-    base=None,
-    args=None,
-    description=None,
-    serializers=None,
-    deserializers=None,
-    normalizers=None,
-    validators=None,
-):
-    """
-    Create a new `Field` class.
-
-    This is a convenience method for creating new Field classes from arbitrary
-    serializer, deserializer, normalizer, and/or validator functions.
-
-    Args:
-        name (str): the name of the class.
-        base (Field): the base field class to subclass.
-        args (tuple): positional arguments for the base class's ``__init__``
-            method.
-        serializers (list): a list of serializer functions taking the value to
-            serialize as an argument. The functions need to raise an `Exception`
-            if they fail. These serializer functions will be applied before the
-            primary serializer on this field.
-        deserializers (list): a list of deserializer functions taking the value
-            to deserialize as an argument. The functions need to raise an
-            `Exception` if they fail. These deserializer functions will be
-            applied after the primary deserializer on this field.
-        normalizers (list): a list of normalizer functions taking the value to
-            normalize as an argument. The functions need to raise an `Exception`
-            if they fail. These normalizer functions will be applied after the
-            primary normalizer on this field.
-        validators (list): a list of validator functions taking the value to
-            validate as an argument. The functions need to raise an `Exception`
-            if they fail.
-
-    Returns:
-        class: a new `Field` class.
-    """
-    if not base:
-        base = Field
-
-    if not description:
-        description = name.lower()
-
-    doc = """\
-{description}
-
-Args:
-    **kwargs: keyword arguments for the `Field` constructor.
-""".format(
-        description=description
-    )
-
-    field_cls = type(name, (base,), {'__doc__': doc})
-
-    if args:
-
-        def __init__(self, **kwargs):  # noqa: N807
-            super(field_cls, self).__init__(*args, **kwargs)
-
-        __init__.__doc__ = 'Create a new `{name}`.'.format(name=name)
-        field_cls.__init__ = __init__
-
-    if serializers:
-        field_cls.serialize = _create_serialize(field_cls, serializers)
-
-    if deserializers:
-        field_cls.deserialize = _create_deserialize(field_cls, deserializers)
-
-    if normalizers:
-        field_cls.normalize = _create_normalize(field_cls, normalizers)
-
-    if validators:
-        field_cls.validate = _create_validate(field_cls, validators)
-
-    return field_cls
 
 
 class Optional(Field):
@@ -925,14 +785,25 @@ class Tuple(_Sequence):
         return getattr(f, stage)(v)
 
 
-def create_primitive(name, type):
+def create_primitive(name, type_):
     """
     Create a primitive `Field` class.
     """
-    description = 'This field represents the built-in `{type}` type.'.format(
-        type=type.__name__
+    doc = """\
+This field represents the built-in `{type}` type.
+
+Args:
+    **kwargs: keyword arguments for the `Field` constructor.
+""".format(
+        type=type_
     )
-    return create(name, base=Instance, args=(type,), description=description)
+
+    def __init__(self, **kwargs):  # noqa: N807
+        Instance.__init__(self, type_, **kwargs)
+
+    __init__.__doc__ = 'Create a new `{name}`.'.format(name=name)
+
+    return type(name, (Instance,), {'__doc__': doc, '__init__': __init__})
 
 
 Bool = create_primitive('Bool', bool)
@@ -1343,4 +1214,3 @@ Url = create_from('validators.url', human='URL')
 del create_from
 
 __all__ = [name for name, obj in globals().items() if is_subclass(obj, Field)]
-__all__.append('create')

@@ -40,16 +40,16 @@ from serde.fields import (
     _Mapping,
     _resolve_to_field_instance,
     _Sequence,
-    create,
 )
 
 
-Reversed = create(  # noqa: N806
-    'Reversed',
-    base=Str,
-    serializers=[lambda x: x[::-1]],
-    deserializers=[lambda x: x[::-1]],
-)
+class Reversed(Str):
+    def __init__(self, **kwargs):
+        serializers = kwargs.setdefault('serializers', [])
+        deserializers = kwargs.setdefault('deserializers', [])
+        serializers.append(lambda x: x[::-1])
+        deserializers.append(lambda x: x[::-1])
+        super(Reversed, self).__init__(**kwargs)
 
 
 def test_overridden_methods():
@@ -357,78 +357,6 @@ class TestField:
         field = Field()
         for value in (None, 0, 'string', object(), type):
             field.validate(value)
-
-
-def test_create_base():
-    # By default the created Field should subclass Field.
-    Example = create('Example')  # noqa: N806
-    assert issubclass(Example, Field)
-    assert Example.__mro__[1] == Field
-
-
-def test_create_str():
-    # You should be able to specify a different base Field.
-    Example = create('Example', base=Str)  # noqa: N806
-    assert issubclass(Example, Str)
-    assert Example.__mro__[1] == Str
-
-
-def test_create_args():
-    # You should be able to create a new Field, subclassing a Field that
-    # requires positional arguments.
-    Example = create('Example', base=Instance, args=(str,))  # noqa: N806
-    Example()
-
-    # This is what should happen if you don't give it the arguments!
-    Example = create('Example', base=Instance)  # noqa: N806
-    with raises(TypeError):
-        Example()
-
-
-def test_create_serializer_and_normalizer_and_deserializer():
-    # You should be able to create a new Field with extra serializers,
-    # normalizers, and deserializers.
-
-    def reverser(value):
-        return value[::-1]
-
-    Reversed = create(  # noqa: N806
-        'Reversed',
-        base=Str,
-        serializers=[reverser],
-        deserializers=[reverser],
-        normalizers=[reverser],
-    )
-
-    class Example(Model):
-        a = Reversed()
-
-    field = Example(a='test')
-    assert field.a == 'tset'
-
-    field = Example.from_dict({'a': 'test'})
-    assert field.a == 'test'
-    assert field.to_dict() == {'a': 'tset'}
-
-
-def test_create_validator():
-    # You should be able to create a Field with an arbitrary validate method.
-
-    def assert_is_not_derp(value):
-        if value == 'derp':
-            raise ValidationError("value is 'derp'")
-        assert value != 'derp'
-
-    NotDerp = create('NotDerp', Str, validators=[assert_is_not_derp])  # noqa: N806
-
-    class Example(Model):
-        a = NotDerp()
-
-    assert Example('notderp').a == 'notderp'
-
-    with raises(ValidationError) as e:
-        Example(a='derp')
-    assert e.value.messages() == {'a': "value is 'derp'"}
 
 
 class TestOptional:
