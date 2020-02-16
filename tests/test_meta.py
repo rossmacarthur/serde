@@ -5,6 +5,7 @@ from itertools import groupby
 
 import mock
 
+from serde import fields
 from tests import REPO_DIR, py36
 
 
@@ -60,3 +61,19 @@ def test_module___all__s():
     ]
     for module in [module_from_path(f) for f in filenames]:
         exec ('from {} import *'.format(module), {}, {})  # noqa: E211
+
+
+def test_field_class_map():
+    """
+    Check that all Instance type fields are in the FIELD_CLASS_MAP.
+    """
+    for name in fields.__all__:
+        field_cls = getattr(fields, name)
+        if fields.is_subclass(field_cls, fields.Instance):
+            try:
+                ty = field_cls().ty
+            except TypeError:
+                pass
+            else:
+                msg = '{!r} not in FIELD_CLASS_MAP'.format(ty.__name__)
+                assert ty in fields.FIELD_CLASS_MAP, msg

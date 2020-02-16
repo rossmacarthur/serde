@@ -1260,6 +1260,7 @@ FIELD_CLASS_MAP = {
     complex: Complex,
     dict: Dict,
     float: Float,
+    frozenset: FrozenSet,
     int: Int,
     list: List,
     set: Set,
