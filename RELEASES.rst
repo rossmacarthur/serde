@@ -6,7 +6,9 @@ Releases
 
 *Unreleased*
 
-- Add ``Flatten`` field.
+- Rename ``BaseField`` to ``_Base``.
+- Add ``frozenset`` to FIELD_CLASS_MAP. (`24d7c0e`_)
+- Add ``Flatten`` field. (`9c740a5`_)
 - Improve ``Uuid`` field normalization. (`34783b0`_)
 - Add ``IpAddress`` field. (`667ca96`_)
 - Extended string types now subclass ``Text`` not ``Str``. (`5862375`_)
@@ -20,6 +22,8 @@ Releases
 .. _5862375: https://github.com/rossmacarthur/serde/commit/5862375ac82a98364d7cf7ef82c6bb668d9abded
 .. _667ca96: https://github.com/rossmacarthur/serde/commit/667ca9629028b29a6d420a9ce4eb14460baca448
 .. _34783b0: https://github.com/rossmacarthur/serde/commit/34783b03084acffc1fd1cddf4c987d3855d45330
+.. _9c740a5: https://github.com/rossmacarthur/serde/commit/9c740a5e9f40b1d913f2d718947f7204e87c6ffa
+.. _24d7c0e: https://github.com/rossmacarthur/serde/commit/24d7c0e3320226837586b214ad3dfc0d95852ddb
 
 0.7.3
 -----

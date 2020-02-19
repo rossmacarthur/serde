@@ -8,7 +8,7 @@ from serde import fields, utils
 from serde.exceptions import ValidationError
 
 
-class Tag(fields.BaseField):
+class Tag(fields._Base):
     """
     A tag field for a `Model <serde.Model>`.
 

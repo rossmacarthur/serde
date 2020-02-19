@@ -9,7 +9,6 @@ from pytest import raises
 from serde import Model, fields, utils, validators
 from serde.exceptions import ContextError, ValidationError
 from serde.fields import (
-    BaseField,
     Bool,
     Bytes,
     Choice,
@@ -38,6 +37,7 @@ from serde.fields import (
     Time,
     Tuple,
     Uuid,
+    _Base,
     _Container,
     _Mapping,
     _resolve_to_field_instance,
@@ -126,83 +126,83 @@ def test__resolve_to_field_instance_builtin_types():
         pass
 
 
-class TestBaseField:
+class TestBase:
     def test___init___basic(self):
         # Construct a basic Base and check values are set correctly.
-        base = BaseField()
+        base = _Base()
         assert base.id >= 0
         assert base.serializers == []
         assert base.deserializers == []
 
         # A second Base instantiated should have a higher counter.
-        base2 = BaseField()
+        base2 = _Base()
         assert base2.id - base.id == 1
 
     def test___init___options(self):
         # A Base with extra options set.
-        base = BaseField(serializers=[None], deserializers=[1, 2, 3])
+        base = _Base(serializers=[None], deserializers=[1, 2, 3])
         assert base.serializers == [None]
         assert base.deserializers == [1, 2, 3]
 
     def test___eq__(self):
         # Bases with equal values should be equal.
-        assert BaseField() == BaseField()
-        assert BaseField(serializers=[None]) == BaseField(serializers=[None])
-        assert BaseField(deserializers=[None]) == BaseField(deserializers=[None])
+        assert _Base() == _Base()
+        assert _Base(serializers=[None]) == _Base(serializers=[None])
+        assert _Base(deserializers=[None]) == _Base(deserializers=[None])
 
     def test___model__(self):
         # Base.__model__ simply returns the _model_cls value.
         obj = object()
-        base = BaseField()
+        base = _Base()
         base._model_cls = obj
         assert base.__model__ is obj
 
     def test__attrs(self):
         # Returns a filtered dictionary of filtered attributes.
-        base = BaseField(serializers=[None], deserializers=[1, 2, 3])
+        base = _Base(serializers=[None], deserializers=[1, 2, 3])
         assert base._attrs() == {'deserializers': [1, 2, 3], 'serializers': [None]}
 
     def test__bind(self):
         # Make sure _bind can't be called twice.
         obj = object()
-        base = BaseField()
+        base = _Base()
         base._bind(obj)
         assert base._model_cls is obj
 
         with raises(ContextError) as e:
             base._bind(object())
 
-        assert e.value.message == "attempted to use 'BaseField' instance more than once"
+        assert e.value.message == "attempted to use '_Base' instance more than once"
 
     def test__serialize_with(self):
         # Check that the Base field doesn't implement this method.
         with raises(NotImplementedError):
-            BaseField()._serialize_with(object(), {})
+            _Base()._serialize_with(object(), {})
 
     def test__deserialize_with(self):
         # Check that the Base field doesn't implement this method.
         with raises(NotImplementedError):
-            BaseField()._deserialize_with(object(), {})
+            _Base()._deserialize_with(object(), {})
 
     def test__serialize(self):
         # Check that custom serializers are applied.
-        base = BaseField(serializers=[lambda x: x[::-1]])
+        base = _Base(serializers=[lambda x: x[::-1]])
         assert base._serialize('testing') == 'gnitset'
 
     def test__deserialize(self):
         # Check that custom deserializers are applied.
-        base = BaseField(deserializers=[lambda x: x[::-1]])
+        base = _Base(deserializers=[lambda x: x[::-1]])
         assert base._deserialize('gnitset') == 'testing'
 
     def test_serialize(self):
         # Check that serialize simply passes a value through.
         obj = object()
-        assert BaseField().serialize(obj) is obj
+        assert _Base().serialize(obj) is obj
 
     def test_deserialize(self):
         # Check that deserialize simply passes a value through.
         obj = object()
-        assert BaseField().deserialize(obj) is obj
+        assert _Base().deserialize(obj) is obj
 
 
 class TestField:

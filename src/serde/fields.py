@@ -57,7 +57,7 @@ def _resolve_to_field_instance(thing, none_allowed=True):
     raise TypeError('failed to resolve {!r} into a field'.format(thing))
 
 
-class BaseField(object):
+class _Base(object):
     """
     A base field or tag on a `~serde.Model`.
 
@@ -82,8 +82,8 @@ class BaseField(object):
         """
         Create a new base field.
         """
-        self.id = BaseField._counter
-        BaseField._counter += 1
+        self.id = _Base._counter
+        _Base._counter += 1
         self.serializers = serializers or []
         self.deserializers = deserializers or []
 
@@ -179,7 +179,7 @@ class BaseField(object):
         return value
 
 
-class Field(BaseField):
+class Field(_Base):
     """
     A field on a `~serde.Model`.
 
