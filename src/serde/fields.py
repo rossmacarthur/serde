@@ -15,7 +15,46 @@ from serde.exceptions import ContextError, ValidationError
 from serde.utils import is_subclass, try_lookup, zip_equal
 
 
-def _resolve_to_field_instance(thing, none_allowed=True):
+def _resolve_type_annotation(thing, default=None):
+    """
+    Map a `typing` hint to a `Field` class.
+
+    Args:
+        thing: anything to resolve to a `Field` class.
+        default: the default value to pass to the `Field` instance.
+    """
+    import typing
+    import typing_compat
+    from serde.model import Model
+
+    if isinstance(thing, Field):
+        return thing
+    elif is_subclass(thing, Model):
+        return Nested(thing, default=default)
+
+    ty = typing_compat.get_origin(thing) or thing
+    args = typing_compat.get_args(thing)
+
+    if ty is typing.Any:
+        return Field()
+    # Special case for Optional because we don't support Union yet.
+    elif ty is typing.Union and len(args) == 2 and args[1] is type(None):  # noqa: E721
+        return Optional(_resolve_type_annotation(args[0]), default=default)
+
+    try:
+        field_cls = FIELD_CLASS_MAP[ty]
+    except (KeyError, TypeError):
+        if isinstance(ty, type):
+            return Instance(ty, default=default)
+    else:
+        return field_cls(
+            *(_resolve_type_annotation(arg) for arg in args), default=default
+        )
+
+    raise TypeError('failed to resolve {!r} into a field'.format(thing))
+
+
+def _resolve(thing, none_allowed=True):
     """
     Resolve an arbitrary object to a `Field` instance.
 
@@ -27,32 +66,27 @@ def _resolve_to_field_instance(thing, none_allowed=True):
     Returns:
         Field: a field instance.
     """
-    # We import Model here to avoid circular dependency problems.
     from serde.model import Model
 
     # If the thing is None then return a generic Field instance.
     if none_allowed and thing is None:
         return Field()
-
     # If the thing is a Field instance then thats great.
     elif isinstance(thing, Field):
         return thing
-
     # If the thing is a subclass of Field then attempt to create an instance.
     # This could fail the Field expects positional arguments.
     if is_subclass(thing, Field):
         return thing()
-
     # If the thing is a subclass of Model then create a Nested instance.
     if is_subclass(thing, Model):
         return Nested(thing)
-
     # If the thing is a built-in type that we support then create an Instance
     # with that type.
-    field_class = FIELD_CLASS_MAP.get(thing, None)
-
-    if field_class is not None:
-        return field_class()
+    try:
+        return FIELD_CLASS_MAP[thing]()
+    except (KeyError, TypeError):
+        pass
 
     raise TypeError('failed to resolve {!r} into a field'.format(thing))
 
@@ -353,7 +387,7 @@ class Optional(Field):
         Create a new `Optional`.
         """
         super(Optional, self).__init__(**kwargs)
-        self.inner = _resolve_to_field_instance(inner)
+        self.inner = _resolve(inner)
 
     def _instantiate_with(self, model, kwargs):
         """
@@ -624,8 +658,8 @@ class _Mapping(_Container):
 
     def __init__(self, ty, key=None, value=None, **kwargs):
         super(_Mapping, self).__init__(ty, **kwargs)
-        self.key = _resolve_to_field_instance(key)
-        self.value = _resolve_to_field_instance(value)
+        self.key = _resolve(key)
+        self.value = _resolve(value)
 
     def _iter(self, value):
         """
@@ -690,7 +724,7 @@ class _Sequence(_Container):
 
     def __init__(self, ty, element=None, **kwargs):
         super(_Sequence, self).__init__(ty, **kwargs)
-        self.element = _resolve_to_field_instance(element)
+        self.element = _resolve(element)
 
     def _iter(self, value):
         """
@@ -802,9 +836,7 @@ class Tuple(_Sequence):
         Create a new `Tuple`.
         """
         super(_Sequence, self).__init__(tuple, **kwargs)
-        self.elements = tuple(
-            _resolve_to_field_instance(e, none_allowed=False) for e in elements
-        )
+        self.elements = tuple(_resolve(e, none_allowed=False) for e in elements)
         assert not hasattr(self, 'element')
 
     def _iter(self, value):

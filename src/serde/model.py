@@ -9,7 +9,7 @@ from collections import OrderedDict
 from six import add_metaclass
 
 from serde.exceptions import ContextError, add_context
-from serde.fields import Field, _resolve_to_field_instance
+from serde.fields import Field, _resolve_type_annotation
 from serde.utils import dict_partition, zip_until_right
 
 
@@ -82,9 +82,10 @@ class ModelType(type):
                     'simultaneous use of annotations and class attributes '
                     'for field definitions'
                 )
+            annotations = attrs.pop('__annotations__')
             fields = OrderedDict(
-                (k, _resolve_to_field_instance(v))
-                for k, v in attrs.pop('__annotations__').items()
+                (k, _resolve_type_annotation(v, default=final_attrs.pop(k, None)))
+                for k, v in annotations.items()
             )
 
         # Create our Model class.
