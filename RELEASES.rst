@@ -6,7 +6,7 @@ Releases
 
 *Unreleased*
 
-- Rename ``BaseField`` to ``_Base``.
+- Rename ``BaseField`` to ``_Base``. (`c5abc2f`_)
 - Add ``frozenset`` to FIELD_CLASS_MAP. (`24d7c0e`_)
 - Add ``Flatten`` field. (`9c740a5`_)
 - Improve ``Uuid`` field normalization. (`34783b0`_)
@@ -16,6 +16,7 @@ Releases
 - Completely rework error handling. (`c95b6b3`_)
 - Make ``Tag.lookup_tag`` default to module + qualname. (`26963d6`_)
 
+.. _c5abc2f: https://github.com/rossmacarthur/serde/commit/c5abc2f1d36e9c0857dc1ea65e4536be4c7397ef
 .. _26963d6: https://github.com/rossmacarthur/serde/commit/26963d65b45229db50444665a3160bd0f1358421
 .. _c95b6b3: https://github.com/rossmacarthur/serde/commit/c95b6b329125164e3301a7e43292c7a858d5e34f
 .. _2a54886: https://github.com/rossmacarthur/serde/commit/2a548865106b1cfc98f5dea8bf00084f62e6334e
