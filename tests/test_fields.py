@@ -13,7 +13,6 @@ from serde.fields import (
     Bytes,
     Choice,
     Complex,
-    Constant,
     Date,
     DateTime,
     Deque,
@@ -1201,14 +1200,6 @@ class TestLiteral:
 
         with raises(ValidationError):
             assert field.validate(False)
-
-
-class TestConstant:
-    def test___init__(self):
-        # Construct a basic Constant and check values are set correctly.
-        field = Constant(1)
-        assert field.value == 1
-        assert field.validators == []
 
 
 class TestChoice:

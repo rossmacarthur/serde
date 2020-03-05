@@ -912,18 +912,6 @@ class Literal(Field):
             )
 
 
-class Constant(Literal):
-    """
-    Deprecated, use `Literal`.
-    """
-
-    def __init__(self, value, **kwargs):
-        """
-        Create a new `Constant`.
-        """
-        super(Constant, self).__init__(value, **kwargs)
-
-
 class Choice(Field):
     """
     One of a given selection of values.

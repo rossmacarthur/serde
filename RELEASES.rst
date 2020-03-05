@@ -6,7 +6,8 @@ Releases
 
 *Unreleased*
 
-- Improve ``ValidationError`` messages for container fields.
+- Remove deprecated ``Constant`` field.
+- Improve ``ValidationError`` messages for container fields. (`7746732`_)
 - Rename ``BaseField`` to ``_Base``. (`c5abc2f`_)
 - Add ``frozenset`` to FIELD_CLASS_MAP. (`24d7c0e`_)
 - Add ``Flatten`` field. (`9c740a5`_)
@@ -17,7 +18,6 @@ Releases
 - Completely rework error handling. (`c95b6b3`_)
 - Make ``Tag.lookup_tag`` default to module + qualname. (`26963d6`_)
 
-.. _c5abc2f: https://github.com/rossmacarthur/serde/commit/c5abc2f1d36e9c0857dc1ea65e4536be4c7397ef
 .. _26963d6: https://github.com/rossmacarthur/serde/commit/26963d65b45229db50444665a3160bd0f1358421
 .. _c95b6b3: https://github.com/rossmacarthur/serde/commit/c95b6b329125164e3301a7e43292c7a858d5e34f
 .. _2a54886: https://github.com/rossmacarthur/serde/commit/2a548865106b1cfc98f5dea8bf00084f62e6334e
@@ -26,6 +26,8 @@ Releases
 .. _34783b0: https://github.com/rossmacarthur/serde/commit/34783b03084acffc1fd1cddf4c987d3855d45330
 .. _9c740a5: https://github.com/rossmacarthur/serde/commit/9c740a5e9f40b1d913f2d718947f7204e87c6ffa
 .. _24d7c0e: https://github.com/rossmacarthur/serde/commit/24d7c0e3320226837586b214ad3dfc0d95852ddb
+.. _c5abc2f: https://github.com/rossmacarthur/serde/commit/c5abc2f1d36e9c0857dc1ea65e4536be4c7397ef
+.. _7746732: https://github.com/rossmacarthur/serde/commit/7746732d2180d6bd9cbf141475f87409b7977343
 
 0.7.3
 -----
