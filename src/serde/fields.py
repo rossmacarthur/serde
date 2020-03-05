@@ -11,7 +11,7 @@ import isodate
 from six import PY3, binary_type, integer_types, text_type
 from six.moves.collections_abc import Mapping as MappingType
 
-from serde.exceptions import ContextError, ValidationError
+from serde.exceptions import ContextError, ValidationError, add_context
 from serde.utils import is_subclass, try_lookup, zip_equal
 
 
@@ -564,7 +564,7 @@ class _Container(Instance):
         """
         Apply a stage to a particular element in the container.
         """
-        return getattr(self.element, stage)(element)
+        raise NotImplementedError()
 
     def serialize(self, value):
         """
@@ -643,8 +643,9 @@ class _Mapping(_Container):
         """
         Apply the key stage to each key, and the value stage to each value.
         """
-        k, v = element
-        return (getattr(self.key, stage)(k), getattr(self.value, stage)(v))
+        key, value = element
+        with add_context(key):
+            return (getattr(self.key, stage)(key), getattr(self.value, stage)(value))
 
 
 class Dict(_Mapping):
@@ -697,12 +698,20 @@ class _Sequence(_Container):
         Iterate over the sequence.
         """
         try:
-            for element in value:
+            for element in enumerate(value):
                 yield element
         except TypeError:
             raise ValidationError(
                 'invalid type, expected {!r}'.format(self.ty.__name__), value=value
             )
+
+    def _apply(self, stage, element):
+        """
+        Apply a stage to a particular element in the container.
+        """
+        index, value = element
+        with add_context(index):
+            return getattr(self.element, stage)(value)
 
 
 class Deque(_Sequence):
@@ -805,20 +814,28 @@ class Tuple(_Sequence):
         self.elements = tuple(
             _resolve_to_field_instance(e, none_allowed=False) for e in elements
         )
-        assert not hasattr(self, 'element')
 
     def _iter(self, value):
         """
         Iterate over the fields and each element in the tuple.
         """
-        return zip_equal(self.elements, super(Tuple, self)._iter(value))
+        try:
+            for element in zip_equal(self.elements, super(Tuple, self)._iter(value)):
+                yield element
+        except ValueError:
+            raise ValidationError(
+                'invalid length, expected {} elements'.format(
+                    len(self.elements), value=value
+                )
+            )
 
     def _apply(self, stage, element):
         """
         Apply the element field stage to the corresponding element value.
         """
-        f, v = element
-        return getattr(f, stage)(v)
+        field, (index, value) = element
+        with add_context(index):
+            return getattr(field, stage)(value)
 
 
 def create_primitive(name, ty):

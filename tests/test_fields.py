@@ -578,7 +578,7 @@ class TestOptional:
         }
 
     def test_integrate_contained_validators(self):
-        # An optional with extra validators shoudl be able to be contained by
+        # An optional with extra validators should be able to be contained by
         # other container fields.
 
         class Example(Model):
@@ -589,7 +589,7 @@ class TestOptional:
 
         with raises(ValidationError) as e:
             Example(a=['a', 'b', None, 'c', 'hello there'])
-        assert e.value.messages() == {'a': 'expected length 1'}
+        assert e.value.messages() == {'a': {4: 'expected length 1'}}
 
 
 class TestInstance:
@@ -683,6 +683,10 @@ class TestContainer:
     def test__iter(self):
         with raises(NotImplementedError):
             _Container(dict)._iter(object())
+
+    def test__apply(self):
+        with raises(NotImplementedError):
+            _Container(dict)._apply('_serialize', object())
 
 
 class TestMapping:
@@ -1164,6 +1168,16 @@ class TestTuple:
 
         with raises(ValidationError):
             field.validate((20, 11))
+
+    def test_integrate_incorrect_length(self):
+        # A Tuple should handle incorrect length inputs.
+
+        class Example(Model):
+            a = Tuple(Int, Str, Int)
+
+        with raises(ValidationError) as e:
+            Example.from_dict({'a': (1, 'testing...')})
+        assert e.value.messages() == {'a': 'invalid length, expected 3 elements'}
 
 
 class TestLiteral:

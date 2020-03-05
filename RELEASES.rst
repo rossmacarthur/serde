@@ -6,6 +6,7 @@ Releases
 
 *Unreleased*
 
+- Improve ``ValidationError`` messages for container fields.
 - Rename ``BaseField`` to ``_Base``. (`c5abc2f`_)
 - Add ``frozenset`` to FIELD_CLASS_MAP. (`24d7c0e`_)
 - Add ``Flatten`` field. (`9c740a5`_)

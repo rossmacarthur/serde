@@ -4,6 +4,8 @@ This module contains `Exception` classes that are used in Serde.
 
 from contextlib import contextmanager
 
+import six
+
 
 __all__ = [
     'ContextError',
@@ -77,6 +79,8 @@ class ValidationError(SerdeError):
             # Avoids tags which might not have `_serde_name`
             if isinstance(field, Field):
                 d = {field._serde_name: d}
+            elif isinstance(field, (six.string_types, six.integer_types)):
+                d = {field: d}
         return d
 
     def __str__(self):
