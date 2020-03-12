@@ -4,9 +4,9 @@ Releases
 0.8.0
 -----
 
-*Unreleased*
+*Released on March 12th, 2020*
 
-- Remove deprecated ``Constant`` field.
+- Remove deprecated ``Constant`` field. (`d70b044`_)
 - Improve ``ValidationError`` messages for container fields. (`7746732`_)
 - Rename ``BaseField`` to ``_Base``. (`c5abc2f`_)
 - Add ``frozenset`` to FIELD_CLASS_MAP. (`24d7c0e`_)
@@ -28,6 +28,7 @@ Releases
 .. _24d7c0e: https://github.com/rossmacarthur/serde/commit/24d7c0e3320226837586b214ad3dfc0d95852ddb
 .. _c5abc2f: https://github.com/rossmacarthur/serde/commit/c5abc2f1d36e9c0857dc1ea65e4536be4c7397ef
 .. _7746732: https://github.com/rossmacarthur/serde/commit/7746732d2180d6bd9cbf141475f87409b7977343
+.. _d70b044: https://github.com/rossmacarthur/serde/commit/d70b044157e258365868a32daeff4b158b1fbc9d
 
 0.7.3
 -----
