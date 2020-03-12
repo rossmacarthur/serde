@@ -15,7 +15,7 @@ from serde.exceptions import ContextError, ValidationError, add_context
 from serde.utils import is_subclass, try_lookup, zip_equal
 
 
-def _resolve_to_field_instance(thing, none_allowed=True):
+def _resolve(thing, none_allowed=True):
     """
     Resolve an arbitrary object to a `Field` instance.
 
@@ -27,32 +27,28 @@ def _resolve_to_field_instance(thing, none_allowed=True):
     Returns:
         Field: a field instance.
     """
-    # We import Model here to avoid circular dependency problems.
     from serde.model import Model
 
     # If the thing is None then return a generic Field instance.
     if none_allowed and thing is None:
         return Field()
-
     # If the thing is a Field instance then thats great.
     elif isinstance(thing, Field):
         return thing
-
     # If the thing is a subclass of Field then attempt to create an instance.
     # This could fail the Field expects positional arguments.
     if is_subclass(thing, Field):
         return thing()
-
     # If the thing is a subclass of Model then create a Nested instance.
     if is_subclass(thing, Model):
         return Nested(thing)
 
     # If the thing is a built-in type that we support then create an Instance
     # with that type.
-    field_class = FIELD_CLASS_MAP.get(thing, None)
-
-    if field_class is not None:
-        return field_class()
+    try:
+        return _FIELD_CLASS_MAP[thing]()
+    except (KeyError, TypeError):
+        pass
 
     raise TypeError('failed to resolve {!r} into a field'.format(thing))
 
@@ -353,7 +349,7 @@ class Optional(Field):
         Create a new `Optional`.
         """
         super(Optional, self).__init__(**kwargs)
-        self.inner = _resolve_to_field_instance(inner)
+        self.inner = _resolve(inner)
 
     def _instantiate_with(self, model, kwargs):
         """
@@ -624,8 +620,8 @@ class _Mapping(_Container):
 
     def __init__(self, ty, key=None, value=None, **kwargs):
         super(_Mapping, self).__init__(ty, **kwargs)
-        self.key = _resolve_to_field_instance(key)
-        self.value = _resolve_to_field_instance(value)
+        self.key = _resolve(key)
+        self.value = _resolve(value)
 
     def _iter(self, value):
         """
@@ -691,7 +687,7 @@ class _Sequence(_Container):
 
     def __init__(self, ty, element=None, **kwargs):
         super(_Sequence, self).__init__(ty, **kwargs)
-        self.element = _resolve_to_field_instance(element)
+        self.element = _resolve(element)
 
     def _iter(self, value):
         """
@@ -811,9 +807,7 @@ class Tuple(_Sequence):
         Create a new `Tuple`.
         """
         super(_Sequence, self).__init__(tuple, **kwargs)
-        self.elements = tuple(
-            _resolve_to_field_instance(e, none_allowed=False) for e in elements
-        )
+        self.elements = tuple(_resolve(e, none_allowed=False) for e in elements)
 
     def _iter(self, value):
         """
@@ -1258,7 +1252,7 @@ Url = create_from('validators.url', human='URL')
 
 del create_from
 
-FIELD_CLASS_MAP = {
+_FIELD_CLASS_MAP = {
     # Built-in types
     bool: Bool,
     bytes: Bytes,
@@ -1283,17 +1277,17 @@ FIELD_CLASS_MAP = {
 }
 
 try:
-    FIELD_CLASS_MAP[basestring] = BaseString
+    _FIELD_CLASS_MAP[basestring] = BaseString
 except NameError:
     pass
 
 try:
-    FIELD_CLASS_MAP[long] = Long
+    _FIELD_CLASS_MAP[long] = Long
 except NameError:
     pass
 
 try:
-    FIELD_CLASS_MAP[unicode] = Unicode
+    _FIELD_CLASS_MAP[unicode] = Unicode
 except NameError:
     pass
 

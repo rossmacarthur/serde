@@ -9,17 +9,15 @@ from pytest import raises
 from serde import Model, fields, utils, validators
 from serde.exceptions import ContextError, ValidationError
 from serde.fields import (
+    _FIELD_CLASS_MAP,
     Bool,
-    Bytes,
     Choice,
-    Complex,
     Date,
     DateTime,
     Deque,
     Dict,
     Field,
     Flatten,
-    Float,
     FrozenSet,
     Instance,
     Int,
@@ -39,7 +37,7 @@ from serde.fields import (
     _Base,
     _Container,
     _Mapping,
-    _resolve_to_field_instance,
+    _resolve,
     _Sequence,
 )
 
@@ -66,63 +64,41 @@ def test_overridden_methods():
                 assert all(method in vars(obj).keys() for method in methods)
 
 
-def test__resolve_to_field_instance_field():
+def test__resolve_field():
     # An instance of Field should be passed through.
     field = Field()
-    assert _resolve_to_field_instance(field) is field
+    assert _resolve(field) is field
 
 
-def test__resolve_to_field_instance_field_class():
+def test__resolve_field_class():
     # A Field class should be instantiated.
-    assert _resolve_to_field_instance(Field) == Field()
+    assert _resolve(Field) == Field()
 
 
-def test__resolve_to_field_instance_model_class():
+def test__resolve_model_class():
     # A Model class should become a Nested instance, wrapping the Model class.
 
     class Example(Model):
         pass
 
-    assert _resolve_to_field_instance(Example) == Nested(Example)
+    assert _resolve(Example) == Nested(Example)
 
 
-def test__resolve_to_field_instance_model():
+def test__resolve_model():
     # A Model instance should not be allowed.
 
     class Example(Model):
         pass
 
     with raises(TypeError):
-        _resolve_to_field_instance(Example())
+        _resolve(Example())
 
 
-def test__resolve_to_field_instance_builtin_types():
+def test__resolve_builtin_types():
     # All the built-in types should resolve to an instance of their
     # corresponding Field.
-    assert _resolve_to_field_instance(bool) == Bool()
-    assert _resolve_to_field_instance(bytes) == Bytes()
-    assert _resolve_to_field_instance(complex) == Complex()
-    assert _resolve_to_field_instance(dict) == Dict()
-    assert _resolve_to_field_instance(float) == Float()
-    assert _resolve_to_field_instance(int) == Int()
-    assert _resolve_to_field_instance(list) == List()
-    assert _resolve_to_field_instance(str) == Str()
-    assert _resolve_to_field_instance(tuple) == Tuple()
-
-    try:
-        assert _resolve_to_field_instance(basestring) == fields.BaseString()
-    except NameError:
-        pass
-
-    try:
-        assert _resolve_to_field_instance(long) == fields.Long()
-    except NameError:
-        pass
-
-    try:
-        assert _resolve_to_field_instance(unicode) == fields.Unicode()
-    except NameError:
-        pass
+    for ty, expected in _FIELD_CLASS_MAP.items():
+        assert _resolve(ty) == expected()
 
 
 class TestBase:

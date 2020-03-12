@@ -76,4 +76,4 @@ def test_field_class_map():
                 pass
             else:
                 msg = '{!r} not in FIELD_CLASS_MAP'.format(ty.__name__)
-                assert ty in fields.FIELD_CLASS_MAP, msg
+                assert ty in fields._FIELD_CLASS_MAP, msg
