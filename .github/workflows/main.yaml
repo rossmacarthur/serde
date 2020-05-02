@@ -13,19 +13,14 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
+    - uses: extractions/setup-just@v1
+
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - run: echo "::set-env name=VIRTUAL_ENV::$(printf ${{ env.pythonLocation }} | sed 's/\/bin$//g')"
-
-    - name: Install just
-      run: |
-        curl --proto '=https' -fLsS https://rossmacarthur.github.io/install/crate.sh \
-          | bash -s -- --repo casey/just --to $GITHUB_WORKSPACE/bin
-        echo "::add-path::$GITHUB_WORKSPACE/bin"
 
     - name: Install dependencies
-      run: just install-all
+      run: just install-dev
 
     - name: Lint
       run: just lint
@@ -33,11 +28,8 @@ jobs:
     - name: Test
       run: just test
 
-    - name: Upload coverage report to Codecov
+    - uses: codecov/codecov-action@v1
       if: matrix.python-version == 3.7
-      run: pip install codecov && codecov --slug=$GITHUB_REPOSITORY --branch=$GITHUB_REF --commit=$GITHUB_SHA
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   deploy:
     needs: test
