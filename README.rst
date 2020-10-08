@@ -6,7 +6,7 @@ Serde
     :alt: PyPI Version
 
 .. image:: https://img.shields.io/badge/docs-passing-brightgreen.svg?style=flat-square
-    :target: https://ross.macarthur.io/project/serde/
+    :target: https://rossmacarthur.github.io/serde/
     :alt: Documentation Status
 
 .. image:: https://img.shields.io/github/workflow/status/rossmacarthur/serde/build/master?style=flat-square

@@ -56,7 +56,7 @@ setup(
     # Metadata
     download_url='{url}/archive/{version}.tar.gz'.format(**metadata),
     project_urls={
-        'Documentation': 'https://ross.macarthur.io/project/serde/',
+        'Documentation': 'https://rossmacarthur.github.io/serde/',
         'Issue Tracker': '{url}/issues'.format(**metadata),
     },
     classifiers=[
