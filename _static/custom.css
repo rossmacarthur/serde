@@ -1,0 +1,43 @@
+body {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-size: 100%;
+  line-height: 1.45;
+}
+
+p {
+  text-align: justify;
+}
+
+a {
+  color: #0366d6;
+}
+
+pre {
+  background-color: #f6f8fa;
+  border-radius: 3px;
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 85%;
+  line-height: 1.45;
+  overflow: auto;
+  padding: 16px;
+}
+
+code.literal {
+  border-radius: 3px;
+  padding: 3px 5px;
+}
+
+dl.class, dl.exception {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+table.field-list th.field-name {
+  font-style: italic;
+  font-weight: normal;
+}
+
+div.contents {
+  background-color: #fff;
+  border: none;
+}

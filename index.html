@@ -1,0 +1,625 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Serde &#8212; Serde 0.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API" href="api.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">Serde</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=rossmacarthur&repo=serde&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Releases</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="api.html" title="next chapter">API</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="serde">
+<h1>Serde<a class="headerlink" href="#serde" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://pypi.org/project/serde/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/serde.svg?style=flat-square&amp;colorB=4c1" /></a>
+<a class="reference external image-reference" href="https://ross.macarthur.io/project/serde/"><img alt="Documentation Status" src="https://img.shields.io/badge/docs-passing-brightgreen.svg?style=flat-square" /></a>
+<a class="reference external image-reference" href="https://github.com/rossmacarthur/serde/actions?query=workflow%3Abuild"><img alt="Build Status" src="https://img.shields.io/github/workflow/status/rossmacarthur/serde/build/master?style=flat-square" /></a>
+<a class="reference external image-reference" href="https://codecov.io/gh/rossmacarthur/serde"><img alt="Code Coverage" src="https://img.shields.io/codecov/c/github/rossmacarthur/serde.svg?style=flat-square" /></a>
+<a class="reference external image-reference" href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-101010.svg?style=flat-square" /></a>
+<p>Serde is a lightweight, general-purpose framework for defining, serializing,
+deserializing, and validating data structures in Python.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#getting-started" id="id1">Getting started</a></p>
+<ul>
+<li><p><a class="reference internal" href="#installation" id="id2">Installation</a></p></li>
+<li><p><a class="reference internal" href="#introduction" id="id3">Introduction</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#basic-usage" id="id4">Basic usage</a></p></li>
+<li><p><a class="reference internal" href="#models" id="id5">Models</a></p>
+<ul>
+<li><p><a class="reference internal" href="#subclassed-models" id="id6">Subclassed models</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#model-tagging" id="id7">Model tagging</a></p>
+<ul>
+<li><p><a class="reference internal" href="#internally-tagged" id="id8">Internally tagged</a></p></li>
+<li><p><a class="reference internal" href="#externally-tagged" id="id9">Externally tagged</a></p></li>
+<li><p><a class="reference internal" href="#adjacently-tagged" id="id10">Adjacently tagged</a></p></li>
+<li><p><a class="reference internal" href="#abstract-models" id="id11">Abstract models</a></p></li>
+<li><p><a class="reference internal" href="#custom-tags" id="id12">Custom tags</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#fields" id="id13">Fields</a></p></li>
+<li><p><a class="reference internal" href="#python-2-7-and-python-3-5-compatibility" id="id14">Python 2.7 and Python 3.5 compatibility</a></p></li>
+<li><p><a class="reference internal" href="#model-states-and-processes" id="id15">Model states and processes</a></p></li>
+<li><p><a class="reference internal" href="#license" id="id16">License</a></p></li>
+<li><p><a class="reference internal" href="#index" id="id17">Index</a></p></li>
+</ul>
+</div>
+<div class="section" id="getting-started">
+<h2>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h3>
+<p>Serde is available on PyPI, you can install it using</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip install serde
+</pre></div>
+</div>
+<p>Extended features can be installed with the <code class="docutils literal notranslate"><span class="pre">ext</span></code> feature.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip install serde<span class="o">[</span>ext<span class="o">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="introduction">
+<h3>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h3>
+<p>In Serde <em>models</em> are containers for <em>fields</em>. Data structures are defined by
+subclassing <code class="docutils literal notranslate"><span class="pre">Model</span></code> and assigning <code class="docutils literal notranslate"><span class="pre">Field</span></code> instances as class annotations.
+These fields handle serialization, deserialization, normalization, and
+validation for the corresponding model attributes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">date</span>
+<span class="kn">from</span> <span class="nn">serde</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">fields</span>
+
+<span class="k">class</span> <span class="nc">Artist</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">Album</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">title</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+    <span class="n">release_date</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">Date</span><span class="p">)</span>
+    <span class="n">artist</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Nested</span><span class="p">(</span><span class="n">Artist</span><span class="p">)</span>
+
+<span class="n">album</span> <span class="o">=</span> <span class="n">Album</span><span class="p">(</span>
+    <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Dangerously in Love&#39;</span><span class="p">,</span>
+    <span class="n">release_date</span><span class="o">=</span><span class="n">date</span><span class="p">(</span><span class="mi">2003</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">23</span><span class="p">),</span>
+    <span class="n">artist</span><span class="o">=</span><span class="n">Artist</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Beyoncé&#39;</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">assert</span> <span class="n">album</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="o">==</span> <span class="p">{</span>
+    <span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="s1">&#39;Dangerously in Love&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;release_date&#39;</span><span class="p">:</span> <span class="s1">&#39;2003-06-23&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;artist&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Beyoncé&#39;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">album</span> <span class="o">=</span> <span class="n">Album</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;{</span>
+<span class="s2">    &quot;title&quot;: &quot;Lemonade&quot;,</span>
+<span class="s2">    &quot;artist&quot;: {&quot;name&quot;: &quot;Beyoncé&quot;}}&quot;</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">album</span> <span class="o">==</span> <span class="n">Album</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Lemonade&#39;</span><span class="p">,</span> <span class="n">artist</span><span class="o">=</span><span class="n">Artist</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Beyoncé&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="basic-usage">
+<h2>Basic usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h2>
+<p>Below we create a <code class="docutils literal notranslate"><span class="pre">User</span></code> model by subclassing <code class="docutils literal notranslate"><span class="pre">Model</span></code> and adding the
+<code class="docutils literal notranslate"><span class="pre">name</span></code> and <code class="docutils literal notranslate"><span class="pre">email</span></code> fields.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">serde</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">fields</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">name</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">(</span><span class="n">rename</span><span class="o">=</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">email</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Email</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The corresponding attribute names are used to instantiate the model object and
+access the values on the model instance.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Linus Torvalds&#39;</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s1">&#39;torvalds@linuxfoundation.org&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">user</span><span class="o">.</span><span class="n">name</span>
+<span class="go">&#39;Linus Torvalds&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">user</span><span class="o">.</span><span class="n">email</span>
+<span class="go">&#39;torvalds@linuxfoundation.org&#39;</span>
+</pre></div>
+</div>
+<p>Models are validated when they are instantiated and a <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> is
+raised if you provide invalid values.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">User</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Linus Torvalds&#39;</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s1">&#39;not an email&#39;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">serde.exceptions.ValidationError</span>: <span class="n">{&#39;email&#39;: &#39;invalid email&#39;}</span>
+</pre></div>
+</div>
+<p>Models are serialized into primitive Python types using the <code class="docutils literal notranslate"><span class="pre">to_dict()</span></code> method
+on the model instance.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">user</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="go">OrderedDict([(&#39;username&#39;, &#39;Linus Torvalds&#39;), (&#39;email&#39;, &#39;torvalds@linuxfoundation.org&#39;)])</span>
+</pre></div>
+</div>
+<p>Or to JSON using the <code class="docutils literal notranslate"><span class="pre">to_json()</span></code> method.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">user</span><span class="o">.</span><span class="n">to_json</span><span class="p">()</span>
+<span class="go">&#39;{&quot;username&quot;: &quot;Linus Torvalds&quot;, &quot;email&quot;: &quot;torvalds@linuxfoundation.org&quot;}&#39;</span>
+</pre></div>
+</div>
+<p>Models are also validated when they are deserialized. Models are deserialized
+from primitive Python types using the reciprocal <code class="docutils literal notranslate"><span class="pre">from_dict()</span></code> class method.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
+<span class="gp">... </span>    <span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="s1">&#39;Donald Knuth&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s1">&#39;email&#39;</span><span class="p">:</span> <span class="s1">&#39;noreply@stanford.edu&#39;</span>
+<span class="gp">... </span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Or from JSON using the <code class="docutils literal notranslate"><span class="pre">from_json()</span></code> method.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;{</span>
+<span class="gp">... </span><span class="s1">    &quot;username&quot;: &quot;Donald Knuth&quot;,</span>
+<span class="gp">... </span><span class="s1">    &quot;email&quot;: &quot;noreply@stanford.edu&quot;</span>
+<span class="gp">... </span><span class="s1">}&#39;&#39;&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Attempting to deserialize invalid data will result in a <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">User</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="s1">&#39;Donald Knuth&#39;</span><span class="p">})</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">serde.exceptions.ValidationError</span>: <span class="n">{&#39;email&#39;: &quot;missing data, expected field &#39;email&#39;&quot;}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="models">
+<h2>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h2>
+<p>Models can be nested and used in container-like fields.  Below we create a
+<code class="docutils literal notranslate"><span class="pre">Blog</span></code> with an author and a list of subscribers which must all be <code class="docutils literal notranslate"><span class="pre">User</span></code>
+instances.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Blog</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">title</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+<span class="gp">... </span>    <span class="n">author</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Nested</span><span class="p">(</span><span class="n">User</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">subscribers</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">List</span><span class="p">(</span><span class="n">User</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When instantiating you have to supply instances of the nested models.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">blog</span> <span class="o">=</span> <span class="n">Blog</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;sobolevn&#39;s personal blog&quot;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">author</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Nikita Sobolev&#39;</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s1">&#39;mail@sobolevn.me&#39;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">subscribers</span><span class="o">=</span><span class="p">[</span>
+<span class="gp">... </span>        <span class="n">User</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Ned Batchelder&#39;</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s1">&#39;ned@nedbatchelder.com&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="p">]</span>
+<span class="gp">... </span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Serializing a <code class="docutils literal notranslate"><span class="pre">Blog</span></code> would serialize the entire nested structure.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">blog</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+<span class="go">{</span>
+<span class="go">  &quot;title&quot;: &quot;sobolevn&#39;s personal blog&quot;,</span>
+<span class="go">  &quot;author&quot;: {</span>
+<span class="go">    &quot;username&quot;: &quot;Nikita Sobolev&quot;,</span>
+<span class="go">    &quot;email&quot;: &quot;mail@sobolevn.me&quot;</span>
+<span class="go">  },</span>
+<span class="go">  &quot;subscribers&quot;: [</span>
+<span class="go">    {</span>
+<span class="go">      &quot;username&quot;: &quot;Ned Batchelder&quot;,</span>
+<span class="go">      &quot;email&quot;: &quot;ned@nedbatchelder.com&quot;</span>
+<span class="go">    }</span>
+<span class="go">  ]</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>Similiarly deserializing a <code class="docutils literal notranslate"><span class="pre">Blog</span></code> would deserialize the entire nested
+structure, and create instances of all the submodels.</p>
+<div class="section" id="subclassed-models">
+<h3>Subclassed models<a class="headerlink" href="#subclassed-models" title="Permalink to this headline">¶</a></h3>
+<p>Models can be subclassed. The subclass will have all the fields of the parent
+and any additional ones. Consider the case where we define a <code class="docutils literal notranslate"><span class="pre">SuperUser</span></code> model
+which is a subclass of a <code class="docutils literal notranslate"><span class="pre">User</span></code>. Simply a <code class="docutils literal notranslate"><span class="pre">User</span></code> that has an extra <code class="docutils literal notranslate"><span class="pre">level</span></code>
+field.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">SuperUser</span><span class="p">(</span><span class="n">User</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="c1"># inherits name and email fields from User</span>
+<span class="gp">... </span>    <span class="n">level</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span> <span class="s1">&#39;read-only&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>We instantiate a subclassed model as normal by passing in each field value.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">superuser</span> <span class="o">=</span> <span class="n">SuperUser</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Linus Torvalds&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">email</span><span class="o">=</span><span class="s1">&#39;torvalds@linuxfoundation.org&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">level</span><span class="o">=</span><span class="s1">&#39;admin&#39;</span>
+<span class="gp">... </span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is great for many cases, however, a commonly desired paradigm is to be able
+to have the <code class="docutils literal notranslate"><span class="pre">User.from_dict()</span></code> class method be able to deserialize a
+<code class="docutils literal notranslate"><span class="pre">SuperUser</span></code> as well. This can be made possible through <em>model tagging</em>.</p>
+</div>
+</div>
+<div class="section" id="model-tagging">
+<h2>Model tagging<a class="headerlink" href="#model-tagging" title="Permalink to this headline">¶</a></h2>
+<p>Model tagging is a way to mark serialized data in order to show that it is a
+particular <em>variant</em> of a model. Serde provides three types of model tagging,
+but you can also define you own custom <code class="docutils literal notranslate"><span class="pre">Tag</span></code>. A <code class="docutils literal notranslate"><span class="pre">Tag</span></code> can be thought of in
+the same way as a <code class="docutils literal notranslate"><span class="pre">Field</span></code> but instead of deserializing data into an attribute
+on a model instance, it deserializes data into a model class.</p>
+<div class="section" id="internally-tagged">
+<h3>Internally tagged<a class="headerlink" href="#internally-tagged" title="Permalink to this headline">¶</a></h3>
+<p>Internally tagged data stores a tag value inside the serialized data.</p>
+<p>Let us consider an example where we define a <code class="docutils literal notranslate"><span class="pre">Pet</span></code> model with a <code class="docutils literal notranslate"><span class="pre">tag</span></code>. We
+can then subclass this model and deserialize arbitrary subclasses using the
+tagged model.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">serde</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">tags</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Pet</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">name</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">... </span>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="n">tag</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">Internal</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;species&#39;</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Dog</span><span class="p">(</span><span class="n">Pet</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">hates_cats</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Cat</span><span class="p">(</span><span class="n">Pet</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">hates_dogs</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We refer to the <code class="docutils literal notranslate"><span class="pre">Dog</span></code> and <code class="docutils literal notranslate"><span class="pre">Cat</span></code> subclasses as <em>variants</em> of <code class="docutils literal notranslate"><span class="pre">Pet</span></code>. When
+serializing all parent model tag serialization is done after field
+serialization.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Cat</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Fluffy&#39;</span><span class="p">,</span> <span class="n">hates_dogs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="go">OrderedDict([(&#39;name&#39;, &#39;Fluffy&#39;), (&#39;hates_dogs&#39;, True), (&#39;species&#39;, &#39;__main__.Cat&#39;)])</span>
+</pre></div>
+</div>
+<p>When deserializing, tag deserialization is done first to determine which model
+to use for the deserialization.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">milo</span> <span class="o">=</span> <span class="n">Pet</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
+<span class="gp">... </span>    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Milo&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s1">&#39;hates_cats&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s1">&#39;species&#39;</span><span class="p">:</span> <span class="s1">&#39;__main__.Dog&#39;</span>
+<span class="gp">... </span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">milo</span><span class="o">.</span><span class="vm">__class__</span>
+<span class="go">&lt;class &#39;__main__.Dog&#39;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">milo</span><span class="o">.</span><span class="n">name</span>
+<span class="go">&#39;Milo&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">milo</span><span class="o">.</span><span class="n">hates_cats</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>An invalid or missing tag will raise a <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Pet</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Milo&#39;</span><span class="p">,</span> <span class="s1">&#39;hates_cats&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">serde.exceptions.ValidationError</span>: <span class="n">missing data, expected tag &#39;species&#39;</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Pet</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Duke&#39;</span><span class="p">,</span> <span class="s1">&#39;species&#39;</span><span class="p">:</span> <span class="s1">&#39;__main__.Horse&#39;</span><span class="p">})</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">serde.exceptions.ValidationError</span>: <span class="n">no variant found</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="externally-tagged">
+<h3>Externally tagged<a class="headerlink" href="#externally-tagged" title="Permalink to this headline">¶</a></h3>
+<p>Externally tagged data uses the tag value as a key and nests the content
+underneath that key. All other processes behave similarly to the internally
+tagged example above.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Pet</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">name</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">... </span>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="n">tag</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">External</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Dog</span><span class="p">(</span><span class="n">Pet</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">hates_cats</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Dog</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Max&#39;</span><span class="p">,</span> <span class="n">hates_cats</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="go">OrderedDict([(&#39;__main__.Dog&#39;, OrderedDict([(&#39;name&#39;, &#39;Max&#39;), (&#39;hates_cats&#39;, True)]))])</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="adjacently-tagged">
+<h3>Adjacently tagged<a class="headerlink" href="#adjacently-tagged" title="Permalink to this headline">¶</a></h3>
+<p>Adjacently tagged data data stores the tag value and the content underneath two
+separate keys. All other processes behave similarly to the internally tagged
+example.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Pet</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">name</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">... </span>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="n">tag</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">Adjacent</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;species&#39;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Dog</span><span class="p">(</span><span class="n">Pet</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">hates_cats</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Dog</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Max&#39;</span><span class="p">,</span> <span class="n">hates_cats</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="go">OrderedDict([(&#39;species&#39;, &#39;__main__.Dog&#39;), (&#39;data&#39;, OrderedDict([(&#39;name&#39;, &#39;Max&#39;), (&#39;hates_cats&#39;, True)]))])</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="abstract-models">
+<h3>Abstract models<a class="headerlink" href="#abstract-models" title="Permalink to this headline">¶</a></h3>
+<p>By default model tagging still allows deserialization of the base model. It is
+common to have this model be abstract. You can do this by setting the
+<code class="docutils literal notranslate"><span class="pre">abstract</span></code> Meta field to <code class="docutils literal notranslate"><span class="pre">True</span></code>. This will make it uninstantiatable and it
+won’t be included in the variant list during deserialization.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Fruit</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="n">abstract</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Fruit</span><span class="p">()</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">TypeError</span>: <span class="n">unable to instantiate abstract model &#39;Fruit&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="custom-tags">
+<h3>Custom tags<a class="headerlink" href="#custom-tags" title="Permalink to this headline">¶</a></h3>
+<p>It is possible to create your own custom tag class by subclassing any of
+<code class="docutils literal notranslate"><span class="pre">tags.External</span></code>, <code class="docutils literal notranslate"><span class="pre">tags.Internal</span></code>, <code class="docutils literal notranslate"><span class="pre">tags.Adjacent</span></code> or even the base
+<code class="docutils literal notranslate"><span class="pre">tags.Tag</span></code>. This will allow customization of how the variants are looked up,
+how the tag values are generated for variants, and how the data is serialized.</p>
+<p>Consider an example where we use a class attribute <code class="docutils literal notranslate"><span class="pre">code</span></code> as the tag value.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Custom</span><span class="p">(</span><span class="n">tags</span><span class="o">.</span><span class="n">Internal</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="nf">lookup_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variant</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="k">return</span> <span class="n">variant</span><span class="o">.</span><span class="n">code</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Pet</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">name</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">... </span>    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+<span class="gp">... </span>        <span class="n">abstract</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="gp">... </span>        <span class="n">tag</span> <span class="o">=</span> <span class="n">Custom</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;code&#39;</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Dog</span><span class="p">(</span><span class="n">Pet</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">code</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">... </span>    <span class="n">hates_cats</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Bool</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Dog</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Max&#39;</span><span class="p">,</span> <span class="n">hates_cats</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+<span class="go">OrderedDict([(&#39;name&#39;, &#39;Max&#39;), (&#39;hates_cats&#39;, True), (&#39;code&#39;, 1)])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">max</span> <span class="o">=</span> <span class="n">Pet</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Max&#39;</span><span class="p">,</span> <span class="s1">&#39;hates_cats&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;code&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">max</span><span class="o">.</span><span class="vm">__class__</span>
+<span class="go">&lt;class &#39;__main__.Dog&#39;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">max</span><span class="o">.</span><span class="n">name</span>
+<span class="go">&#39;Max&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">max</span><span class="o">.</span><span class="n">hates_cats</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="fields">
+<h2>Fields<a class="headerlink" href="#fields" title="Permalink to this headline">¶</a></h2>
+<p>Fields do the work of serializing, deserializing, normalizing, and validating
+the input values. Fields are always assigned to a model as <em>instances</em> , and
+they support extra serialization, deserialization, normalization, and validation
+of values without having to subclass <code class="docutils literal notranslate"><span class="pre">Field</span></code>. For example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">serde</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">validators</span>
+
+<span class="k">class</span> <span class="nc">Album</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">title</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">(</span><span class="n">normalizers</span><span class="o">=</span><span class="p">[</span><span class="nb">str</span><span class="o">.</span><span class="n">strip</span><span class="p">])</span>
+    <span class="n">released</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Date</span><span class="p">(</span>
+        <span class="n">rename</span><span class="o">=</span><span class="s1">&#39;release_date&#39;</span><span class="p">,</span>
+        <span class="n">validators</span><span class="o">=</span><span class="p">[</span><span class="n">validators</span><span class="o">.</span><span class="n">Min</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">1912</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">15</span><span class="p">))]</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>In the above example we define an <code class="docutils literal notranslate"><span class="pre">Album</span></code> class. The <code class="docutils literal notranslate"><span class="pre">title</span></code> field is of
+type <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code></a> , and we apply the <code class="docutils literal notranslate"><span class="pre">str.strip</span></code> normalizer to automatically strip
+the input value when instantiating or deserializing the <code class="docutils literal notranslate"><span class="pre">Album</span></code>. The
+<code class="docutils literal notranslate"><span class="pre">released</span></code> field is of type <code class="docutils literal notranslate"><span class="pre">datetime.date</span></code> and we apply an extra validator
+to only accept dates after 15th April 1912. Note: the <code class="docutils literal notranslate"><span class="pre">rename</span></code> argument only
+applies to the serializing and deserializing of the data, the <code class="docutils literal notranslate"><span class="pre">Album</span></code> class
+would still be instantiated using <code class="docutils literal notranslate"><span class="pre">Album(released=...)</span></code>.</p>
+<p>If these methods of creating custom <code class="docutils literal notranslate"><span class="pre">Field</span></code> classes are not satisfactory, you
+can always subclass a <code class="docutils literal notranslate"><span class="pre">Field</span></code> and override the relevant methods.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Percent</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">Float</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<span class="gp">... </span>        <span class="n">validators</span><span class="o">.</span><span class="n">Between</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">)(</span><span class="n">value</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="python-2-7-and-python-3-5-compatibility">
+<h2>Python 2.7 and Python 3.5 compatibility<a class="headerlink" href="#python-2-7-and-python-3-5-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>Class annotations were only added in Python 3.6, for this reason class
+attributes can be used for <code class="docutils literal notranslate"><span class="pre">Field</span></code> definitions for projects that require
+compatibility for these versions. For example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Artist</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">Album</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">title</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+    <span class="n">release_date</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">Date</span><span class="p">)</span>
+    <span class="n">artist</span><span class="p">:</span> <span class="n">fields</span><span class="o">.</span><span class="n">Nested</span><span class="p">(</span><span class="n">Artist</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>is equivalent to</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Artist</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+
+<span class="k">class</span> <span class="nc">Album</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">title</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">Str</span><span class="p">()</span>
+    <span class="n">release_date</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">Optional</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">Date</span><span class="p">)</span>
+    <span class="n">artist</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">Nested</span><span class="p">(</span><span class="n">Artist</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="model-states-and-processes">
+<h2>Model states and processes<a class="headerlink" href="#model-states-and-processes" title="Permalink to this headline">¶</a></h2>
+<p>In Serde, there are two states that the data can be in:</p>
+<ul class="simple">
+<li><p>Serialized data</p></li>
+<li><p>Model instance</p></li>
+</ul>
+<p>There are five different processes that the data structure can go through when
+moving between these two states.</p>
+<ul class="simple">
+<li><p>Deserialization happens when you create a model instance from a serialized
+version using <code class="docutils literal notranslate"><span class="pre">from_dict()</span></code> or similar.</p></li>
+<li><p>Instantiation happens when you construct a model instance in Python using the
+<code class="docutils literal notranslate"><span class="pre">__init__()</span></code> constructor.</p></li>
+<li><p>Normalization happens after instantiation and after deserialization. This is
+usually a way to transform things before they are validated. For example: this
+is where an <code class="docutils literal notranslate"><span class="pre">Optional</span></code> field sets default values.</p></li>
+<li><p>Validation is where the model and fields values are validated. This happens
+after normalization.</p></li>
+<li><p>Serialization is when you serialize a model instance to a supported
+serialization format using <code class="docutils literal notranslate"><span class="pre">to_dict()</span></code> or similar.</p></li>
+</ul>
+<p>The diagram below shows how the stages (uppercase) and processes (lowercase) fit
+in with each other.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                    +---------------+
+                    | Instantiation |
+                    +---------------+
+                            |
+                            v
++---------------+   +---------------+
+|Deserialization|--&gt;| Normalization |
++---------------+   +---------------+
+        ^                   |
+        |                   v
+        |           +---------------+
+        |           |   Validation  |
+        |           +---------------+
+        |                   |
+        |                   v
++-------+-------+   +---------------+
+|SERIALIZED DATA|   | MODEL INSTANCE|
++---------------+   +---------------+
+        ^                   |
+        |                   |
++-------+-------+           |
+| Serialization |&lt;----------+
++---------------+
+</pre></div>
+</div>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p>Serde is licensed under either of</p>
+<ul class="simple">
+<li><p>Apache License, Version 2.0 (<a class="reference external" href="LICENSE-APACHE">LICENSE-APACHE</a> or <a class="reference external" href="https://www.apache.org/licenses/LICENSE-2.0">https://www.apache.org/licenses/LICENSE-2.0</a>)</p></li>
+<li><p>MIT License (<a class="reference external" href="LICENSE-MIT">LICENSE-MIT</a> or <a class="reference external" href="https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>)</p></li>
+</ul>
+<p>at your option.</p>
+</div>
+<div class="section" id="index">
+<h2>Index<a class="headerlink" href="#index" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-serde.fields">Fields</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#primitives">Primitives</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#containers">Containers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#standard-library">Standard library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#miscellanous">Miscellanous</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#extended">Extended</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-serde.tags">Tags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-serde.validators">Validators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-serde.exceptions">Exceptions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#reporting-bugs">Reporting Bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#pull-requests">Pull Requests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="contributing.html#guidelines">Guidelines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="contributing.html#development-process">Development process</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="releases.html">Releases</a></li>
+</ul>
+</div>
+<ul class="simple">
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy; 2020, Ross MacArthur.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

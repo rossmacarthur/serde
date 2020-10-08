@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Releases &#8212; Serde 0.8.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Contributing" href="contributing.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Serde</a></h1>
+
+
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=rossmacarthur&repo=serde&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Releases</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="contributing.html" title="previous chapter">Contributing</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="releases">
+<h1>Releases<a class="headerlink" href="#releases" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2>0.8.0<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on March 12th, 2020</em></p>
+<ul class="simple">
+<li><p>Remove deprecated <code class="docutils literal notranslate"><span class="pre">Constant</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/d70b044157e258365868a32daeff4b158b1fbc9d">d70b044</a>)</p></li>
+<li><p>Improve <code class="docutils literal notranslate"><span class="pre">ValidationError</span></code> messages for container fields. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/7746732d2180d6bd9cbf141475f87409b7977343">7746732</a>)</p></li>
+<li><p>Rename <code class="docutils literal notranslate"><span class="pre">BaseField</span></code> to <code class="docutils literal notranslate"><span class="pre">_Base</span></code>. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/c5abc2f1d36e9c0857dc1ea65e4536be4c7397ef">c5abc2f</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">frozenset</span></code> to FIELD_CLASS_MAP. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/24d7c0e3320226837586b214ad3dfc0d95852ddb">24d7c0e</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Flatten</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/9c740a5e9f40b1d913f2d718947f7204e87c6ffa">9c740a5</a>)</p></li>
+<li><p>Improve <code class="docutils literal notranslate"><span class="pre">Uuid</span></code> field normalization. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/34783b03084acffc1fd1cddf4c987d3855d45330">34783b0</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">IpAddress</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/667ca9629028b29a6d420a9ce4eb14460baca448">667ca96</a>)</p></li>
+<li><p>Extended string types now subclass <code class="docutils literal notranslate"><span class="pre">Text</span></code> not <code class="docutils literal notranslate"><span class="pre">Str</span></code>. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/5862375ac82a98364d7cf7ef82c6bb668d9abded">5862375</a>)</p></li>
+<li><p>Remove <code class="xref py py-obj docutils literal notranslate"><span class="pre">fields.create()</span></code> method. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/2a548865106b1cfc98f5dea8bf00084f62e6334e">2a54886</a>)</p></li>
+<li><p>Completely rework error handling. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/c95b6b329125164e3301a7e43292c7a858d5e34f">c95b6b3</a>)</p></li>
+<li><p>Make <code class="docutils literal notranslate"><span class="pre">Tag.lookup_tag</span></code> default to module + qualname. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/26963d65b45229db50444665a3160bd0f1358421">26963d6</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id4">
+<h2>0.7.3<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on January 12th, 2020</em></p>
+<ul class="simple">
+<li><p>Fix contained <code class="docutils literal notranslate"><span class="pre">Optional</span></code> field (again). (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/120">#120</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id6">
+<h2>0.7.2<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on December 2nd, 2019</em></p>
+<ul class="simple">
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">FrozenSet</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/1d2f0cd09cc49e350ac36ba2697e8023a2f9e47f">1d2f0cd</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Deque</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/ec44671704529aca505fc10716cde030c9295188">ec44671</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">default</span></code> keyword argument to <code class="docutils literal notranslate"><span class="pre">Field</span></code>. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/111">#111</a>)</p></li>
+<li><p>Fix bug in <code class="docutils literal notranslate"><span class="pre">Uuid.normalize()</span></code>. (<a class="reference external" href="https://github.com/rossmacarthur/serde/commit/408bc834ee8c4dbf92438ebcc6e94989927e2d89">408bc83</a>)</p></li>
+<li><p>Rename <code class="docutils literal notranslate"><span class="pre">Constant</span></code> field to <code class="docutils literal notranslate"><span class="pre">Literal</span></code>. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/118">#118</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id9">
+<h2>0.7.1<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on September 26th, 2019</em></p>
+<ul class="simple">
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Text</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/110">#110</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/116">#116</a>)</p></li>
+<li><p>Support annotations for specifying fields. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/99">#99</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/115">#115</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">OrderedDict</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/114">#114</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Set</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/113">#113</a>)</p></li>
+<li><p>Fix contained <code class="docutils literal notranslate"><span class="pre">Optional</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/112">#112</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id17">
+<h2>0.7.0<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on September 8th, 2019</em></p>
+<ul class="simple">
+<li><p>Embed <code class="docutils literal notranslate"><span class="pre">serde-ext</span></code> package code in serde. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/104">#104</a>)</p></li>
+<li><p>Rework validators as classes. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/102">#102</a>)</p></li>
+<li><p>Documentation overhaul. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/101">#101</a>)</p></li>
+<li><p>Rework tags to subclass <code class="docutils literal notranslate"><span class="pre">BaseField</span></code>. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/100">#100</a>)</p></li>
+<li><p>Remove optional extras (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/97">#97</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id23">
+<h2>0.6.2<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on July 20th, 2019</em></p>
+<ul class="simple">
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Regex</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/95">#95</a>)</p></li>
+<li><p>Drop Python 3.4 support. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/94">#94</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id26">
+<h2>0.6.1<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on April 4th, 2019</em></p>
+<ul class="simple">
+<li><p>Fix some bugs in <code class="docutils literal notranslate"><span class="pre">Model</span></code> tagging. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/92">#92</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id28">
+<h2>0.6.0<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on March 30th, 2019</em></p>
+<ul class="simple">
+<li><p>Improve base <code class="docutils literal notranslate"><span class="pre">Field</span></code> exception messages. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/86">#86</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Constant</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/58">#58</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/85">#85</a>)</p></li>
+<li><p>Model tagging when serializing and deserializing. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/64">#64</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/issues/81">#81</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/83">#83</a>)</p></li>
+<li><p>Streamline sdist. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/82">#82</a>)</p></li>
+<li><p>Better error context and handling. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/38">#38</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/80">#80</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id38">
+<h2>0.5.2<a class="headerlink" href="#id38" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on February 4th, 2019</em></p>
+<ul class="simple">
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Long</span></code> field in Python 2. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/79">#79</a>)</p></li>
+<li><p>Fix a bug where validators was a required dependency. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/78">#78</a>)</p></li>
+<li><p>Support conversion between Pickle. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/10">#10</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/76">#76</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id43">
+<h2>0.5.1<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on January 29th, 2019</em></p>
+<ul class="simple">
+<li><p>Reexport <a class="reference external" href="https://github.com/rossmacarthur/serde-ext">serde-ext</a> fields and validators. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/75">#75</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id45">
+<h2>0.5.0<a class="headerlink" href="#id45" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on January 29th, 2019</em></p>
+<ul class="simple">
+<li><p>Support conversion between CBOR. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/40">#40</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/74">#74</a>)</p></li>
+<li><p>Remove fields and validators that were moved to <a class="reference external" href="https://github.com/rossmacarthur/serde-ext">serde-ext</a> package. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/66">#66</a>,
+<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/71">#71</a>)</p></li>
+<li><p>Container fields now properly call inner <code class="docutils literal notranslate"><span class="pre">Field</span></code> methods. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/70">#70</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">equal()</span></code> and <code class="docutils literal notranslate"><span class="pre">length()</span></code> validators. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/67">#67</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/69">#69</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">basestring</span></code> and <code class="docutils literal notranslate"><span class="pre">unicode</span></code> to built-in <code class="docutils literal notranslate"><span class="pre">Field</span></code> map. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/68">#68</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id54">
+<h2>0.4.1<a class="headerlink" href="#id54" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on January 23rd, 2019</em></p>
+<ul class="simple">
+<li><p>Fix a bug where <code class="docutils literal notranslate"><span class="pre">Optional</span></code> didn’t call the inner <code class="docutils literal notranslate"><span class="pre">Field.normalize()</span></code>.
+(<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/65">#65</a>)</p></li>
+<li><p>Use ‘simplejson’ package if available. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/60">#60</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/63">#63</a>)</p></li>
+<li><p>Fix a bug where <code class="docutils literal notranslate"><span class="pre">Choice</span></code> field didn’t call <code class="docutils literal notranslate"><span class="pre">super().validate()</span></code>.
+(<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/62">#62</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id59">
+<h2>0.4.0<a class="headerlink" href="#id59" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on January 6th, 2019</em></p>
+<ul class="simple">
+<li><p>Fix a bug where dependencies were not pinned correctly. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/54">#54</a>)</p></li>
+<li><p>Pluralise module names. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/52">#52</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Optional</span></code> field. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/51">#51</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/issues/48">#48</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/issues/49">#49</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id65">
+<h2>0.3.2<a class="headerlink" href="#id65" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on December 19th, 2018</em></p>
+<ul class="simple">
+<li><p>Fix a bug where overriding <code class="docutils literal notranslate"><span class="pre">Model.__init__()</span></code> method affected
+<code class="docutils literal notranslate"><span class="pre">Model.from_dict</span></code>. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/45">#45</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/46">#46</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id68">
+<h2>0.3.1<a class="headerlink" href="#id68" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on December 17th, 2018</em></p>
+<ul class="simple">
+<li><p>Fix a bug with the <code class="docutils literal notranslate"><span class="pre">Model.__repr__()</span></code> method. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/44">#44</a>)</p></li>
+<li><p>Make <code class="docutils literal notranslate"><span class="pre">Bytes</span></code> an alias of <code class="docutils literal notranslate"><span class="pre">Str</span></code> in Python 2.7. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/43">#43</a>)</p></li>
+<li><p>Fix not being able to create attributes, methods, and functions with the same
+name as fields on a <code class="docutils literal notranslate"><span class="pre">Model</span></code>. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/41">#41</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/42">#42</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id73">
+<h2>0.3.0<a class="headerlink" href="#id73" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on December 9th, 2018</em></p>
+<ul class="simple">
+<li><p>Support Python 2.7. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/35">#35</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">BaseString</span></code> and <code class="docutils literal notranslate"><span class="pre">Unicode</span></code> fields. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/35">#35</a>)</p></li>
+<li><p>Remove extra validation options from built-in type Fields. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/34">#34</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">min()</span></code> and <code class="docutils literal notranslate"><span class="pre">max()</span></code> validation functions. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/34">#34</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">inclusive</span></code> option to <code class="docutils literal notranslate"><span class="pre">between()</span></code> validator. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/34">#34</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">args</span></code> option to the <code class="docutils literal notranslate"><span class="pre">field.create()</span></code> method. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/34">#34</a>)</p></li>
+<li><p>Generate built-in types using the <code class="docutils literal notranslate"><span class="pre">field.create()</span></code> method. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/34">#34</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Complex</span></code> and <code class="docutils literal notranslate"><span class="pre">Bytes</span></code> fields. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/34">#34</a>)</p></li>
+<li><p>Do not clutter root namespace with fields. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/34">#34</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id76">
+<h2>0.2.1<a class="headerlink" href="#id76" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on November 21th, 2018</em></p>
+<ul class="simple">
+<li><p>Fix <code class="docutils literal notranslate"><span class="pre">SerdeErrors</span></code> having incorrect context. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/30">#32</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">IpAddress</span></code>, <code class="docutils literal notranslate"><span class="pre">Ipv4Address</span></code>, <code class="docutils literal notranslate"><span class="pre">Ipv6Address</span></code>, and <code class="docutils literal notranslate"><span class="pre">MacAddress</span></code>
+fields. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/3">#3</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/30">#30</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">DateTime</span></code>, <code class="docutils literal notranslate"><span class="pre">Date</span></code>, and <code class="docutils literal notranslate"><span class="pre">Time</span></code> fields. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/2">#2</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/29">#29</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id82">
+<h2>0.2.0<a class="headerlink" href="#id82" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on November 16th, 2018</em></p>
+<ul class="simple">
+<li><p>Add validate module with validate functions for use with fields. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/22">#22</a>)</p></li>
+<li><p>Support <code class="docutils literal notranslate"><span class="pre">Field</span></code> creation from functions. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/22">#22</a>)</p></li>
+<li><p>General API improvements. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/17">#17</a>)</p></li>
+<li><p>Support conversion between TOML, YAML. (<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/7">#7</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/issues/8">#8</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/16">#16</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">Boolean</span></code>, <code class="docutils literal notranslate"><span class="pre">Dictionary</span></code>, <code class="docutils literal notranslate"><span class="pre">Integer</span></code>, and <code class="docutils literal notranslate"><span class="pre">String</span></code> aliases.
+(<a class="reference external" href="https://github.com/rossmacarthur/serde/issues/11">#11</a>, <a class="reference external" href="https://github.com/rossmacarthur/serde/pull/14">#14</a>)</p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">serializers</span></code> and <code class="docutils literal notranslate"><span class="pre">deserializers</span></code> <code class="docutils literal notranslate"><span class="pre">Field</span></code> options for arbitrary
+serializer and deserializer functions. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/6">#6</a>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Nested</span></code> fields now take the same options as <code class="docutils literal notranslate"><span class="pre">to_dict()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">from_dict()</span></code> on <code class="docutils literal notranslate"><span class="pre">Model</span></code> objects. (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/5">#5</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id92">
+<h2>0.1.2<a class="headerlink" href="#id92" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on October 28th, 2018</em></p>
+<ul class="simple">
+<li><p>Add support for ignoring unknown dictionary keys (<a class="reference external" href="https://github.com/rossmacarthur/serde/pull/1">#1</a>)</p></li>
+</ul>
+</div>
+<div class="section" id="id94">
+<h2>0.1.1<a class="headerlink" href="#id94" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on October 27th, 2018</em></p>
+<ul class="simple">
+<li><p>Initial release, fixed.</p></li>
+</ul>
+</div>
+<div class="section" id="id95">
+<h2>0.1.0<a class="headerlink" href="#id95" title="Permalink to this headline">¶</a></h2>
+<p><em>Released on October 27th, 2018</em></p>
+<ul class="simple">
+<li><p>Initial release, yanked.</p></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy; 2020, Ross MacArthur.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/releases.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
