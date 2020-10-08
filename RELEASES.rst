@@ -1,6 +1,15 @@
 Releases
 ========
 
+0.8.1
+-----
+
+*Released on October 8th, 2020*
+
+- Relax ``validators`` dependency requirement. (`c73b194`_)
+
+.. _c73b194: https://github.com/rossmacarthur/serde/commit/c73b194b23dd2ca41437a455921234a39c1870e9
+
 0.8.0
 -----
 
