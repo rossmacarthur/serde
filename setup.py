@@ -44,7 +44,7 @@ metadata = get_metadata()
 
 # Primary requirements
 install_requires = ['isodate==0.6.*', 'six==1.*,>=1.13.0']
-ext_requires = ['chardet==3.*', 'validators>=0.12.0,<0.15.0']
+ext_requires = ['chardet==3.*', 'validators>=0.12.0']
 
 setup(
     # Options
