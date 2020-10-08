@@ -8,14 +8,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [2.7, pypy2, 3.5, 3.6, 3.7, 3.8, pypy3]
+        python-version: [2.7, pypy2, 3.5, 3.6, 3.7, 3.8, 3.9, pypy3]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - uses: extractions/setup-just@v1
 
-    - uses: actions/setup-python@v1
+    - uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -40,9 +40,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
-    - uses: actions/setup-python@v1
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.7
 
