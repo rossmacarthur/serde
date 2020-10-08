@@ -27,18 +27,16 @@ install:
 install-dev:
     pip install -r dev-requirements.in -e ".[ext]"
 
-_black +ARGS='':
-    black --target-version py27 --skip-string-normalization . {{ ARGS }}
-
 # Run all lints.
 lint:
-    @just _python '3.[6-9].*C' _black --check
+    black --check --diff .
+    isort --check --diff .
     flake8 --max-complexity 10 .
 
 # Sort import statements and run black.
-blacken:
-    isort --recursive .
-    @just _python '3.[6-9].*C' _black
+fmt:
+    black .
+    isort .
 
 _test +ARGS='':
     pytest -xvv --cov=serde --cov-report xml --cov-report term-missing {{ ARGS }} tests

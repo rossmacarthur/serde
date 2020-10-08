@@ -23,6 +23,7 @@ jobs:
       run: just install-dev
 
     - name: Lint
+      if: matrix.python-version == 3.7
       run: just lint
 
     - name: Test

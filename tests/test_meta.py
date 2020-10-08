@@ -35,8 +35,8 @@ def test_dev_requirements_sorted():
     with open(os.path.join(REPO_DIR, 'dev-requirements.in'), 'r') as f:
         lines = f.readlines()
 
-    def is_comment_or_empty(l):
-        return not l.strip() or l.lstrip().startswith('#')
+    def is_comment_or_empty(line):
+        return not line.strip() or line.lstrip().startswith('#')
 
     for _, group in groupby(lines, key=is_comment_or_empty):
         grouped = list(group)

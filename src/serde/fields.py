@@ -819,8 +819,9 @@ class Tuple(_Sequence):
         except ValueError:
             raise ValidationError(
                 'invalid length, expected {} elements'.format(
-                    len(self.elements), value=value
-                )
+                    len(self.elements),
+                ),
+                value=value,
             )
 
     def _apply(self, stage, element):

@@ -4,12 +4,12 @@ flake8
 flake8-bugbear; python_version>="3"
 flake8-comprehensions
 flake8-expression-complexity; python_version>="3.6"
-flake8-isort
 flake8-mock
 flake8-mutable
 flake8-pep3101
 flake8-pytest
 flake8-quotes
+isort; python_version>="3.6" and implementation_name=="cpython"
 pep8-naming
 
 # Testing requirements
