@@ -1,5 +1,4 @@
 import mock
-import six
 from pytest import raises
 
 from serde import Model
@@ -72,10 +71,7 @@ class TestTag:
         class Example(Model):
             pass
 
-        if six.PY2:
-            prefix = 'tests.test_tags'
-        else:
-            prefix = 'tests.test_tags.TestTag.test_lookup_tag.<locals>'
+        prefix = 'tests.test_tags.TestTag.test_lookup_tag.<locals>'
         assert Tag().lookup_tag(Example) == prefix + '.Example'
 
     def test_lookup_variant(self):
@@ -90,10 +86,7 @@ class TestTag:
 
         tag = Tag(recurse=True)
         tag._bind(Example)
-        if six.PY2:
-            prefix = 'tests.test_tags'
-        else:
-            prefix = 'tests.test_tags.TestTag.test_lookup_variant.<locals>'
+        prefix = 'tests.test_tags.TestTag.test_lookup_variant.<locals>'
         assert tag.lookup_variant(prefix + '.Example') is Example
         assert tag.lookup_variant(prefix + '.Example2') is Example2
         assert tag.lookup_variant(prefix + '.Example3') is Example3
@@ -103,10 +96,7 @@ class TestTag:
         class Example(Model):
             pass
 
-        if six.PY2:
-            prefix = 'tests.test_tags'
-        else:
-            prefix = 'tests.test_tags.TestTag.test_serialize.<locals>'
+        prefix = 'tests.test_tags.TestTag.test_serialize.<locals>'
         assert Tag().serialize(Example) == prefix + '.Example'
 
     def test_deserialize(self):
@@ -121,10 +111,7 @@ class TestTag:
 
         tag = Tag(recurse=True)
         tag._bind(Example)
-        if six.PY2:
-            prefix = 'tests.test_tags'
-        else:
-            prefix = 'tests.test_tags.TestTag.test_deserialize.<locals>'
+        prefix = 'tests.test_tags.TestTag.test_deserialize.<locals>'
         assert tag.deserialize(prefix + '.Example') is Example
         assert tag.deserialize(prefix + '.Example2') is Example2
         assert tag.deserialize(prefix + '.Example3') is Example3

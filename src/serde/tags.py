@@ -58,8 +58,7 @@ class Tag(fields._Base):
         Returns:
             str: the corresponding tag value.
         """
-        name = getattr(variant, '__qualname__', variant.__name__)
-        return '{}.{}'.format(variant.__module__, name)
+        return '{}.{}'.format(variant.__module__, variant.__qualname__)
 
     def lookup_variant(self, tag):
         """

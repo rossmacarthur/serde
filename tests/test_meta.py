@@ -6,10 +6,9 @@ from itertools import groupby
 import mock
 
 from serde import fields
-from tests import REPO_DIR, py36
+from tests import REPO_DIR
 
 
-@py36
 def test_readme():
     failures, _ = doctest.testfile('../README.rst')
 
@@ -60,7 +59,7 @@ def test_module___all__s():
         if filename.endswith('.py')
     ]
     for module in [module_from_path(f) for f in filenames]:
-        exec ('from {} import *'.format(module), {}, {})  # noqa: E211
+        exec('from {} import *'.format(module), {}, {})  # noqa: E211
 
 
 def test_field_class_map():

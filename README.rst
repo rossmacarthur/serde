@@ -452,35 +452,6 @@ can always subclass a ``Field`` and override the relevant methods.
     ...         super().validate(value)
     ...         validators.Between(0.0, 100.0)(value)
 
-Python 2.7 and Python 3.5 compatibility
----------------------------------------
-
-Class annotations were only added in Python 3.6, for this reason class
-attributes can be used for ``Field`` definitions for projects that require
-compatibility for these versions. For example
-
-.. code-block:: python
-
-    class Artist(Model):
-        name: fields.Str()
-
-    class Album(Model):
-        title: fields.Str()
-        release_date: fields.Optional(fields.Date)
-        artist: fields.Nested(Artist)
-
-is equivalent to
-
-.. code-block:: python
-
-    class Artist(Model):
-        name = fields.Str()
-
-    class Album(Model):
-        title = fields.Str()
-        release_date = fields.Optional(fields.Date)
-        artist = fields.Nested(Artist)
-
 Model states and processes
 --------------------------
 

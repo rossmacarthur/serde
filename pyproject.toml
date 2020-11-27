@@ -4,4 +4,4 @@ lines_after_imports = 2
 
 [tool.black]
 skip-string-normalization = true
-target-version = ['py27']
+target-version = ['py36']

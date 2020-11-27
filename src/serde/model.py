@@ -6,8 +6,6 @@ import inspect
 import json
 from collections import OrderedDict
 
-from six import add_metaclass
-
 from serde.exceptions import ContextError, add_context
 from serde.fields import Field, _resolve
 from serde.utils import dict_partition, zip_until_right
@@ -158,8 +156,7 @@ class ModelType(type):
         return cls._tags[:]
 
 
-@add_metaclass(ModelType)
-class Model(object):
+class Model(object, metaclass=ModelType):
     """
     The base model.
     """
@@ -236,7 +233,7 @@ class Model(object):
         """
         return '<{module}.{name} model at 0x{id:x}>'.format(
             module=self.__class__.__module__,
-            name=getattr(self.__class__, '__qualname__', self.__class__.__name__),
+            name=self.__class__.__qualname__,
             id=id(self),
         )
 

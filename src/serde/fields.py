@@ -6,10 +6,9 @@ import collections
 import datetime
 import re
 import uuid
+from collections.abc import Mapping as MappingType
 
 import isodate
-from six import PY3, binary_type, integer_types, text_type
-from six.moves.collections_abc import Mapping as MappingType
 
 from serde.exceptions import ContextError, ValidationError, add_context
 from serde.utils import is_subclass, try_lookup, zip_equal
@@ -571,7 +570,7 @@ class _Container(Instance):
         """
         value = self.ty(
             (self._apply('_serialize', element) for element in self._iter(value)),
-            **self.kwargs
+            **self.kwargs,
         )
         return super(_Container, self).serialize(value)
 
@@ -585,7 +584,7 @@ class _Container(Instance):
         value = super(_Container, self).deserialize(value)
         return self.ty(
             (self._apply('_deserialize', element) for element in self._iter(value)),
-            **self.kwargs
+            **self.kwargs,
         )
 
     def normalize(self, value):
@@ -598,7 +597,7 @@ class _Container(Instance):
         value = super(_Container, self).normalize(value)
         return self.ty(
             (self._apply('_normalize', element) for element in self._iter(value)),
-            **self.kwargs
+            **self.kwargs,
         )
 
     def validate(self, value):
@@ -859,22 +858,7 @@ Complex = create_primitive('Complex', complex)
 Float = create_primitive('Float', float)
 Int = create_primitive('Int', int)
 Str = create_primitive('Str', str)
-Bytes = create_primitive('Bytes', bytes) if bytes != str else Str
-
-try:
-    BaseString = create_primitive('BaseString', basestring)
-except NameError:
-    pass
-
-try:
-    Long = create_primitive('Long', long)
-except NameError:
-    pass
-
-try:
-    Unicode = create_primitive('Unicode', unicode)
-except NameError:
-    pass
+Bytes = create_primitive('Bytes', bytes)
 
 del create_primitive
 
@@ -1064,7 +1048,7 @@ class Text(Instance):
         """
         Create a new `Text`.
         """
-        super(Text, self).__init__(text_type, **kwargs)
+        super(Text, self).__init__(str, **kwargs)
         self.encoding = encoding
         self.errors = errors
         if self.encoding is None:
@@ -1074,7 +1058,7 @@ class Text(Instance):
         """
         Normalize byte strings to unicode strings.
         """
-        if isinstance(value, binary_type):
+        if isinstance(value, bytes):
             if self.encoding is None:
                 value = value.decode(
                     encoding=self._detect(value)['encoding'], errors=self.errors
@@ -1159,11 +1143,11 @@ class Uuid(Instance):
         """
         if not isinstance(value, uuid.UUID):
             input_form = None
-            if isinstance(value, text_type):
+            if isinstance(value, str):
                 input_form = 'hex'
-            elif isinstance(value, binary_type):
-                input_form = 'bytes' if PY3 or len(value) == 16 else 'hex'
-            elif isinstance(value, integer_types):
+            elif isinstance(value, bytes):
+                input_form = 'bytes'
+            elif isinstance(value, int):
                 input_form = 'int'
             elif isinstance(value, (list, tuple)):
                 input_form = 'fields'
@@ -1276,20 +1260,5 @@ _FIELD_CLASS_MAP = {
     # Others
     uuid.UUID: Uuid,
 }
-
-try:
-    _FIELD_CLASS_MAP[basestring] = BaseString
-except NameError:
-    pass
-
-try:
-    _FIELD_CLASS_MAP[long] = Long
-except NameError:
-    pass
-
-try:
-    _FIELD_CLASS_MAP[unicode] = Unicode
-except NameError:
-    pass
 
 __all__ = [name for name, obj in globals().items() if is_subclass(obj, Field)]

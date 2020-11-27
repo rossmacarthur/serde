@@ -4,8 +4,7 @@ This module defines some utility functions.
 
 import importlib
 from collections import OrderedDict
-
-from six.moves import zip_longest
+from itertools import zip_longest
 
 from serde.exceptions import MissingDependency
 

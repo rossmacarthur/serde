@@ -5,7 +5,6 @@ from pytest import raises
 
 from serde import Model, fields, tags, validators
 from serde.exceptions import ValidationError
-from tests import py3
 
 
 class LookupTagMixin(object):
@@ -333,7 +332,6 @@ class TestModel:
             Example(nested=NestedExample(a=4))
         )
 
-    @py3
     def test___repr___basic(self):
         # Check that a basic Model __repr__ works.
 
@@ -347,7 +345,6 @@ class TestModel:
             'test___repr___basic.<locals>.Example model at'
         )
 
-    @py3
     def test___repr___nested(self):
         # Check that a nested Model __repr__ works.
 

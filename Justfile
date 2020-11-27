@@ -2,14 +2,6 @@
 help:
     @just --list
 
-# Run any Just command but only if we are using the given Python version.
-_python VERSION COMMAND +ARGS='':
-    @if python \
-            -c "import platform as p;print ('{} {}'.format(p.python_version(), p.python_implementation()))" \
-            | grep -q "^{{ VERSION }}"; then \
-        just {{ COMMAND }} {{ ARGS }}; \
-    fi
-
 # Completely removing anything not tracked by Git.
 pristine:
     git reset --hard && git clean -dfx
@@ -38,13 +30,9 @@ fmt:
     black .
     isort .
 
-_test +ARGS='':
-    pytest -xvv --cov=serde --cov-report xml --cov-report term-missing {{ ARGS }} tests
-
 # Run all tests.
 test:
-    @just _python '\(2\|3.5\)' _test
-    @just _python 3.[6-9] _test --cov-fail-under 100
+    pytest -xvv --cov=serde --cov-report xml --cov-report term-missing --cov-fail-under 100 tests
 
 # Compile docs.
 docs:

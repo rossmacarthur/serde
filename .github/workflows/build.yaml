@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [2.7, pypy2, 3.5, 3.6, 3.7, 3.8, 3.9, pypy3]
+        python-version: [3.6, 3.7, 3.8, 3.9, pypy3]
 
     steps:
     - uses: actions/checkout@v2
@@ -23,14 +23,13 @@ jobs:
       run: just install-dev
 
     - name: Lint
-      if: matrix.python-version == 3.7
+      if: matrix.python-version != 'pypy3'
       run: just lint
 
     - name: Test
       run: just test
 
     - uses: codecov/codecov-action@v1
-      if: matrix.python-version == 3.7
 
   deploy:
     needs: test
@@ -44,7 +43,7 @@ jobs:
 
     - uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 3.8
 
     - name: Check tag against package version
       run: grep '__version__' src/serde/__init__.py | grep -q "'${GITHUB_REF#refs/tags/}'"
