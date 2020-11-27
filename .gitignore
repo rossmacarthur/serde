@@ -1,6 +1,3 @@
-# Created by https://www.gitignore.io/api/python,visualstudiocode
-# Edit at https://www.gitignore.io/?templates=python,visualstudiocode
-
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -24,6 +21,7 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
@@ -50,8 +48,10 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
+*.py,cover
 .hypothesis/
 .pytest_cache/
+pytestdebug.log
 
 # Translations
 *.mo
@@ -61,6 +61,7 @@ coverage.xml
 *.log
 local_settings.py
 db.sqlite3
+db.sqlite3-journal
 
 # Flask stuff:
 instance/
@@ -71,6 +72,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+doc/_build/
 
 # PyBuilder
 target/
@@ -85,8 +87,19 @@ ipython_config.py
 # pyenv
 .python-version
 
-# celery beat schedule file
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+__pypackages__/
+
+# Celery stuff
 celerybeat-schedule
+celerybeat.pid
 
 # SageMath parsed files
 *.sage.py
@@ -99,6 +112,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+pythonenv*
 
 # Spyder project settings
 .spyderproject
@@ -118,8 +132,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-### Python Patch ###
-.venv/
+# pytype static type analyzer
+.pytype/
+
+# profiling data
+.prof
 
 ### VisualStudioCode ###
 .vscode/*
@@ -127,5 +144,4 @@ dmypy.json
 ### VisualStudioCode Patch ###
 # Ignore all local history of files
 .history
-
-# End of https://www.gitignore.io/api/python,visualstudiocode
+.ionide
