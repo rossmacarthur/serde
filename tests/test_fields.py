@@ -1082,7 +1082,7 @@ class TestTuple:
     def test___init___basic(self):
         # Construct a basic Tuple and check values are set correctly.
         field = Tuple()
-        field.elements == ()
+        field.elements = ()
         assert field.validators == []
 
     def test___init___options(self):
@@ -1319,20 +1319,20 @@ class TestText:
         # A Text should normalize bytes to a string, and pass through all other
         # values.
         field = Text(encoding='utf-8', errors='ignore')
-        field.normalize(None) is None
-        field.normalize('test') == u'test'
-        field.normalize(b'test') == u'test'
-        field.normalize(b'\xc3\xa9') == u'\xe9'
+        assert field.normalize(None) is None
+        assert field.normalize('test') == u'test'
+        assert field.normalize(b'test') == u'test'
+        assert field.normalize(b'\xc3\xa9') == u'\xe9'
 
     def test_normalize_detect(self):
         # A Text should normalize arbitrary bytes to a string by detecting the
         # encoding.
         field = Text()
-        field.normalize(None) is None
-        field.normalize('test') == u'test'
-        field.normalize(b'test') == u'test'
-        field.normalize(b'\xc3\xa9') == u'\xe9'  # utf-8
-        field.normalize(b't\x00e\x00s\x00t\x00') == u'test'  # utf-16-le
+        assert field.normalize(None) is None
+        assert field.normalize('test') == u'test'
+        assert field.normalize(b'test') == u'test'
+        assert field.normalize(b'\xef\xbb\xbf\xc3\xa9') == u'\xe9'  # utf-8
+        assert field.normalize(b'\xff\xfet\x00e\x00s\x00t\x00') == u'test'  # utf-16-le
 
     def test_integrate(self):
         # Check that the behaviour of a Text field makes sense on a Model.
@@ -1417,7 +1417,9 @@ class TestUuid:
         # A Uuid should normalize a byte string a a uuid.UUID.
         field = Uuid()
         value = b'\x99\x1a\xf7\xc7\xee\x17G\x02\xb6C\xe2\x93<\xe8:\x01'
-        field.normalize(value) == uuid.UUID('991af7c7-ee17-4702-b643-e2933ce83a01')
+        assert field.normalize(value) == uuid.UUID(
+            '991af7c7-ee17-4702-b643-e2933ce83a01'
+        )
 
     def test_normalize_int(self):
         # A Uuid should normalize an integer as a uuid.UUID.
