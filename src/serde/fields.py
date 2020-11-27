@@ -49,7 +49,7 @@ def _resolve(thing, none_allowed=True):
     except (KeyError, TypeError):
         pass
 
-    raise TypeError('failed to resolve {!r} into a field'.format(thing))
+    raise TypeError(f'failed to resolve {thing!r} into a field')
 
 
 class _Base(object):
@@ -111,9 +111,7 @@ class _Base(object):
         """
         if hasattr(self, '_model_cls'):
             raise ContextError(
-                'attempted to use {!r} instance more than once'.format(
-                    self.__class__.__name__
-                )
+                f'attempted to use {self.__class__.__name__!r} instance more than once'
             )
         self._model_cls = model_cls
 
@@ -258,9 +256,7 @@ class Field(_Base):
         """
         value = self._instantiate(kwargs.pop(self._attr_name, None))
         if value is None:
-            raise TypeError(
-                '__init__() missing required argument {!r}'.format(self._attr_name)
-            )
+            raise TypeError(f'__init__() missing required argument {self._attr_name!r}')
         setattr(model, self._attr_name, value)
 
     def _serialize_with(self, model, d):
@@ -277,9 +273,7 @@ class Field(_Base):
         try:
             value = d[self._serde_name]
         except KeyError:
-            raise ValidationError(
-                'missing data, expected field {!r}'.format(self._serde_name)
-            )
+            raise ValidationError(f'missing data, expected field {self._serde_name!r}')
         setattr(model, self._attr_name, self._deserialize(value))
         return model, d
 
@@ -472,7 +466,7 @@ class Instance(Field):
         """
         if not isinstance(value, self.ty):
             raise ValidationError(
-                'invalid type, expected {!r}'.format(self.ty.__name__), value=value
+                f'invalid type, expected {self.ty.__name__!r}', value=value
             )
 
 
@@ -631,7 +625,7 @@ class _Mapping(_Container):
                 yield element
         except (AttributeError, TypeError):
             raise ValidationError(
-                'invalid type, expected {!r}'.format(self.ty.__name__), value=value
+                f'invalid type, expected {self.ty.__name__!r}', value=value
             )
 
     def _apply(self, stage, element):
@@ -697,7 +691,7 @@ class _Sequence(_Container):
                 yield element
         except TypeError:
             raise ValidationError(
-                'invalid type, expected {!r}'.format(self.ty.__name__), value=value
+                f'invalid type, expected {self.ty.__name__!r}', value=value
             )
 
     def _apply(self, stage, element):
@@ -740,7 +734,7 @@ class Deque(_Sequence):
         super(Deque, self).validate(value)
         if value.maxlen != self.maxlen:
             raise ValidationError(
-                'invalid max length, expected {}'.format(self.maxlen), value=value
+                f'invalid max length, expected {self.maxlen}', value=value
             )
 
 
@@ -817,9 +811,7 @@ class Tuple(_Sequence):
                 yield element
         except ValueError:
             raise ValidationError(
-                'invalid length, expected {} elements'.format(
-                    len(self.elements),
-                ),
+                f'invalid length, expected {len(self.elements)} elements',
                 value=value,
             )
 
@@ -836,19 +828,16 @@ def create_primitive(name, ty):
     """
     Create a primitive `Field` class.
     """
-    doc = """\
-This field represents the built-in `{ty}` type.
+    doc = f"""This field represents the built-in `{ty}` type.
 
 Args:
     **kwargs: keyword arguments for the `Field` constructor.
-""".format(
-        ty=ty
-    )
+"""
 
     def __init__(self, **kwargs):  # noqa: N807
         Instance.__init__(self, ty, **kwargs)
 
-    __init__.__doc__ = 'Create a new `{name}`.'.format(name=name)
+    __init__.__doc__ = f'Create a new `{name}`.'
 
     return type(name, (Instance,), {'__doc__': doc, '__init__': __init__})
 
@@ -887,7 +876,7 @@ class Literal(Field):
         """
         if value != self.value:
             raise ValidationError(
-                'invalid literal, expected {!r}'.format(self.value), value=value
+                f'invalid literal, expected {self.value!r}', value=value
             )
 
 
@@ -967,7 +956,7 @@ class DateTime(Instance):
                 return datetime.datetime.strptime(value, self.format)
             except (TypeError, ValueError):
                 raise ValidationError(
-                    'invalid datetime, expected format {!r}'.format(self.format),
+                    f'invalid datetime, expected format {self.format!r}',
                     value=value,
                 )
 
@@ -995,7 +984,7 @@ class Date(DateTime):
                 return datetime.datetime.strptime(value, self.format).date()
             except (TypeError, ValueError):
                 raise ValidationError(
-                    'invalid date, expected format {!r}'.format(self.format),
+                    f'invalid date, expected format {self.format!r}',
                     value=value,
                 )
 
@@ -1023,7 +1012,7 @@ class Time(DateTime):
                 return datetime.datetime.strptime(value, self.format).time()
             except (TypeError, ValueError):
                 raise ValidationError(
-                    'invalid time, expected format {!r}'.format(self.format),
+                    f'invalid time, expected format {self.format!r}',
                     value=value,
                 )
 
@@ -1098,9 +1087,7 @@ class Regex(Text):
         super(Regex, self).validate(value)
         if not self._compiled.match(value):
             raise ValidationError(
-                'invalid string, expected to match regex pattern {!r}'.format(
-                    self.pattern
-                ),
+                f'invalid string, expected to match regex pattern {self.pattern!r}',
                 value=value,
             )
 
@@ -1192,16 +1179,13 @@ def create_from(foreign, name=None, human=None):
     if human is None:
         human = suffix
 
-    doc = """\
-A text field that asserts the text is a valid {}.
+    doc = f"""A text field that asserts the text is a valid {human}.
 
-The validation is delegated to `{}`.
+The validation is delegated to `{foreign}`.
 
 Args:
     **kwargs: keyword arguments for the `Field` constructor.
-""".format(
-        human, foreign
-    )
+"""
 
     field_cls = type(name, (Text,), {'__doc__': doc})
 
@@ -1212,7 +1196,7 @@ Args:
     def validate(self, value):
         super(field_cls, self).validate(value)
         if not self._validator(value):
-            raise ValidationError('invalid {}'.format(human), value=value)
+            raise ValidationError(f'invalid {human}', value=value)
 
     field_cls.__init__ = __init__
     field_cls.validate = validate

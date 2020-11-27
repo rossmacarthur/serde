@@ -80,9 +80,7 @@ def try_lookup(name):
         obj = importlib.import_module(module)
     except ImportError:
         raise MissingDependency(
-            "{!r} is missing, did you forget to install the serde 'ext' feature?".format(
-                module
-            )
+            f"{module!r} is missing, did you forget to install the serde 'ext' feature?"
         )
     for attr in path.split('.'):
         obj = getattr(obj, attr)

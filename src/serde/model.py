@@ -173,25 +173,22 @@ class Model(object, metaclass=ModelType):
         """
         if self.__class__.__abstract__:
             raise TypeError(
-                'unable to instantiate abstract model {!r}'.format(
-                    self.__class__.__name__
-                )
+                f'unable to instantiate abstract model {self.__class__.__name__!r}'
             )
 
         try:
             for name, value in zip_until_right(self.__class__.__fields__.keys(), args):
                 if name in kwargs:
                     raise TypeError(
-                        '__init__() got multiple values '
-                        'for keyword argument {!r}'.format(name)
+                        f'__init__() got multiple values for keyword argument {name!r}'
                     )
                 kwargs[name] = value
         except ValueError:
+            max_args = len(self.__class__.__fields__) + 1
+            given_args = len(args) + 1
             raise TypeError(
-                '__init__() takes a maximum of {!r} positional arguments'
-                ' but {!r} were given'.format(
-                    len(self.__class__.__fields__) + 1, len(args) + 1
-                )
+                f'__init__() takes a maximum of {max_args!r} '
+                f'positional arguments but {given_args!r} were given'
             )
 
         for field in self.__class__.__fields__.values():
@@ -199,11 +196,8 @@ class Model(object, metaclass=ModelType):
                 field._instantiate_with(self, kwargs)
 
         if kwargs:
-            raise TypeError(
-                '__init__() got an unexpected keyword argument {!r}'.format(
-                    next(iter(kwargs.keys()))
-                )
-            )
+            kwarg = next(iter(kwargs.keys()))
+            raise TypeError(f'__init__() got an unexpected keyword argument {kwarg!r}')
 
         self._normalize()
         self._validate()

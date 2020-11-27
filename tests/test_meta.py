@@ -59,7 +59,7 @@ def test_module___all__s():
         if filename.endswith('.py')
     ]
     for module in [module_from_path(f) for f in filenames]:
-        exec('from {} import *'.format(module), {}, {})  # noqa: E211
+        exec(f'from {module} import *', {}, {})  # noqa: E211
 
 
 def test_field_class_map():
@@ -74,5 +74,5 @@ def test_field_class_map():
             except TypeError:
                 pass
             else:
-                msg = '{!r} not in FIELD_CLASS_MAP'.format(ty.__name__)
+                msg = f'{ty.__name__!r} not in FIELD_CLASS_MAP'
                 assert ty in fields._FIELD_CLASS_MAP, msg

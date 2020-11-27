@@ -6,7 +6,7 @@ import serde
 
 # Project configuration
 project = 'Serde'
-copyright = ' {:d}, {}'.format(datetime.now().year, serde.__author__)
+copyright = f' {datetime.now().year:d}, {serde.__author__}'
 author = serde.__author__
 version = serde.__version__
 release = serde.__version__

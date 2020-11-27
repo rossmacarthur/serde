@@ -51,12 +51,12 @@ class Min(Validator):
         if self.inclusive:
             if value < self.endpoint:
                 raise ValidationError(
-                    'expected at least {!r}'.format(self.endpoint), value=value
+                    f'expected at least {self.endpoint!r}', value=value
                 )
         else:
             if value <= self.endpoint:
                 raise ValidationError(
-                    'expected more than {!r}'.format(self.endpoint), value=value
+                    f'expected more than {self.endpoint!r}', value=value
                 )
 
 
@@ -77,12 +77,12 @@ class Max(Validator):
         if self.inclusive:
             if value > self.endpoint:
                 raise ValidationError(
-                    'expected at most {!r}'.format(self.endpoint), value=value
+                    f'expected at most {self.endpoint!r}', value=value
                 )
         else:
             if value >= self.endpoint:
                 raise ValidationError(
-                    'expected less than {!r}'.format(self.endpoint), value=value
+                    f'expected less than {self.endpoint!r}', value=value
                 )
 
 
@@ -114,9 +114,7 @@ class Length(Validator):
 
     def __call__(self, value):
         if len(value) != self.length:
-            raise ValidationError(
-                'expected length {!r}'.format(self.length), value=value
-            )
+            raise ValidationError(f'expected length {self.length!r}', value=value)
 
 
 class LengthMin(Min):

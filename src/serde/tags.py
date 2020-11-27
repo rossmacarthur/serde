@@ -58,7 +58,7 @@ class Tag(fields._Base):
         Returns:
             str: the corresponding tag value.
         """
-        return '{}.{}'.format(variant.__module__, variant.__qualname__)
+        return f'{variant.__module__}.{variant.__qualname__}'
 
     def lookup_variant(self, tag):
         """
@@ -147,7 +147,7 @@ class Internal(Tag):
         try:
             tag = d[self.tag]
         except KeyError:
-            raise ValidationError('missing data, expected tag {!r}'.format(self.tag))
+            raise ValidationError(f'missing data, expected tag {self.tag!r}')
 
         model.__class__ = self._deserialize(tag)
 
@@ -186,14 +186,12 @@ class Adjacent(Tag):
         try:
             tag = d[self.tag]
         except KeyError:
-            raise ValidationError('missing data, expected tag {!r}'.format(self.tag))
+            raise ValidationError(f'missing data, expected tag {self.tag!r}')
 
         try:
             content = d[self.content]
         except KeyError:
-            raise ValidationError(
-                'missing data, expected content {!r}'.format(self.content)
-            )
+            raise ValidationError(f'missing data, expected content {self.content!r}')
 
         model.__class__ = self._deserialize(tag)
 
