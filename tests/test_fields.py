@@ -1,11 +1,11 @@
 import collections
 import datetime
+import decimal
 import re
 import uuid
 from collections import deque
 
 from pytest import raises
-
 from serde import Model, fields, utils, validators
 from serde.exceptions import ContextError, ValidationError
 from serde.fields import (
@@ -14,6 +14,7 @@ from serde.fields import (
     Choice,
     Date,
     DateTime,
+    Decimal,
     Deque,
     Dict,
     Field,
@@ -1239,6 +1240,30 @@ class TestDateTime:
         assert e.value.message == "invalid datetime, expected format '%Y%m%d %H:%M:%S'"
 
 
+class TestDecimal:
+    def test_serialize(self):
+        # A Decimal should serialize a Decimal object as a str equivalent.
+        field = Decimal()
+        assert field.serialize(decimal.Decimal("100.76753")) == "100.76753"
+
+    def test_serialize_diff_places(self):
+        # A Decimal should serialize a Decimal object as a str equivalent.
+        field = Decimal(resolution=10)
+        assert field.serialize(decimal.Decimal("100.1234567891")) == "100.1234567891"
+
+    def test_deserialize(self):
+        # A Decimal should deserialize a decimal value from a str equivalent
+        field = Decimal()
+
+        assert field.deserialize("100.76753") == decimal.Decimal("100.76753")
+
+    def test_deserialize_diff_places(self):
+        # A Decimal should deserialize a decimal value from a str equivalent
+        field = Decimal(resolution=10)
+
+        assert field.deserialize("100.1234567891") == decimal.Decimal("100.1234567891")
+
+
 class TestDate:
     def test_serialize_iso8601(self):
         # A Date should serialize a date as a ISO 8601 formatted string.
@@ -1420,6 +1445,7 @@ class TestUuid:
         assert field.normalize(value) == uuid.UUID(
             '991af7c7-ee17-4702-b643-e2933ce83a01'
         )
+
 
     def test_normalize_int(self):
         # A Uuid should normalize an integer as a uuid.UUID.
