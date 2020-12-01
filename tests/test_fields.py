@@ -1268,7 +1268,7 @@ class TestDecimal:
         field = Decimal()
 
         try:
-            field.deserialize("skiyaaa")
+            field.deserialize('skiyaaa')
         except ValidationError:
             pass
 
