@@ -1446,7 +1446,6 @@ class TestUuid:
             '991af7c7-ee17-4702-b643-e2933ce83a01'
         )
 
-
     def test_normalize_int(self):
         # A Uuid should normalize an integer as a uuid.UUID.
         field = Uuid()
