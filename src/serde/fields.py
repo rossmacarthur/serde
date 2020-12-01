@@ -4,8 +4,8 @@ This module contains field classes for use with `Models <serde.Model>`.
 
 import collections
 import datetime
-import re
 import decimal
+import re
 import uuid
 from collections.abc import Mapping as MappingType
 
