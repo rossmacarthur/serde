@@ -855,9 +855,9 @@ del create_primitive
 
 # A helper function...
 def round_decimal(
-    decimalObj: decimal.Decimal, num_of_places: int = 6
+    decimal_obj: decimal.Decimal, num_of_places: int = 6
 ) -> decimal.Decimal:
-    return decimalObj.quantize(decimal.Decimal(10) ** -num_of_places).normalize()
+    return decimal_obj.quantize(decimal.Decimal(10) ** -num_of_places).normalize()
 
 
 class Decimal(Instance):
@@ -882,7 +882,7 @@ class Decimal(Instance):
         self.resolution = resolution
 
     def serialize(self, value: decimal.Decimal) -> str:
-        return "{0:f}".format(round_decimal(value, num_of_places=self.resolution))
+        return '{0:f}'.format(round_decimal(value, num_of_places=self.resolution))
 
     def deserialize(self, value) -> decimal.Decimal:
         try:
