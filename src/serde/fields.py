@@ -854,13 +854,15 @@ del create_primitive
 
 
 # A helper function...
-def round_decimal(decimalObj: decimal.Decimal, num_of_places: int = 6) -> decimal.Decimal:
+def round_decimal(
+    decimalObj: decimal.Decimal, num_of_places: int = 6
+) -> decimal.Decimal:
     return decimalObj.quantize(decimal.Decimal(10) ** -num_of_places).normalize()
 
 
 class Decimal(Instance):
     """
-      A `~decimal.Decimal` field.
+    A `~decimal.Decimal` field.
 
     This field serializes `~decimal.Decimal` objects as strings and
     deserializes string representations of Decimals as `~decimal.Decimal`
@@ -872,6 +874,7 @@ class Decimal(Instance):
         resolution (int): The amount of decimal places to round to and deserialize to.
         **kwargs: keyword arguments for the `Field` constructor.
     """
+
     ty = decimal.Decimal
 
     def __init__(self, resolution=6, **kwargs):
@@ -885,10 +888,7 @@ class Decimal(Instance):
         try:
             return decimal.Decimal(value)
         except (TypeError, ValueError):
-            raise ValidationError(
-                f"Invalid decimal: {value}",
-                value=value
-            )
+            raise ValidationError(f"Invalid decimal: {value}",value=value)
 
 
 class Literal(Field):
@@ -1282,7 +1282,7 @@ _FIELD_CLASS_MAP = {
     datetime.time: Time,
     # Others
     uuid.UUID: Uuid,
-    decimal.Decimal: Decimal
+    decimal.Decimal: Decimal,
 }
 
 __all__ = [name for name, obj in globals().items() if is_subclass(obj, Field)]
