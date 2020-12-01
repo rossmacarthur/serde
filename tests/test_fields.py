@@ -1264,6 +1264,14 @@ class TestDecimal:
 
         assert field.deserialize('100.1234567891') == decimal.Decimal('100.1234567891')
 
+    def test_failure(self):
+        field = Decimal()
+
+        try:
+            field.deserialize("skiyaaa")
+        except ValidationError:
+            pass
+
 
 class TestDate:
     def test_serialize_iso8601(self):
