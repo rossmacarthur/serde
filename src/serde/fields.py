@@ -852,9 +852,11 @@ Bytes = create_primitive('Bytes', bytes)
 
 del create_primitive
 
+
 # A helper function...
 def round_decimal(decimalObj: decimal.Decimal, num_of_places: int = 6) -> decimal.Decimal:
     return decimalObj.quantize(decimal.Decimal(10) ** -num_of_places).normalize()
+
 
 class Decimal(Instance):
     """
