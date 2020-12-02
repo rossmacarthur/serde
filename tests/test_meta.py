@@ -1,9 +1,6 @@
 import doctest
-import importlib
 import os
 from itertools import groupby
-
-import mock
 
 from serde import fields
 from tests import REPO_DIR
@@ -14,17 +11,6 @@ def test_readme():
 
     if failures:
         raise Exception('doctests in README.rst failed')
-
-
-@mock.patch('setuptools.setup')
-@mock.patch('setuptools.find_packages')
-def test_setup_requirements_sorted(find_packages, setup):
-    """
-    Check that setup.py requirements are sorted.
-    """
-    setup_mod = importlib.import_module('setup')
-    assert setup_mod.install_requires == sorted(setup_mod.install_requires)
-    assert setup_mod.ext_requires == sorted(setup_mod.ext_requires)
 
 
 def test_dev_requirements_sorted():

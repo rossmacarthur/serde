@@ -42,15 +42,12 @@ def get_metadata():
 
 metadata = get_metadata()
 
-# Primary requirements
-install_requires = ['isodate==0.6.*']
 ext_requires = ['chardet==3.*', 'validators>=0.12.0']
 
 setup(
     # Options
-    install_requires=install_requires,
     extras_require={'ext': ext_requires},
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     # Metadata
@@ -65,12 +62,10 @@ setup(
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy',
     ],
     keywords='serde serialization deserialization validation schema json',
     **metadata,

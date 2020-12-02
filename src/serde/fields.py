@@ -8,8 +8,6 @@ import re
 import uuid
 from collections.abc import Mapping as MappingType
 
-import isodate
-
 from serde.exceptions import ContextError, ValidationError, add_context
 from serde.utils import is_subclass, try_lookup, zip_equal
 
@@ -948,8 +946,8 @@ class DateTime(Instance):
         """
         if self.format == 'iso8601':
             try:
-                return isodate.parse_datetime(value)
-            except isodate.ISO8601Error:
+                return self.ty.fromisoformat(value)
+            except ValueError:
                 raise ValidationError('invalid ISO 8601 datetime', value=value)
         else:
             try:
@@ -976,8 +974,8 @@ class Date(DateTime):
         """
         if self.format == 'iso8601':
             try:
-                return isodate.parse_date(value)
-            except isodate.ISO8601Error:
+                return self.ty.fromisoformat(value)
+            except ValueError:
                 raise ValidationError('invalid ISO 8601 date', value=value)
         else:
             try:
@@ -1004,8 +1002,8 @@ class Time(DateTime):
         """
         if self.format == 'iso8601':
             try:
-                return isodate.parse_time(value)
-            except isodate.ISO8601Error:
+                return self.ty.fromisoformat(value)
+            except ValueError:
                 raise ValidationError('invalid ISO 8601 time', value=value)
         else:
             try:
