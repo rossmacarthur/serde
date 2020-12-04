@@ -887,7 +887,7 @@ class Decimal(Instance):
     def deserialize(self, value) -> decimal.Decimal:
         try:
             return decimal.Decimal(value)
-        except:
+        except decimal.DecimalException:
             raise ValidationError(f'Invalid decimal: {value}', value=value)
 
 
