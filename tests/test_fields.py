@@ -1267,10 +1267,8 @@ class TestDecimal:
     def test_failure(self):
         field = Decimal()
 
-        try:
+        with raises(ValidationError):
             field.deserialize('skiyaaa')
-        except ValidationError:
-            pass
 
 
 class TestDate:
