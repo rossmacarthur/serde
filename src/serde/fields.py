@@ -888,7 +888,7 @@ class Decimal(Instance):
         try:
             return decimal.Decimal(value)
         except decimal.DecimalException:
-            raise ValidationError('invalid decimal' value=value)
+            raise ValidationError('invalid decimal', value=value)
 
 
 class Literal(Field):
