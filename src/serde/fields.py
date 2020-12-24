@@ -894,7 +894,9 @@ class Decimal(Instance):
     def deserialize(self, value) -> decimal.Decimal:
         try:
             if self.resolution is not None:
-                return round_decimal(decimal.Decimal(value), num_of_places=self.resolution)
+                return round_decimal(
+                    decimal.Decimal(value), num_of_places=self.resolution
+                )
 
             return decimal.Decimal(value)
         except decimal.DecimalException:
