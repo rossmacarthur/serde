@@ -868,15 +868,18 @@ class Decimal(Instance):
     deserializes string representations of Decimals as `~decimal.Decimal`
     objects.
 
-    The resolution of the decimal can be specified. When not specified, the number is not rounded.
-    When it is specified, the decimal is rounded to this number of decimal places upon serialization
-    and deserialization.
+    The resolution of the decimal can be specified. When not specified, the number
+    is not rounded. When it is specified, the decimal is rounded to this number of
+    decimal places upon serialization and deserialization.
 
-    Note: When float type numbers are not rounded before serialization, they will be serialized in exact
-    form, which as they are floats, is almost never the exact intended value, e.g. 0.2 = 0.20000000000000000000023
+    Note: When float type numbers are not rounded before serialization,
+    they will be serialized in exact form, which as they are floats,
+    is almost never the exact intended value,
+    e.g. 0.2 = 0.20000000000000000000023
 
     Args:
-        resolution (Union[int, bool]): The number of decimal places to round to. When None, rounding is disabled.
+        resolution (Union[int, bool]): The number of decimal places to round to.
+        When None, rounding is disabled.
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
