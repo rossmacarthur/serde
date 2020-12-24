@@ -868,24 +868,34 @@ class Decimal(Instance):
     deserializes string representations of Decimals as `~decimal.Decimal`
     objects.
 
-    The resolution of the decimal can be specified. It defaults to 6 decimal places.
+    The resolution of the decimal can be specified. When not specified, the number is not rounded.
+    When it is specified, the decimal is rounded to this number of decimal places upon serialization
+    and deserialization.
+
+    Note: When float type numbers are not rounded before serialization, they will be serialized in exact
+    form, which as they are floats, is almost never the exact intended value, e.g. 0.2 = 0.20000000000000000000023
 
     Args:
-        resolution (int): The amount of decimal places to round to and deserialize to.
+        resolution (Union[int, bool]): The number of decimal places to round to. When None, rounding is disabled.
         **kwargs: keyword arguments for the `Field` constructor.
     """
 
     ty = decimal.Decimal
 
-    def __init__(self, resolution=6, **kwargs):
+    def __init__(self, resolution=None, **kwargs):
         super(Decimal, self).__init__(self.__class__.ty, **kwargs)
         self.resolution = resolution
 
     def serialize(self, value: decimal.Decimal) -> str:
-        return '{0:f}'.format(round_decimal(value, num_of_places=self.resolution))
+        if self.resolution is not None:
+            value = round_decimal(value, num_of_places=self.resolution)
+        return '{0:f}'.format(value)
 
     def deserialize(self, value) -> decimal.Decimal:
         try:
+            if self.resolution is not None:
+                return round_decimal(decimal.Decimal(value), num_of_places=self.resolution)
+
             return decimal.Decimal(value)
         except decimal.DecimalException:
             raise ValidationError('invalid decimal', value=value)
