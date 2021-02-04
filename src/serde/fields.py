@@ -4,6 +4,7 @@ This module contains field classes for use with `Models <serde.Model>`.
 
 import collections
 import datetime
+import decimal
 import re
 import uuid
 from collections.abc import Mapping as MappingType
@@ -850,6 +851,59 @@ Bytes = create_primitive('Bytes', bytes)
 del create_primitive
 
 
+# A helper function...
+def round_decimal(
+    decimal_obj: decimal.Decimal, num_of_places: int = 6
+) -> decimal.Decimal:
+    return decimal_obj.quantize(decimal.Decimal(10) ** -num_of_places).normalize()
+
+
+class Decimal(Instance):
+    """
+    A `~decimal.Decimal` field.
+
+    This field serializes `~decimal.Decimal` objects as strings and
+    deserializes string representations of Decimals as `~decimal.Decimal`
+    objects.
+
+    The resolution of the decimal can be specified. When not specified, the number
+    is not rounded. When it is specified, the decimal is rounded to this number of
+    decimal places upon serialization and deserialization.
+
+    Note: When float type numbers are not rounded before serialization,
+    they will be serialized in exact form, which as they are floats,
+    is almost never the exact intended value,
+    e.g. 0.2 = 0.20000000000000000000023
+
+    Args:
+        resolution (Union[int, bool]): The number of decimal places to round to.
+        When None, rounding is disabled.
+        **kwargs: keyword arguments for the `Field` constructor.
+    """
+
+    ty = decimal.Decimal
+
+    def __init__(self, resolution=None, **kwargs):
+        super(Decimal, self).__init__(self.__class__.ty, **kwargs)
+        self.resolution = resolution
+
+    def serialize(self, value: decimal.Decimal) -> str:
+        if self.resolution is not None:
+            value = round_decimal(value, num_of_places=self.resolution)
+        return '{0:f}'.format(value)
+
+    def deserialize(self, value) -> decimal.Decimal:
+        try:
+            if self.resolution is not None:
+                return round_decimal(
+                    decimal.Decimal(value), num_of_places=self.resolution
+                )
+
+            return decimal.Decimal(value)
+        except decimal.DecimalException:
+            raise ValidationError('invalid decimal', value=value)
+
+
 class Literal(Field):
     """
     A literal field.
@@ -1241,6 +1295,7 @@ _FIELD_CLASS_MAP = {
     datetime.time: Time,
     # Others
     uuid.UUID: Uuid,
+    decimal.Decimal: Decimal,
 }
 
 __all__ = [name for name, obj in globals().items() if is_subclass(obj, Field)]

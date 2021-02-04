@@ -1,5 +1,6 @@
 import collections
 import datetime
+import decimal
 import re
 import uuid
 from collections import deque
@@ -14,6 +15,7 @@ from serde.fields import (
     Choice,
     Date,
     DateTime,
+    Decimal,
     Deque,
     Dict,
     Field,
@@ -1237,6 +1239,36 @@ class TestDateTime:
             field.deserialize(value)
         assert e.value.value == value
         assert e.value.message == "invalid datetime, expected format '%Y%m%d %H:%M:%S'"
+
+
+class TestDecimal:
+    def test_serialize(self):
+        # A Decimal should serialize a Decimal object as a str equivalent.
+        field = Decimal()
+        assert field.serialize(decimal.Decimal('100.76753')) == '100.76753'
+
+    def test_serialize_diff_places(self):
+        # A Decimal should serialize a Decimal object as a str equivalent.
+        field = Decimal(resolution=10)
+        assert field.serialize(decimal.Decimal('100.1234567891')) == '100.1234567891'
+
+    def test_deserialize(self):
+        # A Decimal should deserialize a decimal value from a str equivalent
+        field = Decimal()
+
+        assert field.deserialize('100.76753') == decimal.Decimal('100.76753')
+
+    def test_deserialize_diff_places(self):
+        # A Decimal should deserialize a decimal value from a str equivalent
+        field = Decimal(resolution=10)
+
+        assert field.deserialize('100.1234567891') == decimal.Decimal('100.1234567891')
+
+    def test_failure(self):
+        field = Decimal()
+
+        with raises(ValidationError):
+            field.deserialize('skiyaaa')
 
 
 class TestDate:
