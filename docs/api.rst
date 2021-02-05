@@ -50,6 +50,7 @@ Standard library
 .. autoclass:: serde.fields.Time
 .. autoclass:: serde.fields.Uuid
 .. autoclass:: serde.fields.Regex
+.. autoclass:: serde.fields.Decimal
 
 Miscellanous
 ^^^^^^^^^^^^
