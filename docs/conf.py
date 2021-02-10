@@ -1,7 +1,6 @@
 import doctest
 from datetime import datetime
 
-
 import serde
 
 
