@@ -26,4 +26,10 @@ jobs:
           just docs
           git config --global user.name "Serde Docs Auto-Generator"
           cd docs/_build/html
-          ls
+          git init
+          git remote add origin git@github.com:vyrzdev/serde.git
+          git fetch
+          git reset origin/gh-pages
+          git add .
+          git commit -m "publish docs for $(git -C ../../.. rev-parse --short HEAD)"
+          git push origin HEAD:gh-pages
