@@ -22,7 +22,7 @@ jobs:
       - name: Run a multi-line script
         run: |
           sudo apt-get install python3-sphinx
-          export PATH=$GITHUB_WORKSPACE/src:$PATH
+          export PYTHONPATH=$GITHUB_WORKSPACE/src:$PYTHONPATH
           echo $PATH
           cd docs
           python3 test_availability.py
