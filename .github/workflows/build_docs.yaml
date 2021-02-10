@@ -32,5 +32,5 @@ jobs:
           rm -rf ./*
           cp -r ../html_docs_swap_folder/* ./
           git add .
-          git commit -m "publish docs for $(git -C ../../.. rev-parse --short HEAD)"
+          git diff-index --quiet HEAD || git commit -m "publish docs for $(git -C ../../.. rev-parse --short HEAD)"
           git push
