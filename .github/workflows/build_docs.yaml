@@ -27,5 +27,4 @@ jobs:
           git config --global user.name "Serde Docs Auto-Generator"
           mkdir ../html_docs_swap_folder
           cp -r docs/_build/html/* ../html_docs_swap_folder/
-          ls ..
-          ls ../html_docs_swap_folder
+          git branch -a
