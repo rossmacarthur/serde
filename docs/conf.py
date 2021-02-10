@@ -1,8 +1,7 @@
 import doctest
 from datetime import datetime
 
-import serde
-
+import src as serde
 
 # Project configuration
 project = 'Serde'
