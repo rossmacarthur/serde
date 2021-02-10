@@ -1,0 +1,3 @@
+import serde
+
+print("SUCCEEDED")
