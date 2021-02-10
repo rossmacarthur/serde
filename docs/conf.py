@@ -3,7 +3,8 @@ from datetime import datetime
 
 
 import os
-print(os.getcwd())
+print(os.system("ls"))
+print(os.system("pwd"))
 from src import serde
 # Project configuration
 project = 'Serde'
