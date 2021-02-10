@@ -3,9 +3,9 @@ from datetime import datetime
 
 
 import os
-print(os.system("ls"))
-print(os.system("pwd"))
-from src import serde
+import serde
+
+
 # Project configuration
 project = 'Serde'
 copyright = f' {datetime.now().year:d}, {serde.__author__}'

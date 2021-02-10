@@ -22,6 +22,6 @@ jobs:
       - name: Run a multi-line script
         run: |
           sudo apt-get install python3-sphinx
-          echo $GITHUB_WORKSPACE
+          export PATH=$GITHUB_WORKSPACE/src:$PATH
           just docs
           git config --global user.name "Serde Docs Auto-Generator"
