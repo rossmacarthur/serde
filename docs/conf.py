@@ -4,7 +4,7 @@ from datetime import datetime
 
 import os
 print(os.getcwd())
-import serde
+from src import serde
 # Project configuration
 project = 'Serde'
 copyright = f' {datetime.now().year:d}, {serde.__author__}'
