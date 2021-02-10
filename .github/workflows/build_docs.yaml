@@ -29,4 +29,8 @@ jobs:
           cp -r docs/_build/html/* ../html_docs_swap_folder/
           git fetch
           git checkout -t origin/gh-pages
-          ls
+          rm -rf ./*
+          cp -r ../html_docs_swap_folder/* ./
+          git add .
+          git commit -m "Testing Pages Generation"
+          git push
