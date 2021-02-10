@@ -1,11 +1,11 @@
 import doctest
 from datetime import datetime
 
-import serde
-import os
 
-# Project configuration
+import os
 print(os.getcwd())
+import serde
+# Project configuration
 project = 'Serde'
 copyright = f' {datetime.now().year:d}, {serde.__author__}'
 author = serde.__author__
