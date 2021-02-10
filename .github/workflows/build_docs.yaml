@@ -23,8 +23,7 @@ jobs:
         run: |
           sudo apt-get install python3-sphinx
           export PYTHONPATH=$GITHUB_WORKSPACE/src:$PYTHONPATH
-          echo $PATH
-          cd docs
-          python3 test_availability.py
-        # just docs
-        # git config --global user.name "Serde Docs Auto-Generator"
+          just docs
+          git config --global user.name "Serde Docs Auto-Generator"
+          cd docs/_build/html
+          ls
