@@ -1,3 +1,0 @@
-import serde
-
-print("SUCCEEDED")
