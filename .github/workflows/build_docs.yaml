@@ -16,7 +16,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - uses: actions/checkout@v2
         with:
-          ref: main
+          ref: master
       - uses: extractions/setup-just@v1
 
       - name: Run a multi-line script
