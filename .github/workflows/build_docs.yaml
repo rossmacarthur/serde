@@ -21,7 +21,7 @@ jobs:
 
       - name: Run a multi-line script
         run: |
-          pip install sphinx
+          apt-get install python3-sphinx
           just docs
           ls
           git config --global user.name "Serde Docs Auto-Generator"
