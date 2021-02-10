@@ -22,7 +22,6 @@ jobs:
       - name: Run a multi-line script
         run: |
           sudo apt-get install python3-sphinx
-          echo $WORKSPACE
-          pwd
+          echo $GITHUB_WORKSPACE
           just docs
           git config --global user.name "Serde Docs Auto-Generator"
