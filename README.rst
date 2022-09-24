@@ -1,3 +1,15 @@
+Unmaintained
+============
+
+I will personally not be contributing any features or bug fixes to this project,
+but I am happy to accept pull requests. If you would like to maintain this
+project please let me know. If you are using this project please consider
+alternatives like:
+
+* https://docs.python.org/3/library/dataclasses.html
+* https://github.com/pydantic/pydantic
+* https://github.com/keleshev/schema
+
 Serde
 =====
 
