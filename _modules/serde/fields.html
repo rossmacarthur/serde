@@ -1,18 +1,19 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>serde.fields &#8212; Serde 0.8.1 documentation</title>
-    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <title>serde.fields &#8212; Serde 0.9.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
-    <script src="../../_static/language_data.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
    
@@ -45,7 +46,6 @@
 <h3>Navigation</h3>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../releases.html">Releases</a></li>
 </ul>
 
@@ -62,12 +62,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="documentwrapper">
@@ -83,12 +83,10 @@
 
 <span class="kn">import</span> <span class="nn">collections</span>
 <span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">decimal</span>
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">uuid</span>
-
-<span class="kn">import</span> <span class="nn">isodate</span>
-<span class="kn">from</span> <span class="nn">six</span> <span class="kn">import</span> <span class="n">PY3</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">,</span> <span class="n">integer_types</span><span class="p">,</span> <span class="n">text_type</span>
-<span class="kn">from</span> <span class="nn">six.moves.collections_abc</span> <span class="kn">import</span> <span class="n">Mapping</span> <span class="k">as</span> <span class="n">MappingType</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Mapping</span> <span class="k">as</span> <span class="n">MappingType</span>
 
 <span class="kn">from</span> <span class="nn">serde.exceptions</span> <span class="kn">import</span> <span class="n">ContextError</span><span class="p">,</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="n">add_context</span>
 <span class="kn">from</span> <span class="nn">serde.utils</span> <span class="kn">import</span> <span class="n">is_subclass</span><span class="p">,</span> <span class="n">try_lookup</span><span class="p">,</span> <span class="n">zip_equal</span>
@@ -129,7 +127,7 @@
     <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
         <span class="k">pass</span>
 
-    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;failed to resolve </span><span class="si">{!r}</span><span class="s1"> into a field&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">thing</span><span class="p">))</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;failed to resolve </span><span class="si">{</span><span class="n">thing</span><span class="si">!r}</span><span class="s1"> into a field&#39;</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">_Base</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -191,9 +189,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_model_cls&#39;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">ContextError</span><span class="p">(</span>
-                <span class="s1">&#39;attempted to use </span><span class="si">{!r}</span><span class="s1"> instance more than once&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
-                <span class="p">)</span>
+                <span class="sa">f</span><span class="s1">&#39;attempted to use </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">!r}</span><span class="s1"> instance more than once&#39;</span>
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model_cls</span> <span class="o">=</span> <span class="n">model_cls</span>
 
@@ -338,9 +334,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instantiate</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attr_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-                <span class="s1">&#39;__init__() missing required argument </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_attr_name</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;__init__() missing required argument </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_attr_name</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_serialize_with</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
@@ -357,9 +351,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">value</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_serde_name</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="s1">&#39;missing data, expected field </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_serde_name</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;missing data, expected field </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_serde_name</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attr_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">d</span>
 
@@ -552,7 +544,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="s1">&#39;invalid type, expected </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="o">.</span><span class="vm">__name__</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
+                <span class="sa">f</span><span class="s1">&#39;invalid type, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="o">.</span><span class="vm">__name__</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
             <span class="p">)</span>
 
 
@@ -650,7 +642,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="p">(</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="s1">&#39;_serialize&#39;</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span> <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter</span><span class="p">(</span><span class="n">value</span><span class="p">)),</span>
-            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">_Container</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
@@ -664,7 +656,7 @@
         <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">_Container</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="p">(</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="s1">&#39;_deserialize&#39;</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span> <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter</span><span class="p">(</span><span class="n">value</span><span class="p">)),</span>
-            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
@@ -677,7 +669,7 @@
         <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">_Container</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="p">(</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="s1">&#39;_normalize&#39;</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span> <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter</span><span class="p">(</span><span class="n">value</span><span class="p">)),</span>
-            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
@@ -711,7 +703,7 @@
                 <span class="k">yield</span> <span class="n">element</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="s1">&#39;invalid type, expected </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="o">.</span><span class="vm">__name__</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
+                <span class="sa">f</span><span class="s1">&#39;invalid type, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="o">.</span><span class="vm">__name__</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
@@ -777,7 +769,7 @@
                 <span class="k">yield</span> <span class="n">element</span>
         <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="s1">&#39;invalid type, expected </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="o">.</span><span class="vm">__name__</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
+                <span class="sa">f</span><span class="s1">&#39;invalid type, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="o">.</span><span class="vm">__name__</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
@@ -820,7 +812,7 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">Deque</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">maxlen</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="s1">&#39;invalid max length, expected </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
+                <span class="sa">f</span><span class="s1">&#39;invalid max length, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
             <span class="p">)</span></div>
 
 
@@ -897,9 +889,7 @@
                 <span class="k">yield</span> <span class="n">element</span>
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="s1">&#39;invalid length, expected </span><span class="si">{}</span><span class="s1"> elements&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">),</span>
-                <span class="p">),</span>
+                <span class="sa">f</span><span class="s1">&#39;invalid length, expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">elements</span><span class="p">)</span><span class="si">}</span><span class="s1"> elements&#39;</span><span class="p">,</span>
                 <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -916,19 +906,16 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create a primitive `Field` class.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">doc</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
-<span class="s2">This field represents the built-in `</span><span class="si">{ty}</span><span class="s2">` type.</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;This field represents the built-in `</span><span class="si">{</span><span class="n">ty</span><span class="si">}</span><span class="s2">` type.</span>
 
 <span class="s2">Args:</span>
 <span class="s2">    **kwargs: keyword arguments for the `Field` constructor.</span>
-<span class="s2">&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">ty</span><span class="o">=</span><span class="n">ty</span>
-    <span class="p">)</span>
+<span class="s2">&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>  <span class="c1"># noqa: N807</span>
         <span class="n">Instance</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ty</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="fm">__init__</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="s1">&#39;Create a new `</span><span class="si">{name}</span><span class="s1">`.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="fm">__init__</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Create a new `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">`.&#39;</span>
 
     <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">Instance</span><span class="p">,),</span> <span class="p">{</span><span class="s1">&#39;__doc__&#39;</span><span class="p">:</span> <span class="n">doc</span><span class="p">,</span> <span class="s1">&#39;__init__&#39;</span><span class="p">:</span> <span class="fm">__init__</span><span class="p">})</span>
 
@@ -938,24 +925,62 @@
 <span class="n">Float</span> <span class="o">=</span> <span class="n">create_primitive</span><span class="p">(</span><span class="s1">&#39;Float&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
 <span class="n">Int</span> <span class="o">=</span> <span class="n">create_primitive</span><span class="p">(</span><span class="s1">&#39;Int&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
 <span class="n">Str</span> <span class="o">=</span> <span class="n">create_primitive</span><span class="p">(</span><span class="s1">&#39;Str&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
-<span class="n">Bytes</span> <span class="o">=</span> <span class="n">create_primitive</span><span class="p">(</span><span class="s1">&#39;Bytes&#39;</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">if</span> <span class="nb">bytes</span> <span class="o">!=</span> <span class="nb">str</span> <span class="k">else</span> <span class="n">Str</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">BaseString</span> <span class="o">=</span> <span class="n">create_primitive</span><span class="p">(</span><span class="s1">&#39;BaseString&#39;</span><span class="p">,</span> <span class="n">basestring</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">Long</span> <span class="o">=</span> <span class="n">create_primitive</span><span class="p">(</span><span class="s1">&#39;Long&#39;</span><span class="p">,</span> <span class="n">long</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">Unicode</span> <span class="o">=</span> <span class="n">create_primitive</span><span class="p">(</span><span class="s1">&#39;Unicode&#39;</span><span class="p">,</span> <span class="n">unicode</span><span class="p">)</span>
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
+<span class="n">Bytes</span> <span class="o">=</span> <span class="n">create_primitive</span><span class="p">(</span><span class="s1">&#39;Bytes&#39;</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>
 
 <span class="k">del</span> <span class="n">create_primitive</span>
+
+
+<span class="c1"># A helper function...</span>
+<span class="k">def</span> <span class="nf">round_decimal</span><span class="p">(</span>
+    <span class="n">decimal_obj</span><span class="p">:</span> <span class="n">decimal</span><span class="o">.</span><span class="n">Decimal</span><span class="p">,</span> <span class="n">num_of_places</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">decimal</span><span class="o">.</span><span class="n">Decimal</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">decimal_obj</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">decimal</span><span class="o">.</span><span class="n">Decimal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">**</span> <span class="o">-</span><span class="n">num_of_places</span><span class="p">)</span><span class="o">.</span><span class="n">normalize</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Decimal"><a class="viewcode-back" href="../../api.html#serde.fields.Decimal">[docs]</a><span class="k">class</span> <span class="nc">Decimal</span><span class="p">(</span><span class="n">Instance</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A `~decimal.Decimal` field.</span>
+
+<span class="sd">    This field serializes `~decimal.Decimal` objects as strings and</span>
+<span class="sd">    deserializes string representations of Decimals as `~decimal.Decimal`</span>
+<span class="sd">    objects.</span>
+
+<span class="sd">    The resolution of the decimal can be specified. When not specified, the number</span>
+<span class="sd">    is not rounded. When it is specified, the decimal is rounded to this number of</span>
+<span class="sd">    decimal places upon serialization and deserialization.</span>
+
+<span class="sd">    Note: When float type numbers are not rounded before serialization,</span>
+<span class="sd">    they will be serialized in exact form, which as they are floats,</span>
+<span class="sd">    is almost never the exact intended value,</span>
+<span class="sd">    e.g. 0.2 = 0.20000000000000000000023</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        resolution (Union[int, bool]): The number of decimal places to round to.</span>
+<span class="sd">        When None, rounding is disabled.</span>
+<span class="sd">        **kwargs: keyword arguments for the `Field` constructor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ty</span> <span class="o">=</span> <span class="n">decimal</span><span class="o">.</span><span class="n">Decimal</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Decimal</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">ty</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="n">resolution</span>
+
+    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">decimal</span><span class="o">.</span><span class="n">Decimal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">round_decimal</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">num_of_places</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0:f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">decimal</span><span class="o">.</span><span class="n">Decimal</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">round_decimal</span><span class="p">(</span>
+                    <span class="n">decimal</span><span class="o">.</span><span class="n">Decimal</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">num_of_places</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">decimal</span><span class="o">.</span><span class="n">Decimal</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">decimal</span><span class="o">.</span><span class="n">DecimalException</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s1">&#39;invalid decimal&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Literal"><a class="viewcode-back" href="../../api.html#serde.fields.Literal">[docs]</a><span class="k">class</span> <span class="nc">Literal</span><span class="p">(</span><span class="n">Field</span><span class="p">):</span>
@@ -982,7 +1007,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">value</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="s1">&#39;invalid literal, expected </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
+                <span class="sa">f</span><span class="s1">&#39;invalid literal, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span>
             <span class="p">)</span></div>
 
 
@@ -1054,15 +1079,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">==</span> <span class="s1">&#39;iso8601&#39;</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">isodate</span><span class="o">.</span><span class="n">parse_datetime</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-            <span class="k">except</span> <span class="n">isodate</span><span class="o">.</span><span class="n">ISO8601Error</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s1">&#39;invalid ISO 8601 datetime&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">)</span>
             <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                    <span class="s1">&#39;invalid datetime, expected format </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">),</span>
+                    <span class="sa">f</span><span class="s1">&#39;invalid datetime, expected format </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">,</span>
                     <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
                 <span class="p">)</span></div>
 
@@ -1082,15 +1107,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">==</span> <span class="s1">&#39;iso8601&#39;</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">isodate</span><span class="o">.</span><span class="n">parse_date</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-            <span class="k">except</span> <span class="n">isodate</span><span class="o">.</span><span class="n">ISO8601Error</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s1">&#39;invalid ISO 8601 date&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
             <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                    <span class="s1">&#39;invalid date, expected format </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">),</span>
+                    <span class="sa">f</span><span class="s1">&#39;invalid date, expected format </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">,</span>
                     <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
                 <span class="p">)</span></div>
 
@@ -1110,15 +1135,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span> <span class="o">==</span> <span class="s1">&#39;iso8601&#39;</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">isodate</span><span class="o">.</span><span class="n">parse_time</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-            <span class="k">except</span> <span class="n">isodate</span><span class="o">.</span><span class="n">ISO8601Error</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ty</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s1">&#39;invalid ISO 8601 time&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">)</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
             <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                    <span class="s1">&#39;invalid time, expected format </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">),</span>
+                    <span class="sa">f</span><span class="s1">&#39;invalid time, expected format </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">,</span>
                     <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
                 <span class="p">)</span></div>
 
@@ -1143,7 +1168,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a new `Text`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">text_type</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">encoding</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="n">errors</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1153,7 +1178,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Normalize byte strings to unicode strings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
                     <span class="n">encoding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_detect</span><span class="p">(</span><span class="n">value</span><span class="p">)[</span><span class="s1">&#39;encoding&#39;</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span>
@@ -1193,9 +1218,7 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">Regex</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compiled</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="s1">&#39;invalid string, expected to match regex pattern </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span>
-                <span class="p">),</span>
+                <span class="sa">f</span><span class="s1">&#39;invalid string, expected to match regex pattern </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pattern</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">,</span>
                 <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
             <span class="p">)</span></div>
 
@@ -1238,11 +1261,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">):</span>
             <span class="n">input_form</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">text_type</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                 <span class="n">input_form</span> <span class="o">=</span> <span class="s1">&#39;hex&#39;</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">binary_type</span><span class="p">):</span>
-                <span class="n">input_form</span> <span class="o">=</span> <span class="s1">&#39;bytes&#39;</span> <span class="k">if</span> <span class="n">PY3</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">16</span> <span class="k">else</span> <span class="s1">&#39;hex&#39;</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">integer_types</span><span class="p">):</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+                <span class="n">input_form</span> <span class="o">=</span> <span class="s1">&#39;bytes&#39;</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
                 <span class="n">input_form</span> <span class="o">=</span> <span class="s1">&#39;int&#39;</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
                 <span class="n">input_form</span> <span class="o">=</span> <span class="s1">&#39;fields&#39;</span>
@@ -1287,16 +1310,13 @@
     <span class="k">if</span> <span class="n">human</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">human</span> <span class="o">=</span> <span class="n">suffix</span>
 
-    <span class="n">doc</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
-<span class="s2">A text field that asserts the text is a valid </span><span class="si">{}</span><span class="s2">.</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;A text field that asserts the text is a valid </span><span class="si">{</span><span class="n">human</span><span class="si">}</span><span class="s2">.</span>
 
-<span class="s2">The validation is delegated to `</span><span class="si">{}</span><span class="s2">`.</span>
+<span class="s2">The validation is delegated to `</span><span class="si">{</span><span class="n">foreign</span><span class="si">}</span><span class="s2">`.</span>
 
 <span class="s2">Args:</span>
 <span class="s2">    **kwargs: keyword arguments for the `Field` constructor.</span>
-<span class="s2">&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">human</span><span class="p">,</span> <span class="n">foreign</span>
-    <span class="p">)</span>
+<span class="s2">&quot;&quot;&quot;</span>
 
     <span class="n">field_cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">Text</span><span class="p">,),</span> <span class="p">{</span><span class="s1">&#39;__doc__&#39;</span><span class="p">:</span> <span class="n">doc</span><span class="p">})</span>
 
@@ -1307,7 +1327,7 @@
     <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">field_cls</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validator</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s1">&#39;invalid </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">human</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;invalid </span><span class="si">{</span><span class="n">human</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
 
     <span class="n">field_cls</span><span class="o">.</span><span class="fm">__init__</span> <span class="o">=</span> <span class="fm">__init__</span>
     <span class="n">field_cls</span><span class="o">.</span><span class="n">validate</span> <span class="o">=</span> <span class="n">validate</span>
@@ -1354,22 +1374,8 @@
     <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">:</span> <span class="n">Time</span><span class="p">,</span>
     <span class="c1"># Others</span>
     <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">:</span> <span class="n">Uuid</span><span class="p">,</span>
+    <span class="n">decimal</span><span class="o">.</span><span class="n">Decimal</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">,</span>
 <span class="p">}</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">_FIELD_CLASS_MAP</span><span class="p">[</span><span class="n">basestring</span><span class="p">]</span> <span class="o">=</span> <span class="n">BaseString</span>
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">_FIELD_CLASS_MAP</span><span class="p">[</span><span class="n">long</span><span class="p">]</span> <span class="o">=</span> <span class="n">Long</span>
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">_FIELD_CLASS_MAP</span><span class="p">[</span><span class="n">unicode</span><span class="p">]</span> <span class="o">=</span> <span class="n">Unicode</span>
-<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
-    <span class="k">pass</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">is_subclass</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Field</span><span class="p">)]</span>
 </pre></div>
@@ -1381,10 +1387,10 @@
     <div class="clearer"></div>
   </div>
     <div class="footer">
-      &copy; 2020, Ross MacArthur.
+      &copy; 2022, Ross MacArthur.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.2.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.2.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

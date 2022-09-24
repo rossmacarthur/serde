@@ -50,6 +50,7 @@ Standard library
 .. autoclass:: serde.fields.Time
 .. autoclass:: serde.fields.Uuid
 .. autoclass:: serde.fields.Regex
+.. autoclass:: serde.fields.Decimal
 
 Miscellanous
 ^^^^^^^^^^^^
@@ -94,5 +95,5 @@ Exceptions
 .. automodule:: serde.exceptions
 
 .. autoexception:: serde.exceptions.ContextError
-.. autoexception:: serde.exceptions.MissingDependency
+.. autoexception:: serde.exceptions.MissingDependencyError
 .. autoexception:: serde.exceptions.ValidationError
