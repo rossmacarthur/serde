@@ -9,7 +9,7 @@ from serde.model import Model
 
 __all__ = ['Model', 'ValidationError', 'fields', 'tags', 'validators']
 __title__ = 'serde'
-__version__ = '0.8.1'
+__version__ = '0.9.0'
 __url__ = 'https://github.com/rossmacarthur/serde'
 __author__ = 'Ross MacArthur'
 __author_email__ = 'ross@macarthur.io'

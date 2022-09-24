@@ -1,6 +1,19 @@
 Releases
 ========
 
+0.9.0
+-----
+
+*Released on September 24th, 2022*
+
+- Add `Decimal` field. (`#128`_)
+- Drop `isodate` dependency and use standard library. (`de5b598`_)
+- Drop Python 2 and Python 3.5 support. (`453b7e6`_)
+
+.. _453b7e6: https://github.com/rossmacarthur/serde/commit/453b7e636e9c39e99de224d9984d5400d4c7f001
+.. _de5b598: https://github.com/rossmacarthur/serde/commit/de5b59808c92afe6f2f36c71ec62ce7884dd527a
+.. _#128: https://github.com/rossmacarthur/serde/pull/128
+
 0.8.1
 -----
 
