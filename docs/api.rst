@@ -95,5 +95,5 @@ Exceptions
 .. automodule:: serde.exceptions
 
 .. autoexception:: serde.exceptions.ContextError
-.. autoexception:: serde.exceptions.MissingDependency
+.. autoexception:: serde.exceptions.MissingDependencyError
 .. autoexception:: serde.exceptions.ValidationError

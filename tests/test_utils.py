@@ -1,7 +1,7 @@
 from pytest import raises
 
 from serde import Model, fields, utils
-from serde.exceptions import MissingDependency
+from serde.exceptions import MissingDependencyError
 
 
 def test_dict_partition():
@@ -31,7 +31,7 @@ def test_try_lookup():
     assert utils.try_lookup('serde.fields.Str') is fields.Str
     assert utils.try_lookup('serde.Model') is Model
 
-    with raises(MissingDependency) as e:
+    with raises(MissingDependencyError) as e:
         utils.try_lookup('not_a_real_pkg.not_a_real_module')
 
     assert e.value.message == (

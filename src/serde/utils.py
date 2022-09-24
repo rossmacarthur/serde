@@ -6,7 +6,7 @@ import importlib
 from collections import OrderedDict
 from itertools import zip_longest
 
-from serde.exceptions import MissingDependency
+from serde.exceptions import MissingDependencyError
 
 
 def dict_partition(d, keyfunc, dict=OrderedDict):
@@ -73,13 +73,13 @@ def try_lookup(name):
         the object at the path.
 
     Raises:
-        serde.exceptions.MissingDependency: if the path could not be imported.
+        serde.exceptions.MissingDependencyError: if the path could not be imported.
     """
     module, path = name.split('.', 1)
     try:
         obj = importlib.import_module(module)
     except ImportError:
-        raise MissingDependency(
+        raise MissingDependencyError(
             f"{module!r} is missing, did you forget to install the serde 'ext' feature?"
         )
     for attr in path.split('.'):

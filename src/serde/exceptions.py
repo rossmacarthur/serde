@@ -7,7 +7,7 @@ from contextlib import contextmanager
 
 __all__ = [
     'ContextError',
-    'MissingDependency',
+    'MissingDependencyError',
     'SerdeError',
     'ValidationError',
 ]
@@ -43,7 +43,7 @@ class ContextError(SerdeError):
     """
 
 
-class MissingDependency(SerdeError):
+class MissingDependencyError(SerdeError):
     """
     Raised when a dependency is missing.
     """
