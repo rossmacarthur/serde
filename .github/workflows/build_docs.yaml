@@ -1,0 +1,36 @@
+# Triggers the workflows on push or pull request events but only for the main branch
+name: Generate new docs.
+on:
+  # Allows you to run this workflows manually from the Actions tab
+  workflow_dispatch:
+
+# A workflows run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflows contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Runs a set of commands using the runners shell
+      - uses: actions/checkout@v2
+        with:
+          ref: master
+      - uses: extractions/setup-just@v1
+
+      - name: Run a multi-line script
+        run: |
+          sudo apt-get install python3-sphinx
+          export PYTHONPATH=$GITHUB_WORKSPACE/src:$PYTHONPATH
+          just docs
+          git config --global user.name "Serde Docs Auto-Generator"
+          mkdir ../html_docs_swap_folder
+          cp -r docs/_build/html/* ../html_docs_swap_folder/
+          git fetch
+          git checkout -t origin/gh-pages
+          rm -rf ./*
+          cp -r ../html_docs_swap_folder/* ./
+          git add .
+          git diff-index --quiet HEAD || git commit -m "publish docs for $(git -C ../../.. rev-parse --short HEAD)"
+          git push
